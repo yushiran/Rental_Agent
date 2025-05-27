@@ -9,4 +9,9 @@ dependencies = [
     "autogen-ext>=0.5.7",
     "openai>=1.82.0",
     "pyautogen>=0.9",
+    "pandas>=2.0.0",
+    "matplotlib>=3.5.0",
+    "seaborn>=0.11.0",
+    "folium>=0.14.0",
+    "numpy>=1.21.0",
 ]
