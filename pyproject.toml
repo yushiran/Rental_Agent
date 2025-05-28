@@ -16,4 +16,7 @@ dependencies = [
     "numpy>=1.21.0",
     "geopandas>=1.0.1",
     "xyzservices>=2025.4.0",
+    "pypdf2>=3.0.1",
+    "pywhatkit>=5.4",
+    "pillow>=11.2.1",
 ]

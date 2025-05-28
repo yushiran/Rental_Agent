@@ -1,0 +1,122 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{setspace}
+\usepackage{enumitem}
+\usepackage{parskip}
+\usepackage{graphicx}
+\usepackage{ifthen}
+\usepackage{hyperref}
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    urlcolor=blue,
+}
+
+% ---------- Custom Variables ----------
+\newcommand{\agreementDate}{\underline{\hspace{4cm}}}
+\newcommand{\landlordName}{Yu}
+\newcommand{\tenantName}{Shiran}
+\newcommand{\propertyAddress}{Stapleton House, B607G N7 8FB}
+\newcommand{\monthlyRent}{£150}
+\newcommand{\securityDeposit}{£100}
+\newcommand{\startDate}{01/05/2025}
+\newcommand{\tenancyEndDate}{01/06/2025}
+\newcommand{\tenancyDuration}{1 month}
+
+% Signature Configuration
+% Set to 'image' to use signature images, 'manual' for blank signature lines
+\newcommand{\signatureMode}{image} % Options: 'image' or 'manual'
+
+% Signature image paths (only used when signatureMode is 'image')
+% Leave empty or comment out if using manual signatures
+\newcommand{\landlordSignatureImage}{} % e.g., {path/to/landlord_signature.png}
+\newcommand{\tenantSignatureImage}{}   % e.g., {path/to/tenant_signature.png}
+
+% Signature dimensions (adjust as needed)
+\newcommand{\signatureWidth}{4cm}
+\newcommand{\signatureHeight}{1.5cm}
+% --------------------------------------
+
+% Signature display logic
+\newcommand{\displaySignature}[2]{%
+  \ifthenelse{\equal{\signatureMode}{image}}{%
+    \ifthenelse{\equal{#2}{}}{%
+      \underline{\hspace{5cm}}%
+    }{%
+      \includegraphics[width=\signatureWidth,height=\signatureHeight,keepaspectratio]{#2}%
+    }%
+  }{%
+    \underline{\hspace{5cm}}%
+  }%
+}
+
+\begin{document}
+
+\begin{center}
+\textbf{\Large Assured Shorthold Tenancy Agreement}
+\end{center}
+
+\vspace{0.5cm}
+
+\singlespacing
+
+\noindent
+This Tenancy Agreement (the "Agreement") is made on \agreementDate\ between \textbf{\landlordName} (the "Landlord") and \textbf{\tenantName} (the "Tenant").
+
+\section*{1. Premises}
+The Landlord agrees to let to the Tenant and the Tenant agrees to take from the Landlord the following premises (the "Premises"):\\
+\textbf{\propertyAddress}
+
+\section*{2. Rent}
+The Tenant shall pay to the Landlord a monthly rent of \textbf{\monthlyRent} (the "Rent"). The Rent shall be payable in advance on the 1st day of every month.
+
+\section*{3. Deposit}
+The Tenant shall pay to the Landlord a security deposit of \textbf{\securityDeposit} (the "Deposit"). The Landlord shall hold the Deposit until the end of the tenancy and shall return it to the Tenant less any amounts due for rent arrears, damage, or other charges.
+
+\section*{4. Term}
+The tenancy shall commence on \textbf{\startDate} and shall continue for a period of \textbf{\tenancyDuration} until \textbf{\tenancyEndDate}.
+
+\section*{5. Utilities}
+The Tenant shall be responsible for all utilities and services including but not limited to gas, electricity, water, and council tax.
+
+\section*{6. Condition of Premises}
+The Tenant agrees to take and maintain the Premises in good and clean condition.
+
+\section*{7. Repairs}
+The Landlord is responsible for structural and exterior repairs. The Tenant is responsible for interior maintenance including walls, floors, ceilings, and fixtures.
+
+\section*{8. Use of Premises}
+The Premises shall be used for residential purposes only. No commercial or business use is permitted.
+
+\section*{9. Assignment and Subletting}
+The Tenant may not assign or sublet the Premises without the prior written consent of the Landlord.
+
+\section*{10. Notices}
+All notices shall be in writing and delivered in person, by pre-paid post, or via facsimile to the parties' designated addresses.
+
+\section*{11. Governing Law}
+This Agreement is governed by the laws of England and Wales.
+
+\section*{12. Entire Agreement}
+This Agreement contains the entire agreement between the parties and supersedes all prior communications.
+
+\section*{13. Severability}
+If any provision is found invalid, the rest of the Agreement remains effective.
+
+\section*{14. Waiver}
+No waiver shall be valid unless in writing and signed by both parties.
+
+\section*{15. Counterparts}
+This Agreement may be executed in counterparts, each of which is considered an original.
+
+\vspace{0.5cm}
+\noindent
+\textbf{Landlord: \landlordName} \\
+Signature: \displaySignature{\landlordName}{\landlordSignatureImage}
+
+\vspace{0.5cm}
+\noindent
+\textbf{Tenant: \tenantName} \\
+Signature: \displaySignature{\tenantName}{\tenantSignatureImage}
+
+\end{document}
