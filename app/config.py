@@ -36,9 +36,26 @@ class RAW_RENTAL_DATA_API_SETTINGS(BaseModel):
         description="Path to save the rental data",
     )
 
+class MongoDBSettings(BaseModel):
+    host: str = Field("localhost", description="MongoDB host")
+    port: int = Field(27017, description="MongoDB port")
+    username: str = Field("", description="MongoDB username")
+    password: str = Field("", description="MongoDB password")
+    database: str = Field(..., description="MongoDB database name")
+    auth_source: str = Field("admin", description="Authentication database")
+    
+    @property
+    def connection_string(self) -> str:
+        """Generate MongoDB connection string"""
+        if self.username and self.password:
+            return f"mongodb://{self.username}:{self.password}@{self.host}:{self.port}/{self.database}?authSource={self.auth_source}"
+        else:
+            return f"mongodb://{self.host}:{self.port}/{self.database}"
+
 class AppConfig(BaseModel):
     llm: Dict[str, LLMSettings]
     raw_rental_data_api: Optional[RAW_RENTAL_DATA_API_SETTINGS] = Field(None, description="API settings for raw rental data")
+    mongodb: Optional[MongoDBSettings] = Field(None, description="MongoDB settings")
 
     class Config:
         arbitrary_types_allowed = True
@@ -98,10 +115,10 @@ class Config:
         }
     
         raw_rental_data_api_config = raw_config.get("raw_rental_data_api", {})
-        if raw_rental_data_api_config:
-            raw_rental_data_api_settings = RAW_RENTAL_DATA_API_SETTINGS(
-                **raw_rental_data_api_config
-            )
+        raw_rental_data_api_settings = RAW_RENTAL_DATA_API_SETTINGS(**raw_rental_data_api_config) if raw_rental_data_api_config else None
+
+        mongodb_config = raw_config.get("mongodb", {})
+        mongodb_settings = MongoDBSettings(**mongodb_config) if mongodb_config else None
 
         config_dict = {
             "llm": {
@@ -111,7 +128,8 @@ class Config:
                     for name, override_config in llm_overrides.items()
                 },
             },
-            "raw_rental_data_api": raw_rental_data_api_settings if raw_rental_data_api_config else None,
+            "raw_rental_data_api": raw_rental_data_api_settings,
+            "mongodb": mongodb_settings,
         }
 
         self._config = AppConfig(**config_dict)
@@ -125,6 +143,11 @@ class Config:
     def raw_rental_data_api(self) -> Optional[RAW_RENTAL_DATA_API_SETTINGS]:
         assert self._config is not None
         return self._config.raw_rental_data_api
+
+    @property
+    def mongodb(self) -> Optional[MongoDBSettings]:
+        assert self._config is not None
+        return self._config.mongodb
 
     @property
     def root_path(self) -> Path:
