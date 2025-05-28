@@ -10,6 +10,10 @@ import seaborn as sns
 import folium
 import numpy as np
 from matplotlib.backends.backend_pdf import PdfPages
+import geopandas as gpd
+import contextily as ctx
+import matplotlib.pyplot as plt
+from shapely.geometry import Point
 
 from app.api import get_rightmove_data
 from app.config import config
@@ -413,17 +417,13 @@ class RentalDataset:
             # Create interactive map with Folium
             center_lat = stats['center_lat']
             center_lon = stats['center_lon']
-            
             m = folium.Map(location=[center_lat, center_lon], zoom_start=12, 
                           tiles='OpenStreetMap')
-            
             # Add markers for each property
             price_quartiles = pd.qcut(df_filtered['price_amount'], q=4, labels=['Low', 'Medium-Low', 'Medium-High', 'High'])
-            color_map = {'Low': 'green', 'Medium-Low': 'blue', 'Medium-High': 'orange', 'High': 'red'}
-            
+            color_map = {'Low': 'green', 'Medium-Low': 'blue', 'Medium-High': 'orange', 'High': 'red'}           
             for idx, (_, row) in enumerate(df_filtered.iterrows()):
                 color = color_map[str(pd.Series(price_quartiles).iloc[idx])]
-                
                 popup_text = f"""
                 Price: £{row['price_amount']:.0f} {row['price_currency']}
                 Bedrooms: {row['bedrooms']}
@@ -437,8 +437,6 @@ class RentalDataset:
                     popup=folium.Popup(popup_text, max_width=300),
                     icon=folium.Icon(color=color, icon='home')
                 ).add_to(m)
-            
-            # Add legend
             legend_html = '''
             <div style="position: fixed; 
                         bottom: 50px; left: 50px; width: 150px; height: 90px; 
@@ -452,56 +450,72 @@ class RentalDataset:
             </div>
             '''
             m.get_root().add_child(folium.Element(legend_html))
-            
-            # Save interactive map
             map_path = analysis_dir / "rental_properties_map.html"
             m.save(str(map_path))
             
-            # Create static plots for PDF
-            pdf_path = analysis_dir / "geographical_distribution_analysis.pdf"
-            with PdfPages(str(pdf_path)) as pdf:
-                # 1. Scatter plot of locations colored by price
-                fig, ax = plt.subplots(figsize=(10, 8))
-                scatter = ax.scatter(df_filtered['location_longitude'], df_filtered['location_latitude'], 
-                                   c=df_filtered['price_amount'], cmap='viridis', alpha=0.6, s=30)
-                ax.set_xlabel('Longitude')
-                ax.set_ylabel('Latitude')
-                ax.set_title('Property Locations by Price')
-                
-                # Add colorbar
-                cbar = plt.colorbar(scatter, ax=ax)
-                cbar.set_label('Rental Price (GBP)')
-                ax.grid(True, alpha=0.3)
-                
-                plt.tight_layout()
-                pdf.savefig(fig, bbox_inches='tight')
-                plt.close()
-                
-                # 2. Price distribution by geographical regions (simplified)
-                # Divide into quadrants based on center
-                df_filtered['region'] = 'Unknown'
-                df_filtered.loc[(df_filtered['location_latitude'] >= center_lat) & 
-                               (df_filtered['location_longitude'] >= center_lon), 'region'] = 'Northeast'
-                df_filtered.loc[(df_filtered['location_latitude'] >= center_lat) & 
-                               (df_filtered['location_longitude'] < center_lon), 'region'] = 'Northwest'
-                df_filtered.loc[(df_filtered['location_latitude'] < center_lat) & 
-                               (df_filtered['location_longitude'] >= center_lon), 'region'] = 'Southeast'
-                df_filtered.loc[(df_filtered['location_latitude'] < center_lat) & 
-                               (df_filtered['location_longitude'] < center_lon), 'region'] = 'Southwest'
-                
-                fig, ax = plt.subplots(figsize=(8, 6))
-                sns.boxplot(data=df_filtered, x='region', y='price_amount', ax=ax)
-                ax.set_xlabel('Geographical Region')
-                ax.set_ylabel('Rental Price (GBP)')
-                ax.set_title('Price Distribution by Geographical Region')
-                plt.xticks(rotation=45)
-                ax.grid(True, alpha=0.3)
-                
-                plt.tight_layout()
-                pdf.savefig(fig, bbox_inches='tight')
-                plt.close()
+            # 2. 构造 GeoDataFrame（转换为 Web Mercator 坐标系）
+            gdf = gpd.GeoDataFrame(
+                df_filtered,
+                geometry=gpd.points_from_xy(df_filtered['location_longitude'], df_filtered['location_latitude']),
+                crs='EPSG:4326'  # 原始为 WGS84 经纬度
+            ).to_crs(epsg=3857)  # 转换为 Web Mercator 适配底图
+            fig, ax = plt.subplots(figsize=(12, 10))
+            gdf.plot(
+                ax=ax,
+                column='price_amount',  # 用价格着色
+                cmap='viridis',
+                markersize=50,
+                alpha=0.7,
+                legend=True,
+                legend_kwds={'label': 'Price (GBP)', 'shrink': 0.8}
+            )
+            try:
+                ctx.add_basemap(ax, source=ctx.providers.OpenStreetMap.Mapnik, crs=gdf.crs, zoom='auto')  # type: ignore
+            except Exception as e:
+                print(f"Warning: Could not add basemap due to zoom level issue: {e}")
+                try:
+                    ctx.add_basemap(ax, source=ctx.providers.OpenStreetMap.Mapnik, crs=gdf.crs, zoom=12)  # type: ignore
+                except Exception as e2:
+                    print(f"Warning: Could not add basemap with manual zoom: {e2}")
             
-            print(f"Geographical analysis saved to {pdf_path}")
+            ax.set_xlabel('Longitude')
+            ax.set_ylabel('Latitude')
+            ax.set_title('Property Locations by Price')
+            ax.ticklabel_format(style='sci', axis='both', scilimits=(0,0))
+            scatter_pdf_path = analysis_dir / "property_locations_map_overlay.pdf"
+            sci_style.save_figure(scatter_pdf_path.with_suffix(''), format='pdf')
+            plt.close()
+            print(f"Property map overlay plot saved to {scatter_pdf_path}")
+            
+            # 3. Price distribution by geographical regions (simplified)
+            # Divide into quadrants based on center
+            df_filtered['region'] = 'Unknown'
+            df_filtered.loc[(df_filtered['location_latitude'] >= center_lat) & 
+                           (df_filtered['location_longitude'] >= center_lon), 'region'] = 'Northeast'
+            df_filtered.loc[(df_filtered['location_latitude'] >= center_lat) & 
+                           (df_filtered['location_longitude'] < center_lon), 'region'] = 'Northwest'
+            df_filtered.loc[(df_filtered['location_latitude'] < center_lat) & 
+                           (df_filtered['location_longitude'] >= center_lon), 'region'] = 'Southeast'
+            df_filtered.loc[(df_filtered['location_latitude'] < center_lat) & 
+                           (df_filtered['location_longitude'] < center_lon), 'region'] = 'Southwest'
+            
+            fig, ax = plt.subplots(figsize=(8, 6))
+            sns.boxplot(data=df_filtered, x='region', y='price_amount', ax=ax)
+            ax.set_xlabel('Geographical Region')
+            ax.set_ylabel('Rental Price (GBP)')
+            ax.set_title('Price Distribution by Geographical Region')
+            plt.xticks(rotation=45)
+            ax.grid(True, alpha=0.3)
+            
+            plt.tight_layout()
+            
+            # Save second plot as separate PDF
+            region_pdf_path = analysis_dir / "price_by_region_boxplot.pdf"
+            sci_style.save_figure(region_pdf_path.with_suffix(''), format='pdf')
+            plt.close()
+            
+            print(f"Property locations scatter plot saved to {scatter_pdf_path}")
+            print(f"Price by region boxplot saved to {region_pdf_path}")
             print(f"Interactive map saved to {map_path}")
         
         return stats
