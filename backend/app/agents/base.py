@@ -8,44 +8,9 @@ from autogen import ConversableAgent
 from loguru import logger
 from pydantic import BaseModel, Field
 
-from app.mongodb.client import AsyncMongoClientWrapper
-
-
-class AgentMemoryModel(BaseModel):
-    """Agent 记忆数据模型"""
-    id: Optional[str] = None
-    agent_name: str
-    memory_type: str  # 'interaction', 'preference', 'market_data', 'decision'
-    content: dict
-    timestamp: datetime = Field(default_factory=datetime.now)
-    importance: int = Field(default=5, ge=1, le=10)
-    tags: List[str] = Field(default_factory=list)
-
-
-class ConversationMemoryModel(BaseModel):
-    """对话记忆数据模型"""
-    id: Optional[str] = None
-    conversation_id: str
-    agent_name: str
-    message_content: str
-    message_type: str = 'text'
-    context: Dict[str, Any] = Field(default_factory=dict)
-    timestamp: datetime = Field(default_factory=datetime.now)
-
-
-class RAGQueryModel(BaseModel):
-    """RAG 查询记录模型"""
-    id: Optional[str] = None
-    agent_name: str
-    query: str
-    response: str
-    context: Dict[str, Any] = Field(default_factory=dict)
-    timestamp: datetime = Field(default_factory=datetime.now)
-    relevance_score: float = Field(default=0.0, ge=0.0, le=1.0)
-
 
 class EnhancedRentalAgent(ConversableAgent):
-    """增强的租房 Agent 基类，集成异步 MongoDB 支持和 AutoGen RAG"""
+    """Enhanced Rental Agent Base Class, integrating async MongoDB support and AutoGen RAG"""
     
     def __init__(
         self,
@@ -62,22 +27,22 @@ class EnhancedRentalAgent(ConversableAgent):
             **kwargs
         )
         
-        # 异步 MongoDB 客户端
+        # Async MongoDB client
         self.memory_client = None
         self.conversation_client = None
         self.rag_query_client = None
         self.initialized = False
         
-        # RAG 系统配置
+        # RAG system configuration
         self.enable_rag = enable_rag
         self.rag_system = None
         
-        # 本地缓存
+        # Local cache
         self.memory_cache: List[AgentMemoryModel] = []
         self.conversation_cache: List[ConversationMemoryModel] = []
         
     async def initialize_database(self):
-        """初始化数据库连接"""
+        """Initialize database connections"""
         if not self.initialized:
             self.memory_client = AsyncMongoClientWrapper(
                 AgentMemoryModel, 
@@ -96,7 +61,7 @@ class EnhancedRentalAgent(ConversableAgent):
             await self.conversation_client.connect()
             await self.rag_query_client.connect()
             
-            # 初始化 RAG 系统
+            # Initialize RAG system
             if self.enable_rag:
                 await self._initialize_rag_system()
             
@@ -104,7 +69,7 @@ class EnhancedRentalAgent(ConversableAgent):
             logger.info(f"Database and RAG system initialized for agent: {self.name}")
 
     async def _initialize_rag_system(self):
-        """初始化 RAG 系统"""
+        """Initialize RAG system"""
         try:
             from app.mongodb.autogen_integration import get_rental_rag
             self.rag_system = await get_rental_rag()
@@ -120,7 +85,7 @@ class EnhancedRentalAgent(ConversableAgent):
         importance: int = 5,
         tags: List[str] = None
     ) -> str:
-        """异步保存记忆"""
+        """Asynchronously save memory"""
         if not self.initialized:
             await self.initialize_database()
             
@@ -132,14 +97,14 @@ class EnhancedRentalAgent(ConversableAgent):
             tags=tags or []
         )
         
-        # 保存到数据库
+        # Save to database
         memory_id = await self.memory_client.insert_one(memory)
         
-        # 添加到本地缓存
+        # Add to local cache
         memory.id = memory_id
         self.memory_cache.append(memory)
         
-        # 保持缓存大小
+        # Maintain cache size
         if len(self.memory_cache) > 100:
             self.memory_cache = self.memory_cache[-50:]
             
@@ -153,18 +118,18 @@ class EnhancedRentalAgent(ConversableAgent):
         limit: int = 20,
         use_cache: bool = True
     ) -> List[AgentMemoryModel]:
-        """异步获取记忆"""
+        """Asynchronously retrieve memories"""
         if not self.initialized:
             await self.initialize_database()
             
-        # 构建查询过滤器
+        # Build query filter
         filter_dict = {"agent_name": self.name}
         if memory_type:
             filter_dict["memory_type"] = memory_type
         if importance_threshold > 1:
             filter_dict["importance"] = {"$gte": importance_threshold}
             
-        # 优先使用缓存
+        # Prioritize cache
         if use_cache and memory_type is None:
             cached_memories = [
                 m for m in self.memory_cache 
@@ -173,7 +138,7 @@ class EnhancedRentalAgent(ConversableAgent):
             if len(cached_memories) >= limit:
                 return sorted(cached_memories, key=lambda x: x.timestamp, reverse=True)[:limit]
         
-        # 从数据库查询
+        # Query from database
         memories = await self.memory_client.find_many_sorted(
             filter_dict,
             [("timestamp", -1)],
@@ -190,7 +155,7 @@ class EnhancedRentalAgent(ConversableAgent):
         message_type: str = 'text',
         context: Dict[str, Any] = None
     ) -> str:
-        """保存对话记忆"""
+        """Save conversation memory"""
         if not self.initialized:
             await self.initialize_database()
             
@@ -204,7 +169,7 @@ class EnhancedRentalAgent(ConversableAgent):
         
         memory_id = await self.conversation_client.insert_one(conv_memory)
         
-        # 添加到本地缓存
+        # Add to local cache
         conv_memory.id = memory_id
         self.conversation_cache.append(conv_memory)
         
@@ -216,7 +181,7 @@ class EnhancedRentalAgent(ConversableAgent):
         conversation_id: str, 
         limit: int = 50
     ) -> List[ConversationMemoryModel]:
-        """获取对话历史"""
+        """Get conversation history"""
         if not self.initialized:
             await self.initialize_database()
             
@@ -229,7 +194,7 @@ class EnhancedRentalAgent(ConversableAgent):
         return history
 
     async def update_memory_importance(self, memory_id: str, new_importance: int):
-        """更新记忆重要性"""
+        """Update memory importance"""
         if not self.initialized:
             await self.initialize_database()
             
@@ -239,11 +204,11 @@ class EnhancedRentalAgent(ConversableAgent):
         )
 
     async def search_memories(self, search_terms: List[str], limit: int = 10) -> List[AgentMemoryModel]:
-        """搜索记忆"""
+        """Search memories"""
         if not self.initialized:
             await self.initialize_database()
             
-        # 构建文本搜索查询
+        # Build text search query
         search_query = {
             "agent_name": self.name,
             "$or": [
@@ -254,18 +219,17 @@ class EnhancedRentalAgent(ConversableAgent):
         
         memories = await self.memory_client.find_many_sorted(
             search_query,
-            [("importance", -1), ("timestamp", -1)],
+            [("timestamp", -1)],
             limit
         )
         
         return memories
 
     async def get_memory_summary(self) -> Dict[str, Any]:
-        """获取记忆摘要统计"""
+        """Get memory statistics summary"""
         if not self.initialized:
             await self.initialize_database()
             
-        # 使用聚合查询获取统计信息
         pipeline = [
             {"$match": {"agent_name": self.name}},
             {"$group": {
@@ -275,45 +239,37 @@ class EnhancedRentalAgent(ConversableAgent):
             }}
         ]
         
-        stats = await self.memory_client.aggregate(pipeline)
+        summary = await self.memory_client.aggregate(pipeline)
         
-        summary = {
+        return {
             "total_memories": len(self.memory_cache),
-            "memory_types": {stat["_id"]: stat for stat in stats},
-            "last_updated": datetime.now().isoformat()
+            "type_stats": summary
         }
-        
-        return summary
 
     async def cleanup_old_memories(self, days_old: int = 30, min_importance: int = 3):
-        """清理旧的低重要性记忆"""
+        """Clean up old memories with low importance"""
         if not self.initialized:
             await self.initialize_database()
             
-        cutoff_date = datetime.now() - timedelta(days=days_old)
+        cutoff_date = datetime.utcnow() - timedelta(days=days_old)
         
-        filter_dict = {
+        delete_filter = {
             "agent_name": self.name,
             "timestamp": {"$lt": cutoff_date},
             "importance": {"$lt": min_importance}
         }
         
-        deleted_count = await self.memory_client.delete_many(filter_dict)
-        logger.info(f"{self.name} cleaned up {deleted_count} old memories")
-        
-        return deleted_count
+        deleted_count = await self.memory_client.delete_many(delete_filter)
+        logger.info(f"Cleaned up {deleted_count} old memories for {self.name}")
 
     async def close_database_connections(self):
-        """关闭数据库连接"""
-        if self.memory_client:
+        """Close all database connections"""
+        if self.initialized:
             await self.memory_client.close()
-        if self.conversation_client:
             await self.conversation_client.close()
-        if self.rag_query_client:
             await self.rag_query_client.close()
-        
-        self.initialized = False
-        logger.info(f"Database connections closed for agent: {self.name}")
+            self.initialized = False
+            logger.info(f"Closed database connections for agent: {self.name}")
 
     async def query_rag_system(
         self, 
@@ -321,27 +277,21 @@ class EnhancedRentalAgent(ConversableAgent):
         context: Dict[str, Any] = None,
         save_query: bool = True
     ) -> str:
-        """查询 RAG 系统获取增强信息"""
+        """Query the RAG system"""
         if not self.enable_rag or not self.rag_system:
-            return "RAG system not available"
-        
-        if not self.initialized:
-            await self.initialize_database()
-        
-        try:
-            # 查询 RAG 系统
-            response = await self.rag_system.ask_question(query, context)
+            return "RAG system is not enabled or initialized"
             
-            # 保存查询记录
+        try:
+            response = await self.rag_system.aquery(query, context)
+            
             if save_query:
                 await self._save_rag_query(query, response, context)
-            
-            logger.debug(f"{self.name} RAG query successful")
+                
             return response
             
         except Exception as e:
             logger.error(f"RAG query failed for {self.name}: {e}")
-            return f"RAG query error: {str(e)}"
+            return f"RAG query failed: {str(e)}"
 
     async def _save_rag_query(
         self, 
@@ -349,7 +299,10 @@ class EnhancedRentalAgent(ConversableAgent):
         response: str, 
         context: Dict[str, Any] = None
     ):
-        """保存 RAG 查询记录"""
+        """Save RAG query and response"""
+        if not self.initialized:
+            await self.initialize_database()
+            
         rag_query = RAGQueryModel(
             agent_name=self.name,
             query=query,
@@ -360,53 +313,52 @@ class EnhancedRentalAgent(ConversableAgent):
         await self.rag_query_client.insert_one(rag_query)
 
     async def get_rag_history(self, limit: int = 20) -> List[RAGQueryModel]:
-        """获取 RAG 查询历史"""
+        """Get RAG query history"""
         if not self.initialized:
             await self.initialize_database()
-        
-        return await self.rag_query_client.find_many_sorted(
+            
+        history = await self.rag_query_client.find_many_sorted(
             {"agent_name": self.name},
             [("timestamp", -1)],
             limit
         )
+        
+        return history
 
     async def analyze_with_rag(self, data: Dict[str, Any], analysis_type: str) -> Dict[str, Any]:
-        """使用 RAG 系统分析数据"""
-        if not self.enable_rag:
-            return {"error": "RAG system not enabled"}
-        
-        # 构建分析查询
-        query = f"Analyze this {analysis_type} data and provide insights: {json.dumps(data, indent=2)}"
-        
-        # 获取 RAG 响应
-        rag_response = await self.query_rag_system(query, {"analysis_type": analysis_type})
-        
-        # 保存分析结果作为记忆
-        await self.save_memory(
-            f"rag_analysis_{analysis_type}",
-            {
-                "input_data": data,
-                "rag_response": rag_response,
-                "analysis_type": analysis_type
-            },
-            importance=7
-        )
-        
-        return {
-            "analysis_type": analysis_type,
-            "input_data": data,
-            "rag_insights": rag_response,
-            "timestamp": datetime.now().isoformat()
-        }
+        """Analyze data using RAG system"""
+        if not self.enable_rag or not self.rag_system:
+            return {"error": "RAG system is not enabled or initialized"}
+            
+        try:
+            # Format data for analysis
+            data_str = json.dumps(data, indent=2)
+            query = f"Please analyze this {analysis_type} data:\n{data_str}"
+            
+            # Get RAG response
+            response = await self.query_rag_system(
+                query,
+                context={"analysis_type": analysis_type}
+            )
+            
+            return {
+                "analysis_type": analysis_type,
+                "raw_data": data,
+                "analysis_result": response
+            }
+            
+        except Exception as e:
+            logger.error(f"RAG analysis failed for {self.name}: {e}")
+            return {"error": str(e)}
 
     @abstractmethod
     async def process_message_async(self, message: str, sender: str, context: Dict[str, Any] = None) -> str:
-        """异步处理消息的抽象方法"""
+        """Process message asynchronously"""
         pass
 
     @abstractmethod
     async def make_decision_async(self, context: Dict[str, Any]) -> Dict[str, Any]:
-        """异步决策的抽象方法"""
+        """Make decision asynchronously"""
         pass
 
     @abstractmethod
@@ -417,7 +369,7 @@ class EnhancedRentalAgent(ConversableAgent):
         context: Dict[str, Any] = None,
         use_rag: bool = True
     ) -> str:
-        """使用 RAG 增强的消息处理抽象方法"""
+        """Process message with RAG support"""
         pass
 
     @abstractmethod
@@ -426,5 +378,5 @@ class EnhancedRentalAgent(ConversableAgent):
         context: Dict[str, Any],
         decision_type: str = None
     ) -> Dict[str, Any]:
-        """使用 RAG 增强的决策抽象方法"""
+        """Make decision with RAG support"""
         pass

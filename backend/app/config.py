@@ -44,6 +44,11 @@ class MongoDBSettings(BaseModel):
     database: str = Field(..., description="MongoDB database name")
     auth_source: str = Field("admin", description="Authentication database")
     
+    # Collection names
+    mongo_state_checkpoint_collection: str = Field("state_checkpoints", description="State checkpoint collection name")
+    mongo_state_writes_collection: str = Field("state_writes", description="State writes collection name")
+    mongo_long_term_memory_collection: str = Field("long_term_memory", description="Long term memory collection name")
+    
     @property
     def connection_string(self) -> str:
         """Generate MongoDB connection string"""
@@ -51,6 +56,13 @@ class MongoDBSettings(BaseModel):
             return f"mongodb://{self.username}:{self.password}@{self.host}:{self.port}/{self.database}?authSource={self.auth_source}"
         else:
             return f"mongodb://{self.host}:{self.port}/{self.database}"
+
+class RAGSettings(BaseModel):
+    text_embedding_model_id: str = Field("sentence-transformers/all-MiniLM-L6-v2", description="Text embedding model identifier")
+    text_embedding_model_dim: int = Field(384, description="Text embedding model dimension")
+    top_k: int = Field(3, description="Number of top documents to retrieve")
+    device: str = Field("cpu", description="Device to run embedding model on")
+    chunk_size: int = Field(256, description="Size of text chunks for processing")
 
 class OpikSettings(BaseModel):
     api_key: str = Field(..., description="Opik API key")
@@ -62,11 +74,17 @@ class OpikSettings(BaseModel):
     class Config:
         env_prefix = "OPIK_"
 
+class AgentsSettings(BaseModel):
+    total_messages_summary_trigger: int = Field(30, description="Number of messages that trigger a conversation summary")
+    total_messages_after_summary: int = Field(5, description="Number of messages to keep after summarization")
+
 class AppConfig(BaseModel):
     llm: Dict[str, LLMSettings]
     raw_rental_data_api: Optional[RAW_RENTAL_DATA_API_SETTINGS] = Field(None, description="API settings for raw rental data")
     mongodb: Optional[MongoDBSettings] = Field(None, description="MongoDB settings")
+    rag: Optional[RAGSettings] = Field(None, description="RAG settings")
     opik: Optional[OpikSettings] = Field(None, description="Opik settings")
+    agents: Optional[AgentsSettings] = Field(None, description="Agents configuration settings")
 
     class Config:
         arbitrary_types_allowed = True
@@ -131,8 +149,14 @@ class Config:
         mongodb_config = raw_config.get("mongodb", {})
         mongodb_settings = MongoDBSettings(**mongodb_config) if mongodb_config else None
 
+        rag_config = raw_config.get("rag", {})
+        rag_settings = RAGSettings(**rag_config) if rag_config else None
+
         opik_config = raw_config.get("opik", {})
         opik_settings = OpikSettings(**opik_config) if opik_config else None
+
+        agents_config = raw_config.get("agents", {})
+        agents_settings = AgentsSettings(**agents_config) if agents_config else None
 
         config_dict = {
             "llm": {
@@ -144,7 +168,9 @@ class Config:
             },
             "raw_rental_data_api": raw_rental_data_api_settings,
             "mongodb": mongodb_settings,
+            "rag": rag_settings,
             "opik": opik_settings,
+            "agents": agents_settings,
         }
 
         self._config = AppConfig(**config_dict)
@@ -165,9 +191,19 @@ class Config:
         return self._config.mongodb
 
     @property
+    def rag(self) -> Optional[RAGSettings]:
+        assert self._config is not None
+        return self._config.rag
+
+    @property
     def opik(self) -> Optional[OpikSettings]:
         assert self._config is not None
         return self._config.opik
+
+    @property
+    def agents(self) -> Optional[AgentsSettings]:
+        assert self._config is not None
+        return self._config.agents
 
     @property
     def root_path(self) -> Path:

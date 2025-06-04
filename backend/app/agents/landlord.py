@@ -2,11 +2,12 @@ from typing import Dict, List, Any, Optional
 from datetime import datetime
 
 from .base import BaseRentalAgent, AgentProfile, Property, MarketData
+from .models import LandlordModel, PropertyModel
 from loguru import logger
 
 
 class LandlordAgent(BaseRentalAgent):
-    """房主Agent - 负责房源管理和租客筛选"""
+    """Landlord Agent - Professional property manager with market-driven decision making"""
     
     def __init__(
         self,
@@ -15,52 +16,62 @@ class LandlordAgent(BaseRentalAgent):
         properties: List[Property],
         pricing_strategy: str = "market_based",
         tenant_preferences: Dict[str, Any] = None,
+        performance_metrics: Dict[str, Any] = None,
         **kwargs
     ):
         profile = AgentProfile(
             name=name,
-            role="房主",
+            role="Professional Landlord",
             goals=[
-                "以合理价格快速出租房源",
-                "找到可靠的长期租客",
-                "维护房产价值和收益"
+                "Maximize property portfolio returns through optimal pricing",
+                "Secure high-quality, long-term tenants",
+                "Maintain high occupancy rates and property standards",
+                "Build strong landlord reputation and tenant satisfaction"
             ],
             constraints=[
-                "必须符合法律法规",
-                "确保租客信用良好",
-                "维护房产安全"
+                "Comply with all rental market regulations",
+                "Maintain minimum tenant qualification standards",
+                "Ensure property maintenance and safety standards",
+                "Operate within market-competitive pricing ranges"
             ],
             capabilities=[
-                "房源定价",
-                "租客筛选",
-                "合同谈判",
-                "房产管理"
+                "Data-driven property pricing optimization",
+                "Comprehensive tenant screening and risk assessment",
+                "Professional contract negotiation",
+                "Efficient property portfolio management",
+                "Market trend analysis and adaptation"
             ]
         )
         
-        system_message = f"""You are a professional landlord named {name}.
+        system_message = f"""You are a professional landlord named {name} managing {len(properties)} properties.
 
-Role:
-- You own {len(properties)} properties for rent
-- Pricing strategy: {pricing_strategy}
-- Tenant preferences: {tenant_preferences or 'No special requirements'}
+Role and Expertise:
+- Portfolio Size: {len(properties)} properties
+- Pricing Strategy: {pricing_strategy}
+- Tenant Requirements: {tenant_preferences or 'Standard market requirements'}
+- Performance Metrics: {performance_metrics or 'Not available'}
 
-Your objectives:
-1. Rent properties at reasonable market prices quickly
-2. Find reliable long-term tenants
-3. Maintain good landlord reputation through professional service
+Key Objectives:
+1. Optimize rental income through data-driven pricing
+2. Secure reliable, long-term tenants through thorough screening
+3. Maintain high occupancy rates and tenant satisfaction
+4. Build a professional reputation in the market
 
-Communication style:
-- Professional and friendly
-- Provide detailed property information and advantages
-- Use market data for reasonable pricing
-- Willing to negotiate prices based on circumstances
-- If deal is reached, say "Great, we have a deal" or "I agree to this condition"
-- If unacceptable, say "Sorry, this price is too low"
+Communication Approach:
+- Professional and data-informed
+- Clear property specifications and requirements
+- Market-based pricing justification
+- Transparent negotiation process
+- Direct response to tenant queries and concerns
 
-Important: Do not mention house viewing, scheduling tours, or property visits. Focus on property information, price, and condition discussions.
-Adjust strategy flexibly based on market conditions while ensuring reasonable rental income.
-"""
+Decision Framework:
+- Use market data for pricing decisions
+- Apply consistent tenant screening criteria
+- Consider long-term portfolio value
+- Balance occupancy rates with rental income
+- Prioritize tenant quality over quick letting
+
+Important: Focus on property details, terms, and conditions. All decisions must be based on data and market conditions."""
         
         super().__init__(
             name=name,
@@ -70,238 +81,307 @@ Adjust strategy flexibly based on market conditions while ensuring reasonable re
             **kwargs
         )
         
-        self.properties = {prop.id: prop for prop in properties}
+        self.properties = {str(prop.property_id): prop for prop in properties}
         self.pricing_strategy = pricing_strategy
-        self.tenant_preferences = tenant_preferences or {}
+        self.tenant_preferences = tenant_preferences or self._default_tenant_preferences()
+        self.performance_metrics = performance_metrics or {}
         self.rental_applications: List[Dict] = []
         self.tenant_inquiries: List[Dict] = []
         
+    def _default_tenant_preferences(self) -> Dict[str, Any]:
+        """Default tenant qualification criteria"""
+        return {
+            "min_income_ratio": 2.5,
+            "preferred_employment_status": ["employed", "self_employed"],
+            "min_credit_score": 650,
+            "lease_length_preference": "12 months",
+            "additional_requirements": [
+                "employment verification",
+                "previous landlord references",
+                "credit check"
+            ]
+        }
+        
     def set_property_price(self, property_id: str, market_data: MarketData) -> float:
-        """基于市场数据设定房源价格"""
+        """Set optimal property price based on market data and property features"""
         if property_id not in self.properties:
-            raise ValueError(f"Property {property_id} not found")
+            raise ValueError(f"Property {property_id} not found in portfolio")
             
         property_data = self.properties[property_id]
         
         if self.pricing_strategy == "market_based":
-            # 基于市场平均价格定价
+            # Calculate base price from market data
             base_price = market_data.average_price
             
-            # 根据房源特色调整价格
-            adjustment_factor = 1.0
+            # Property feature adjustments
+            adjustments = {
+                "location": self._calculate_location_premium(property_data.location, market_data),
+                "condition": self._assess_property_condition(property_data),
+                "features": self._evaluate_property_features(property_data),
+                "market_trend": self._analyze_market_trend(market_data)
+            }
             
-            # 面积调整
-            if property_data.area > 100:
-                adjustment_factor += 0.1
-            elif property_data.area < 50:
-                adjustment_factor -= 0.1
-                
-            # 设施调整
-            premium_amenities = ["健身房", "游泳池", "停车位", "阳台"]
-            amenity_bonus = len([a for a in property_data.amenities if a in premium_amenities]) * 0.05
-            adjustment_factor += amenity_bonus
-            
-            # 市场趋势调整
-            if market_data.price_trend == "increasing":
-                adjustment_factor += 0.05
-            elif market_data.price_trend == "decreasing":
-                adjustment_factor -= 0.05
-                
-            suggested_price = base_price * adjustment_factor
+            # Apply adjustments
+            final_price = base_price
+            for factor, adjustment in adjustments.items():
+                final_price *= (1 + adjustment)
             
         elif self.pricing_strategy == "competitive":
-            # 略低于市场价格快速出租
-            suggested_price = market_data.average_price * 0.95
+            # Price slightly below market for faster letting
+            similar_properties = self._find_similar_properties(property_data, market_data)
+            final_price = self._calculate_competitive_price(similar_properties)
             
         elif self.pricing_strategy == "premium":
-            # 高于市场价格，突出房源优势
-            suggested_price = market_data.average_price * 1.15
+            # Premium pricing for high-end properties
+            final_price = self._calculate_premium_price(property_data, market_data)
             
         else:
-            suggested_price = market_data.average_price
+            final_price = market_data.average_price
             
-        # 更新房源价格
-        self.properties[property_id].price = suggested_price
+        # Update property price
+        self.properties[property_id].price["amount"] = round(final_price, 2)
         
-        self.log_interaction("price_setting", {
+        # Log price update
+        self.log_interaction("price_update", {
             "property_id": property_id,
-            "old_price": property_data.price,
-            "new_price": suggested_price,
+            "previous_price": property_data.price.get("amount"),
+            "new_price": final_price,
             "market_average": market_data.average_price,
+            "adjustments": adjustments if self.pricing_strategy == "market_based" else None,
             "strategy": self.pricing_strategy
         })
         
-        return suggested_price
+        return final_price
         
     def evaluate_tenant(self, tenant_info: Dict) -> Dict:
-        """评估潜在租客"""
+        """Comprehensive tenant evaluation based on multiple criteria"""
         evaluation = {
-            "tenant_name": tenant_info.get("name", "未知"),
-            "income_adequacy": False,
-            "meets_preferences": True,
-            "risk_level": "medium",
-            "score": 0,
+            "tenant_id": tenant_info.get("tenant_id", "Unknown"),
+            "name": tenant_info.get("name", "Unknown"),
+            "financial_assessment": self._assess_financial_capability(tenant_info),
+            "rental_history": self._evaluate_rental_history(tenant_info),
+            "employment_status": self._verify_employment(tenant_info),
+            "compatibility": self._assess_tenant_compatibility(tenant_info),
+            "risk_factors": [],
+            "overall_score": 0,
             "recommendation": ""
         }
         
-        # 收入评估（租金不超过收入的30%）
-        if "monthly_income" in tenant_info and "desired_rent" in tenant_info:
-            income = tenant_info["monthly_income"]
-            rent = tenant_info["desired_rent"]
-            if income >= rent * 3.33:  # 收入至少是租金的3.33倍
-                evaluation["income_adequacy"] = True
-                evaluation["score"] += 40
-                
-        # 信用记录
-        if tenant_info.get("credit_score", 0) >= 700:
-            evaluation["score"] += 30
-        elif tenant_info.get("credit_score", 0) >= 600:
-            evaluation["score"] += 20
-            
-        # 租房历史
-        if tenant_info.get("rental_history", []):
-            good_references = sum(1 for ref in tenant_info["rental_history"] 
-                                if ref.get("rating", 0) >= 4)
-            evaluation["score"] += min(good_references * 10, 30)
-            
-        # 偏好匹配
-        if self.tenant_preferences:
-            if (self.tenant_preferences.get("no_pets", False) and 
-                tenant_info.get("has_pets", False)):
-                evaluation["meets_preferences"] = False
-                evaluation["score"] -= 20
-                
-        # 风险评估
-        if evaluation["score"] >= 80:
-            evaluation["risk_level"] = "low"
-            evaluation["recommendation"] = "推荐接受"
-        elif evaluation["score"] >= 60:
-            evaluation["risk_level"] = "medium"
-            evaluation["recommendation"] = "可以考虑"
+        # Calculate weighted score
+        weights = {
+            "financial": 0.4,
+            "history": 0.25,
+            "employment": 0.25,
+            "compatibility": 0.1
+        }
+        
+        scores = {
+            "financial": evaluation["financial_assessment"]["score"],
+            "history": evaluation["rental_history"]["score"],
+            "employment": evaluation["employment_status"]["score"],
+            "compatibility": evaluation["compatibility"]["score"]
+        }
+        
+        evaluation["overall_score"] = sum(
+            scores[key] * weights[key] for key in weights
+        )
+        
+        # Risk assessment
+        risk_factors = []
+        if scores["financial"] < 60:
+            risk_factors.append("Financial stability concerns")
+        if scores["history"] < 60:
+            risk_factors.append("Problematic rental history")
+        if scores["employment"] < 60:
+            risk_factors.append("Employment stability issues")
+        
+        evaluation["risk_factors"] = risk_factors
+        
+        # Final recommendation
+        if evaluation["overall_score"] >= 80:
+            evaluation["recommendation"] = "Strongly Recommended"
+        elif evaluation["overall_score"] >= 70:
+            evaluation["recommendation"] = "Recommended with standard deposit"
+        elif evaluation["overall_score"] >= 60:
+            evaluation["recommendation"] = "Consider with increased deposit"
         else:
-            evaluation["risk_level"] = "high"
-            evaluation["recommendation"] = "不推荐"
+            evaluation["recommendation"] = "Not recommended"
             
         self.log_interaction("tenant_evaluation", evaluation)
         return evaluation
         
-    def make_decision(self, context: Dict) -> Dict:
-        """基于上下文做出决策"""
-        if context["type"] == "rental_inquiry":
-            # 处理租房咨询
-            tenant_info = context["tenant_info"]
-            property_id = context["property_id"]
-            
-            evaluation = self.evaluate_tenant(tenant_info)
-            
-            if evaluation["score"] >= 60:
-                decision = {
-                    "action": "invite_viewing",
-                    "property_id": property_id,
-                    "available_times": self._get_available_viewing_times(),
-                    "additional_requirements": self._get_additional_requirements()
-                }
+    def _assess_financial_capability(self, tenant_info: Dict) -> Dict:
+        """Detailed financial assessment"""
+        income = tenant_info.get("profile", {}).get("annual_income", 0)
+        desired_rent = tenant_info.get("budget", {}).get("preferred_amount", 0)
+        credit_score = tenant_info.get("profile", {}).get("credit_score", 0)
+        
+        score = 0
+        notes = []
+        
+        # Income ratio assessment
+        if income > 0 and desired_rent > 0:
+            monthly_income = income / 12
+            income_ratio = monthly_income / desired_rent
+            if income_ratio >= self.tenant_preferences["min_income_ratio"]:
+                score += 40
+                notes.append(f"Income ratio {income_ratio:.1f} meets requirements")
             else:
-                decision = {
-                    "action": "decline_politely",
-                    "reason": "暂时没有合适的房源匹配您的需求"
-                }
-                
-        elif context["type"] == "price_negotiation":
-            # 处理价格谈判
-            decision = self._handle_price_negotiation(context)
-            
-        elif context["type"] == "application_review":
-            # 审核租房申请
-            decision = self._review_application(context)
-            
+                notes.append(f"Income ratio {income_ratio:.1f} below minimum {self.tenant_preferences['min_income_ratio']}")
+        
+        # Credit score assessment
+        if credit_score >= self.tenant_preferences["min_credit_score"]:
+            score += 40
+            notes.append("Credit score meets requirements")
+        elif credit_score >= self.tenant_preferences["min_credit_score"] - 50:
+            score += 20
+            notes.append("Credit score marginally acceptable")
         else:
-            decision = {"action": "need_more_info"}
+            notes.append("Credit score below requirements")
+        
+        # Additional financial factors
+        if tenant_info.get("profile", {}).get("employment_status") in self.tenant_preferences["preferred_employment_status"]:
+            score += 20
+            notes.append("Employment status acceptable")
+        
+        return {
+            "score": score,
+            "notes": notes,
+            "income_ratio": income_ratio if income > 0 and desired_rent > 0 else None,
+            "credit_score": credit_score
+        }
+        
+    def make_decision(self, context: Dict) -> Dict:
+        """Make data-driven decisions based on context and market conditions"""
+        if context["type"] == "rental_inquiry":
+            return self._handle_rental_inquiry(context)
+        elif context["type"] == "price_negotiation":
+            return self._handle_price_negotiation(context)
+        elif context["type"] == "application_review":
+            return self._handle_application_review(context)
+        else:
+            return {"action": "need_more_info", "details": "Unrecognized decision context"}
             
-        self.log_interaction("decision_making", decision)
-        return decision
+    def _handle_rental_inquiry(self, context: Dict) -> Dict:
+        """Process rental inquiry with comprehensive evaluation"""
+        tenant_info = context["tenant_info"]
+        property_id = context["property_id"]
         
-    def _get_available_viewing_times(self) -> List[str]:
-        """获取可看房时间"""
-        return [
-            "明天下午2-4点",
-            "后天上午10-12点",
-            "周末上午9-11点"
-        ]
+        # Evaluate tenant
+        evaluation = self.evaluate_tenant(tenant_info)
         
-    def _get_additional_requirements(self) -> List[str]:
-        """获取额外要求"""
-        requirements = []
-        if self.tenant_preferences.get("income_proof", True):
-            requirements.append("请提供收入证明")
-        if self.tenant_preferences.get("reference_check", True):
-            requirements.append("请提供前房主推荐信")
-        return requirements
+        # Check property availability and suitability
+        property_check = self._check_property_suitability(
+            property_id,
+            tenant_info.get("requirements", {}),
+            tenant_info.get("preferences", {})
+        )
+        
+        if evaluation["overall_score"] >= 60 and property_check["suitable"]:
+            response = {
+                "action": "proceed_with_inquiry",
+                "property_id": property_id,
+                "requirements": self._get_application_requirements(),
+                "viewing_options": self._get_viewing_options(property_id),
+                "next_steps": self._generate_next_steps(evaluation["overall_score"]),
+                "additional_notes": property_check["notes"]
+            }
+        else:
+            response = {
+                "action": "decline_inquiry",
+                "reason": "Property not suitable or tenant requirements not met",
+                "alternative_suggestions": self._suggest_alternatives(tenant_info)
+            }
+            
+        self.log_interaction("inquiry_response", response)
+        return response
         
     def _handle_price_negotiation(self, context: Dict) -> Dict:
-        """处理价格谈判"""
+        """Handle price negotiation based on market data and property metrics"""
         property_id = context["property_id"]
         offered_price = context["offered_price"]
-        current_price = self.properties[property_id].price
         market_data = context.get("market_data")
+        tenant_evaluation = context.get("tenant_evaluation", {})
         
-        # 计算可接受的最低价格
-        min_acceptable = current_price * 0.9
-        if market_data and market_data.supply_level == "high":
-            min_acceptable = current_price * 0.85
-            
+        property_data = self.properties[property_id]
+        current_price = property_data.price["amount"]
+        
+        # Calculate acceptable price range
+        min_acceptable = self._calculate_minimum_acceptable_price(
+            current_price,
+            market_data,
+            tenant_evaluation
+        )
+        
         if offered_price >= min_acceptable:
             return {
                 "action": "accept_offer",
-                "final_price": offered_price,
-                "reasoning": "价格在可接受范围内"
+                "property_id": property_id,
+                "accepted_price": offered_price,
+                "terms": self._generate_lease_terms(offered_price),
+                "next_steps": self._generate_acceptance_steps()
             }
-        elif offered_price >= current_price * 0.8:
-            counter_price = (offered_price + current_price) / 2
+        elif offered_price >= min_acceptable * 0.95:
+            counter_price = self._calculate_counter_offer(
+                offered_price,
+                current_price,
+                market_data
+            )
             return {
                 "action": "counter_offer",
+                "property_id": property_id,
                 "counter_price": counter_price,
-                "reasoning": f"愿意降价，但希望达到¥{counter_price}"
+                "justification": self._generate_price_justification(counter_price, market_data),
+                "negotiation_terms": self._get_negotiation_terms()
             }
         else:
             return {
                 "action": "decline_offer",
-                "reasoning": "价格低于成本底线，无法接受"
+                "property_id": property_id,
+                "reason": "Offer significantly below market value",
+                "market_evidence": self._provide_market_evidence(market_data)
             }
             
-    def _review_application(self, context: Dict) -> Dict:
-        """审核租房申请"""
-        application = context["application"]
-        evaluation = self.evaluate_tenant(application["tenant_info"])
-        
-        if evaluation["score"] >= 70:
-            return {
-                "action": "approve_application",
-                "lease_terms": self._generate_lease_terms(),
-                "reasoning": f"申请人评分{evaluation['score']}/100，符合要求"
-            }
-        else:
-            return {
-                "action": "reject_application",
-                "reasoning": f"申请人评分{evaluation['score']}/100，不符合要求"
-            }
-            
-    def _generate_lease_terms(self) -> Dict:
-        """生成租赁条款"""
+    def _generate_lease_terms(self, agreed_price: float) -> Dict[str, Any]:
+        """Generate comprehensive lease terms"""
         return {
-            "lease_duration": "12个月",
-            "deposit": "两个月租金",
-            "payment_schedule": "每月1号前付款",
-            "utilities": "租客承担",
-            "maintenance": "房主负责大修，租客负责日常维护"
+            "lease_duration": self.tenant_preferences["lease_length_preference"],
+            "rent_amount": agreed_price,
+            "payment_frequency": "monthly",
+            "deposit": agreed_price * 2,
+            "payment_terms": {
+                "due_date": "1st of each month",
+                "payment_method": "bank transfer",
+                "late_payment_penalties": "3% above base rate"
+            },
+            "utilities": {
+                "tenant_responsible": [
+                    "electricity",
+                    "gas",
+                    "water",
+                    "council tax",
+                    "internet"
+                ],
+                "landlord_responsible": [
+                    "building insurance",
+                    "structural repairs",
+                    "common area maintenance"
+                ]
+            },
+            "maintenance": {
+                "tenant_responsibilities": "routine maintenance and minor repairs",
+                "landlord_responsibilities": "major repairs and structural maintenance",
+                "reporting_procedure": "online maintenance portal"
+            },
+            "special_conditions": self._get_special_conditions()
         }
         
     def process_message(self, message: str, sender: str) -> str:
-        """处理接收到的消息"""
+        """Process received message"""
         self.log_interaction("message_received", {
             "from": sender,
             "content": message
         })
         
-        # 这里会被autogen的LLM处理，返回智能回复
+        # This will be processed by the autogen LLM, returning intelligent reply
         return message

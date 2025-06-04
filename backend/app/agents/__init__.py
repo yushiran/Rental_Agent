@@ -1,21 +1,19 @@
 """
-多Agent租房系统
-包含租客、房主和市场分析师三个核心Agent
+Multi-Agent Rental System
+Contains three core agents: Tenant, Landlord, and Market Analyst
 """
 
-from .base import BaseRentalAgent, Property, MarketData, AgentProfile
-from .tenant import TenantAgent
-from .landlord import LandlordAgent
-from .market_analyst import MarketAnalystAgent
-from .manager import RentalAgentManager
+# from .base import BaseRentalAgent, Property, MarketData, AgentProfile
+# from .tenant import TenantAgent
+# from .landlord import LandlordAgent
+from .agents_factory import AgentDataInitializer
 
 __all__ = [
-    "BaseRentalAgent",
-    "Property",
-    "MarketData", 
-    "AgentProfile",
-    "TenantAgent", 
-    "LandlordAgent",
-    "MarketAnalystAgent",
-    "RentalAgentManager"
+    # "BaseRentalAgent",
+    # "Property",
+    # "MarketData", 
+    # "AgentProfile",
+    # "TenantAgent", 
+    # "LandlordAgent",
+    "AgentDataInitializer"
 ]
