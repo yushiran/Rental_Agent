@@ -15,7 +15,7 @@ import contextily as ctx
 import matplotlib.pyplot as plt
 from shapely.geometry import Point
 
-from app.api import get_rightmove_data
+from app.raw_data import get_rightmove_data
 from app.config import config
 from app.utils import SCIPlotStyle
 

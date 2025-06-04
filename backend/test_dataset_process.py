@@ -1,4 +1,4 @@
-from app.api import get_rightmove_data, RentalDataset
+from app.raw_data import get_rightmove_data, RentalDataset
 
 
 if __name__ == "__main__":

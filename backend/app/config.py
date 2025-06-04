@@ -52,10 +52,21 @@ class MongoDBSettings(BaseModel):
         else:
             return f"mongodb://{self.host}:{self.port}/{self.database}"
 
+class OpikSettings(BaseModel):
+    api_key: str = Field(..., description="Opik API key")
+    workspace: str = Field(..., description="Opik workspace name")
+    project_name: str = Field("rental_agent", description="Opik project name")
+    use_local: bool = Field(False, description="Use local Opik instance")
+    base_url: Optional[str] = Field(None, description="Base URL for Opik API (if using local)")
+    
+    class Config:
+        env_prefix = "OPIK_"
+
 class AppConfig(BaseModel):
     llm: Dict[str, LLMSettings]
     raw_rental_data_api: Optional[RAW_RENTAL_DATA_API_SETTINGS] = Field(None, description="API settings for raw rental data")
     mongodb: Optional[MongoDBSettings] = Field(None, description="MongoDB settings")
+    opik: Optional[OpikSettings] = Field(None, description="Opik settings")
 
     class Config:
         arbitrary_types_allowed = True
@@ -120,6 +131,9 @@ class Config:
         mongodb_config = raw_config.get("mongodb", {})
         mongodb_settings = MongoDBSettings(**mongodb_config) if mongodb_config else None
 
+        opik_config = raw_config.get("opik", {})
+        opik_settings = OpikSettings(**opik_config) if opik_config else None
+
         config_dict = {
             "llm": {
                 "default": default_settings,
@@ -130,6 +144,7 @@ class Config:
             },
             "raw_rental_data_api": raw_rental_data_api_settings,
             "mongodb": mongodb_settings,
+            "opik": opik_settings,
         }
 
         self._config = AppConfig(**config_dict)
@@ -148,6 +163,11 @@ class Config:
     def mongodb(self) -> Optional[MongoDBSettings]:
         assert self._config is not None
         return self._config.mongodb
+
+    @property
+    def opik(self) -> Optional[OpikSettings]:
+        assert self._config is not None
+        return self._config.opik
 
     @property
     def root_path(self) -> Path:

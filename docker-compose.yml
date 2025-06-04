@@ -9,7 +9,6 @@ services:
       - "27017:27017"
     volumes:
       - mongodb_data:/data/db
-    # 简化版本，无认证（仅开发环境）
 
 volumes:
   mongodb_data:
