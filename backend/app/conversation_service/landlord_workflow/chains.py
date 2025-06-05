@@ -1,14 +1,12 @@
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_openai import ChatOpenAI
 
-from app.conversation_service.workflow import tools
+from app.conversation_service.landlord_workflow import tools
 from app.config import config
 from app.conversation_service.prompt import (
     LANDLORD_AGENT_PROMPT,
-    TENANT_AGENT_PROMPT,
     PROPERTY_MATCHING_PROMPT,
     RENTAL_SUMMARY_PROMPT,
-    VIEWING_FEEDBACK_ANALYSIS_PROMPT,
 )
 
 def get_chat_model(temperature: float = 0.7, model_name: str = "default") -> ChatOpenAI:
@@ -38,22 +36,6 @@ def get_landlord_agent_chain():
     return prompt | model
 
 
-def get_tenant_agent_chain():
-    """Get the chain for tenant agent responses"""
-    model = get_chat_model()
-    model = model.bind_tools(tools)
-    
-    prompt = ChatPromptTemplate.from_messages(
-        [
-            ("system", TENANT_AGENT_PROMPT.prompt),
-            MessagesPlaceholder(variable_name="messages"),
-        ],
-        template_format="jinja2",
-    )
-
-    return prompt | model
-
-
 def get_property_matching_chain():
     """Get the chain for property matching analysis"""
     model = get_chat_model()
@@ -61,20 +43,6 @@ def get_property_matching_chain():
     prompt = ChatPromptTemplate.from_messages(
         [
             ("human", PROPERTY_MATCHING_PROMPT.prompt),
-        ],
-        template_format="jinja2",
-    )
-
-    return prompt | model
-
-
-def get_viewing_feedback_analysis_chain():
-    """Get the chain for analyzing property viewing feedback"""
-    model = get_chat_model()
-    
-    prompt = ChatPromptTemplate.from_messages(
-        [
-            ("human", VIEWING_FEEDBACK_ANALYSIS_PROMPT.prompt),
         ],
         template_format="jinja2",
     )
@@ -95,4 +63,3 @@ def get_rental_conversation_summary_chain(summary: str = ""):
     )
 
     return prompt | model
-
