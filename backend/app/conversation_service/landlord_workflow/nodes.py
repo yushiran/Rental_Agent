@@ -9,7 +9,7 @@ from app.conversation_service.landlord_workflow import (
     get_rental_conversation_summary_chain,
 )
 from app.conversation_service.landlord_workflow import LandlordState
-from app.conversation_service.landlord_workflow import tools
+from app.conversation_service import tools
 from app.config import config
 
 retriever_node = ToolNode(tools)

@@ -1,7 +1,7 @@
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_openai import ChatOpenAI
 
-from app.conversation_service.landlord_workflow import tools
+from app.conversation_service import tools
 from app.config import config
 from app.conversation_service.prompt import (
     LANDLORD_AGENT_PROMPT,
