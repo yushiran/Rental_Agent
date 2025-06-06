@@ -227,3 +227,43 @@ class MongoClientWrapper(Generic[T]):
 
         self.client.close()
         logger.debug("Closed MongoDB connection.")
+
+    def update_document(self, filter_query: dict, update_data: dict) -> bool:
+        """Update a single document in the MongoDB collection.
+
+        Args:
+            filter_query (dict): MongoDB query filter to identify the document to update.
+            update_data (dict): Update operations to apply to the document.
+
+        Returns:
+            bool: True if document was found and updated, False otherwise.
+
+        Raises:
+            errors.PyMongoError: If the update operation fails.
+        """
+        try:
+            result = self.collection.update_one(filter_query, update_data)
+            logger.debug(f"Updated document with filter: {filter_query}")
+            return result.matched_count > 0
+        except errors.PyMongoError as e:
+            logger.error(f"Error updating document: {e}")
+            raise
+
+    def ingest_document(self, document: dict) -> None:
+        """Insert a single document into the MongoDB collection.
+
+        Args:
+            document (dict): Dictionary representation of the document to insert.
+
+        Raises:
+            errors.PyMongoError: If the insertion operation fails.
+        """
+        try:
+            # Remove '_id' field to avoid duplicate key errors
+            document.pop("_id", None)
+            
+            self.collection.insert_one(document)
+            logger.debug(f"Inserted single document into MongoDB.")
+        except errors.PyMongoError as e:
+            logger.error(f"Error inserting document: {e}")
+            raise

@@ -1,40 +1,42 @@
-from langchain_huggingface import HuggingFaceEmbeddings
+from langchain_openai import OpenAIEmbeddings
+from app.config import config
 
-EmbeddingsModel = HuggingFaceEmbeddings
+EmbeddingsModel = OpenAIEmbeddings
 
 
 def get_embedding_model(
     model_id: str,
-    device: str = "cpu",
+    device: str = "gpu",
 ) -> EmbeddingsModel:
-    """Gets an instance of a HuggingFace embedding model.
+    """Gets an instance of an OpenAI embedding model.
 
     Args:
-        model_id (str): The ID/name of the HuggingFace embedding model to use
-        device (str): The compute device to run the model on (e.g. "cpu", "cuda").
-            Defaults to "cpu"
+        model_id (str): The ID/name of the OpenAI embedding model to use
+        device (str): The compute device parameter (not used for OpenAI models).
+            Kept for compatibility with existing interface.
 
     Returns:
-        EmbeddingsModel: A configured HuggingFace embeddings model instance
+        EmbeddingsModel: A configured OpenAI embeddings model instance
     """
-    return get_huggingface_embedding_model(model_id, device)
+    return get_openai_embedding_model(model_id)
 
 
-def get_huggingface_embedding_model(
-    model_id: str, device: str
-) -> HuggingFaceEmbeddings:
-    """Gets a HuggingFace embedding model instance.
+def get_openai_embedding_model(
+    model_id: str
+) -> OpenAIEmbeddings:
+    """Gets an OpenAI embedding model instance.
 
     Args:
-        model_id (str): The ID/name of the HuggingFace embedding model to use
-        device (str): The compute device to run the model on (e.g. "cpu", "cuda")
+        model_id (str): The ID/name of the OpenAI embedding model to use
 
     Returns:
-        HuggingFaceEmbeddings: A configured HuggingFace embeddings model instance
-            with remote code trust enabled and embedding normalization disabled
+        OpenAIEmbeddings: A configured OpenAI embeddings model instance
     """
-    return HuggingFaceEmbeddings(
-        model_name=model_id,
-        model_kwargs={"device": device, "trust_remote_code": True},
-        encode_kwargs={"normalize_embeddings": False},
+    # Get OpenAI settings from config
+    llm_config = config.llm.get("default")
+    
+    return OpenAIEmbeddings(
+        model=model_id,
+        openai_api_key=llm_config.api_key,
+        openai_api_base=llm_config.base_url if llm_config.base_url else None,
     )

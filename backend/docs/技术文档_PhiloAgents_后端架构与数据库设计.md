@@ -494,7 +494,7 @@ PhiloAgents 采用 MongoDB Atlas 的混合搜索能力：
 
 ```python
 def get_hybrid_search_retriever(
-    embedding_model: HuggingFaceEmbeddings, 
+    embedding_model: OpenAIEmbeddings, 
     k: int
 ) -> MongoDBAtlasHybridSearchRetriever:
     """构建混合搜索检索器"""

@@ -1,4 +1,4 @@
-from langchain_huggingface import HuggingFaceEmbeddings
+from langchain_openai import OpenAIEmbeddings
 from langchain_mongodb import MongoDBAtlasVectorSearch
 from langchain_mongodb.retrievers import (
     MongoDBAtlasHybridSearchRetriever,
@@ -15,7 +15,7 @@ Retriever = MongoDBAtlasHybridSearchRetriever
 def get_retriever(
     embedding_model_id: str,
     k: int = 3,
-    device: str = "cpu",
+    device: str = "gpu",
 ) -> Retriever:
     """Creates and returns a hybrid search retriever with the specified embedding model.
 
@@ -32,17 +32,16 @@ def get_retriever(
     )
 
     embedding_model = get_embedding_model(embedding_model_id, device)
-
     return get_hybrid_search_retriever(embedding_model, k)
 
 
 def get_hybrid_search_retriever(
-    embedding_model: HuggingFaceEmbeddings, k: int
+    embedding_model: OpenAIEmbeddings, k: int
 ) -> MongoDBAtlasHybridSearchRetriever:
     """Creates a MongoDB Atlas hybrid search retriever with the given embedding model.
 
     Args:
-        embedding_model (HuggingFaceEmbeddings): The embedding model to use for vector search.
+        embedding_model (OpenAIEmbeddings): The embedding model to use for vector search.
         k (int): Number of documents to retrieve.
 
     Returns:

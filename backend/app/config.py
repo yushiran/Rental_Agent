@@ -59,10 +59,10 @@ class MongoDBSettings(BaseModel):
             return f"mongodb://{self.host}:{self.port}/{self.database}"
 
 class RAGSettings(BaseModel):
-    text_embedding_model_id: str = Field("sentence-transformers/all-MiniLM-L6-v2", description="Text embedding model identifier")
-    text_embedding_model_dim: int = Field(384, description="Text embedding model dimension")
+    text_embedding_model_id: str = Field("text-embedding-3-small", description="Text embedding model identifier")
+    text_embedding_model_dim: int = Field(1536, description="Text embedding model dimension")
     top_k: int = Field(3, description="Number of top documents to retrieve")
-    device: str = Field("cpu", description="Device to run embedding model on")
+    device: str = Field("cpu", description="Device to run embedding model on (not used for OpenAI)")
     chunk_size: int = Field(256, description="Size of text chunks for processing")
 
 class OpikSettings(BaseModel):
