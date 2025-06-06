@@ -1,0 +1,29 @@
+# Python specific
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/        # uv's virtual environment
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+
+# Editor/IDE specific
+.vscode/
+.idea/
+*.swp
+*~
+.DS_Store
+
+# Git
+.git/
+.gitignore
+
+# Logs and temporary files
+*.log
+tmp/
+temp/
+.env          # Environment variables, often sensitive

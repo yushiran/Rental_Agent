@@ -1,0 +1,13 @@
+{
+    "dockerfile_lines": [],
+    "graphs": {
+      "agent": "./app/conversation_service/tenant_workflow/graph.py:tenant_graph",
+      "tenant": "./app/conversation_service/tenant_workflow/graph.py:tenant_graph",
+      "landlord": "./app/conversation_service/landlord_workflow/graph.py:landlord_graph"
+    },
+    "env": ".env",
+    "python_version": "3.12",
+    "dependencies": [
+      "."
+    ]
+}

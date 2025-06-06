@@ -1,4 +1,5 @@
 import json
+import os
 import threading
 from pathlib import Path
 from typing import Dict, List, Optional
@@ -74,6 +75,17 @@ class OpikSettings(BaseModel):
     class Config:
         env_prefix = "OPIK_"
 
+class LangSmithSettings(BaseModel):
+    api_key: str = Field("", description="LangSmith API key")
+    project_name: str = Field("rental_agent", description="LangSmith project name")
+    endpoint: Optional[str] = Field("https://api.smith.langchain.com", description="LangSmith API endpoint")
+    
+    def __init__(self, **data):
+        super().__init__(**data)
+        # Set the API key as environment variable after initialization
+        if self.api_key:
+            os.environ["LANGSMITH_API_KEY"] = self.api_key
+
 class AgentsSettings(BaseModel):
     total_messages_summary_trigger: int = Field(30, description="Number of messages that trigger a conversation summary")
     total_messages_after_summary: int = Field(5, description="Number of messages to keep after summarization")
@@ -84,6 +96,7 @@ class AppConfig(BaseModel):
     mongodb: Optional[MongoDBSettings] = Field(None, description="MongoDB settings")
     rag: Optional[RAGSettings] = Field(None, description="RAG settings")
     opik: Optional[OpikSettings] = Field(None, description="Opik settings")
+    langsmith: Optional[LangSmithSettings] = Field(None, description="LangSmith settings")
     agents: Optional[AgentsSettings] = Field(None, description="Agents configuration settings")
 
     class Config:
@@ -155,6 +168,9 @@ class Config:
         opik_config = raw_config.get("opik", {})
         opik_settings = OpikSettings(**opik_config) if opik_config else None
 
+        langsmith_config = raw_config.get("langsmith", {})
+        langsmith_settings = LangSmithSettings(**langsmith_config) if langsmith_config else None
+
         agents_config = raw_config.get("agents", {})
         agents_settings = AgentsSettings(**agents_config) if agents_config else None
 
@@ -170,6 +186,7 @@ class Config:
             "mongodb": mongodb_settings,
             "rag": rag_settings,
             "opik": opik_settings,
+            "langsmith": langsmith_settings,
             "agents": agents_settings,
         }
 
@@ -199,6 +216,11 @@ class Config:
     def opik(self) -> Optional[OpikSettings]:
         assert self._config is not None
         return self._config.opik
+
+    @property
+    def langsmith(self) -> Optional[LangSmithSettings]:
+        assert self._config is not None
+        return self._config.langsmith
 
     @property
     def agents(self) -> Optional[AgentsSettings]:
