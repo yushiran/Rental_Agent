@@ -1,30 +1,11 @@
 """
-Multi-Party Rental Negotiation API Service
+群体Agent沟通API服务
 """
 
-from .models import (
-    ParticipantRole, ParticipantInfo, NegotiationStatus, PropertyInfo,
-    NegotiationSession, ChatMessage, StreamChatMessage, NegotiationRequest,
-    JoinNegotiationRequest, NegotiationResponse, MessageResponse, StreamingResponse
-)
-from .negotiation_service import NegotiationService
-from .message_router import MessageRouter
-from .utils import ParticipantUtils
+from .group_negotiation import GroupNegotiationService
+
 
 __all__ = [
-    "ParticipantRole",
-    "ParticipantInfo", 
-    "NegotiationStatus",
-    "PropertyInfo",
-    "NegotiationSession",
-    "ChatMessage",
-    "StreamChatMessage", 
-    "NegotiationRequest",
-    "JoinNegotiationRequest",
-    "NegotiationResponse",
-    "MessageResponse",
-    "StreamingResponse",
-    "NegotiationService",
-    "MessageRouter",
-    "ParticipantUtils"
+    # 新的简化服务
+    "GroupNegotiationService",
 ]

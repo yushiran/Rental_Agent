@@ -3,13 +3,12 @@ Tenant model for rental property seekers
 """
 
 from typing import Dict, List, Any, Optional
-from dataclasses import dataclass, field
+from pydantic import BaseModel, Field
 import uuid
 import math
 
 
-@dataclass
-class TenantModel:
+class TenantModel(BaseModel):
     """
     Simplified tenant model for rental property matching
     
@@ -17,7 +16,7 @@ class TenantModel:
     """
     
     # Core identification
-    tenant_id: str = field(default_factory=lambda: str(uuid.uuid4()))
+    tenant_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     
     # Basic information
     name: str = "Unknown Tenant"
@@ -32,7 +31,7 @@ class TenantModel:
     max_budget: float = 2000.0  # Monthly budget
     min_bedrooms: int = 1
     max_bedrooms: int = 3
-    preferred_locations: List[Dict[str, float]] = field(default_factory=list)  # List of preferred coordinates [{"latitude": lat, "longitude": lon}]
+    preferred_locations: List[Dict[str, float]] = Field(default_factory=list)  # List of preferred coordinates [{"latitude": lat, "longitude": lon}]
     
     # Personal circumstances (simplified)
     is_student: bool = False
@@ -140,28 +139,13 @@ class TenantModel:
         }
     
     def to_dict(self) -> Dict[str, Any]:
-        """Convert to dictionary for serialization"""
-        return {
-            'tenant_id': self.tenant_id,
-            'name': self.name,
-            'email': self.email,
-            'phone': self.phone,
-            'annual_income': self.annual_income,
-            'has_guarantor': self.has_guarantor,
-            'max_budget': self.max_budget,
-            'min_bedrooms': self.min_bedrooms,
-            'max_bedrooms': self.max_bedrooms,
-            'preferred_locations': self.preferred_locations,
-            'is_student': self.is_student,
-            'has_pets': self.has_pets,
-            'is_smoker': self.is_smoker,
-            'num_occupants': self.num_occupants
-        }
+        """Convert to dictionary for serialization (backward compatibility)"""
+        return self.model_dump()
     
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> 'TenantModel':
-        """Create TenantModel from dictionary"""
-        return cls(**data)
+        """Create TenantModel from dictionary (backward compatibility)"""
+        return cls.model_validate(data)
     
     def __str__(self) -> str:
         """String representation"""

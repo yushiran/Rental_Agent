@@ -233,8 +233,8 @@ class AgentDataInitializer:
         except Exception as e:
             logger.error(f"Failed to save data to MongoDB: {e}")
             raise
-    
-    def initialize_all_data(self, rightmove_file_path: str, tenant_count: int = 50):
+
+    def initialize_all_data(self, rightmove_file_path: str = f"{config.root_path}/dataset/rent_cast_data/processed/rightmove_data_processed.json", tenant_count: int = 50):
         """Initialize all data"""
         logger.info("Starting Agent data initialization...")
         

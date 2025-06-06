@@ -38,11 +38,10 @@ def create_tenant_workflow_graph():
         tools_condition,
         {
             "tools": "retriever_node",
-            END: "connector_node"
+            END: END
         }
     )
     graph_builder.add_edge("retriever_node", "tenant_agent_node")
-    graph_builder.add_conditional_edges("connector_node", should_continue_tenant_conversation)
     graph_builder.add_conditional_edges("property_matching_node", should_summarize_tenant_conversation)
     graph_builder.add_conditional_edges("viewing_feedback_analysis_node", should_summarize_tenant_conversation)
     graph_builder.add_edge("summarize_conversation_node", END)

@@ -87,6 +87,7 @@ async def get_tenant_streaming_response(
             config_dict = {
                 "configurable": {"thread_id": thread_id},
                 "callbacks": [opik_tracer],
+                "recursion_limit": 50  # Increase recursion limit to prevent premature termination
             }
 
             # Prepare tenant input data
@@ -158,6 +159,7 @@ async def get_landlord_streaming_response(
             config_dict = {
                 "configurable": {"thread_id": thread_id},
                 "callbacks": [opik_tracer],
+                "recursion_limit": 50  # Increase recursion limit to prevent premature termination
             }
 
             # Prepare landlord input data

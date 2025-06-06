@@ -3,15 +3,14 @@ Landlord model for property owners
 """
 
 from typing import Dict, List, Any, Optional
-from dataclasses import dataclass, field
+from pydantic import BaseModel, Field
 from datetime import datetime
 import uuid
 
 from .property_model import PropertyModel
 
 
-@dataclass
-class LandlordModel:
+class LandlordModel(BaseModel):
     """
     Simplified landlord model based on real rental data
     
@@ -19,7 +18,7 @@ class LandlordModel:
     """
     
     # Core identification (from real data: branchId)
-    landlord_id: str = field(default_factory=lambda: str(uuid.uuid4()))
+    landlord_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     
     # Basic information (from real data)
     name: str = "Unknown Landlord"  # branchDisplayName or brandTradingName
@@ -27,19 +26,19 @@ class LandlordModel:
     branch_name: Optional[str] = None  # branchName (location)
     
     # Properties owned/managed
-    properties: List[PropertyModel] = field(default_factory=list)
+    properties: List[PropertyModel] = Field(default_factory=list)
     
     # Simplified preferences (commonly found in real rental requirements)
-    preferences: Dict[str, Any] = field(default_factory=lambda: {
+    preferences: Dict[str, Any] = Field(default_factory=lambda: {
         'pet_friendly': False,
         'smoking_allowed': False,
         'deposit_weeks': 4  # Number of weeks rent as deposit
     })
     
     # Timestamps
-    date_registered: datetime = field(default_factory=datetime.now)
+    date_registered: datetime = Field(default_factory=datetime.now)
     
-    def __post_init__(self):
+    def model_post_init(self, __context):
         """Post-initialization validation"""
         # Ensure preferences has required fields
         default_preferences = {
@@ -125,30 +124,28 @@ class LandlordModel:
         self.preferences.update(preference_updates)
     
     def to_dict(self) -> Dict[str, Any]:
-        """Convert to dictionary for serialization"""
-        return {
-            'landlord_id': self.landlord_id,
-            'name': self.name,
-            'phone': self.phone,
-            'branch_name': self.branch_name,
-            'properties': [prop.to_dict() for prop in self.properties],
-            'preferences': self.preferences,
-            'date_registered': self.date_registered.isoformat()
-        }
+        """Convert to dictionary for serialization (backward compatibility)"""
+        result = self.model_dump()
+        # Convert datetime to ISO format for compatibility
+        if 'date_registered' in result and isinstance(result['date_registered'], datetime):
+            result['date_registered'] = result['date_registered'].isoformat()
+        return result
     
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> 'LandlordModel':
-        """Create LandlordModel from dictionary"""
+        """Create LandlordModel from dictionary (backward compatibility)"""
         # Handle datetime fields
         if 'date_registered' in data and isinstance(data['date_registered'], str):
             data['date_registered'] = datetime.fromisoformat(data['date_registered'])
         
         # Convert property dictionaries to PropertyModel objects
-        if 'properties' in data:
-            data['properties'] = [PropertyModel.from_dict(prop_data) 
-                                for prop_data in data['properties']]
+        if 'properties' in data and isinstance(data['properties'], list):
+            data['properties'] = [
+                PropertyModel.from_dict(prop_data) if isinstance(prop_data, dict) else prop_data
+                for prop_data in data['properties']
+            ]
         
-        return cls(**data)
+        return cls.model_validate(data)
     
     def __str__(self) -> str:
         """String representation"""

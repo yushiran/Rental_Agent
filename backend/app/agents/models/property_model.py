@@ -3,12 +3,11 @@ Property model for rental properties
 """
 
 from typing import Dict, List, Any, Optional
-from dataclasses import dataclass, field
+from pydantic import BaseModel, Field
 import uuid
 
 
-@dataclass
-class PropertyModel:
+class PropertyModel(BaseModel):
     """
     Simplified property model based on real rental data
     
@@ -16,7 +15,7 @@ class PropertyModel:
     """
     
     # Core identification (from real data)
-    property_id: str = field(default_factory=lambda: str(uuid.uuid4()))
+    property_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     
     # Basic property details (from real data)
     bedrooms: int = 1
@@ -24,14 +23,14 @@ class PropertyModel:
     display_address: str = "Unknown Address"
     
     # Pricing information (from real data structure)
-    price: Dict[str, Any] = field(default_factory=lambda: {
+    price: Dict[str, Any] = Field(default_factory=lambda: {
         'amount': 2000,
         'frequency': 'monthly',
         'currencyCode': 'GBP'
     })
     
     # Location data (from real data)
-    location: Dict[str, float] = field(default_factory=lambda: {
+    location: Dict[str, float] = Field(default_factory=lambda: {
         'latitude': 51.5074,
         'longitude': -0.1278
     })
@@ -50,7 +49,7 @@ class PropertyModel:
     customer: Optional[Dict[str, Any]] = None
     formatted_branch_name: Optional[str] = None
     
-    def __post_init__(self):
+    def model_post_init(self, __context) -> None:
         """Post-initialization validation and processing"""
         # Ensure price has required fields
         if 'amount' not in self.price:
@@ -108,26 +107,13 @@ class PropertyModel:
         return images
     
     def to_dict(self) -> Dict[str, Any]:
-        """Convert to dictionary for serialization"""
-        return {
-            'property_id': self.property_id,
-            'bedrooms': self.bedrooms,
-            'bathrooms': self.bathrooms,
-            'display_address': self.display_address,
-            'price': self.price,
-            'location': self.location,
-            'property_sub_type': self.property_sub_type,
-            'property_type_full_description': self.property_type_full_description,
-            'summary': self.summary,
-            'property_images': self.property_images,
-            'customer': self.customer,
-            'formatted_branch_name': self.formatted_branch_name
-        }
+        """Convert to dictionary for serialization (backward compatibility)"""
+        return self.model_dump()
     
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> 'PropertyModel':
-        """Create PropertyModel from dictionary"""
-        return cls(**data)
+        """Create PropertyModel from dictionary (backward compatibility)"""
+        return cls.model_validate(data)
     
     @classmethod
     def from_rightmove_data(cls, rightmove_data: Dict[str, Any]) -> 'PropertyModel':

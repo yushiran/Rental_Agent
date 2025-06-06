@@ -1,42 +1,54 @@
 """
-Complete Multi-Party Rental Negotiation API
-Integrates all services and endpoints
+群体Agent沟通API - 简化版租房协商系统
+专注于实现租客寻找房东并协商的核心功能
 """
 from contextlib import asynccontextmanager
+from typing import Dict, Optional, Set
+import json
 
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from opik.integrations.langchain import OpikTracer
 from loguru import logger
+from pydantic import BaseModel
 
 from app.conversation_service.reset_conversation import reset_conversation_state
 from app.utils.opik_utils import configure
 
-from .models import (
-    ChatMessage, StreamChatMessage, NegotiationRequest, JoinNegotiationRequest,
-    NegotiationResponse, MessageResponse, StreamingResponse, ParticipantRole
-)
-from .negotiation_service import NegotiationService
-from .message_router import MessageRouter
+from .group_negotiation import GroupNegotiationService
 
 configure()
 
 
+# 简化的API模型
+class MessageRequest(BaseModel):
+    """发送消息请求"""
+    message: str
+    sender_type: str = "tenant"  # tenant 或 landlord
+
+
+class MessageResponse(BaseModel):
+    """消息响应"""
+    response: str
+    session_id: str
+    message_count: int
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Handles startup and shutdown events for the API."""
-    logger.info("Starting Multi-Party Rental Negotiation API")
+    """处理应用启动和关闭事件"""
+    logger.info("启动群体Agent沟通API")
     yield
-    logger.info("Shutting down Multi-Party Rental Negotiation API")
+    logger.info("关闭群体Agent沟通API")
     opik_tracer = OpikTracer()
     opik_tracer.flush()
 
 
-# Create FastAPI app
+# 创建 FastAPI 应用
 app = FastAPI(
-    title="Multi-Party Rental Negotiation API",
-    description="Advanced API for managing rental negotiations between multiple landlords and tenants",
-    version="2.0.0",
+    title="群体Agent沟通API",
+    description="租客和房东之间的智能协商系统",
+    version="1.0.0",
     lifespan=lifespan
 )
 
@@ -48,267 +60,322 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Initialize services
-negotiation_service = NegotiationService()
-message_router = MessageRouter()
+# 初始化服务
+group_service = GroupNegotiationService()
+
+
+# WebSocket连接管理
+class ConnectionManager:
+    def __init__(self):
+        self.active_connections: Dict[str, Set[WebSocket]] = {}
+    
+    async def connect(self, websocket: WebSocket, session_id: str):
+        await websocket.accept()
+        if session_id not in self.active_connections:
+            self.active_connections[session_id] = set()
+        self.active_connections[session_id].add(websocket)
+        logger.info(f"WebSocket连接建立，会话ID: {session_id}")
+    
+    def disconnect(self, websocket: WebSocket, session_id: str):
+        if session_id in self.active_connections:
+            self.active_connections[session_id].discard(websocket)
+            if not self.active_connections[session_id]:
+                del self.active_connections[session_id]
+        logger.info(f"WebSocket连接断开，会话ID: {session_id}")
+    
+    async def send_message_to_session(self, session_id: str, message: dict):
+        if session_id in self.active_connections:
+            disconnected = set()
+            for connection in self.active_connections[session_id]:
+                try:
+                    await connection.send_text(json.dumps(message))
+                except:
+                    disconnected.add(connection)
+            
+            # 清理断开的连接
+            for connection in disconnected:
+                self.active_connections[session_id].discard(connection)
+    
+    async def broadcast_to_all_sessions(self, message: dict):
+        """广播消息到所有会话"""
+        for session_id in list(self.active_connections.keys()):
+            await self.send_message_to_session(session_id, message)
+
+# 实例化连接管理器
+manager = ConnectionManager()
 
 
 @app.get("/")
 async def root():
-    """Root endpoint with API information"""
+    """根端点"""
     return {
-        "name": "Multi-Party Rental Negotiation API",
-        "version": "2.0.0",
-        "description": "API for managing rental negotiations between multiple parties",
+        "name": "群体Agent沟通API",
+        "version": "1.0.0",
+        "description": "租客寻找房东并协商的智能系统",
         "features": [
-            "Multi-party negotiations",
-            "Real-time WebSocket communication", 
-            "Market analyst integration",
-            "Session management",
-            "Analytics and monitoring"
+            "智能租客-房东匹配",
+            "实时协商对话",
+            "群体协商管理",
+            "WebSocket实时通信"
         ]
     }
 
 
-@app.post("/negotiation/create", response_model=NegotiationResponse)
-async def create_negotiation(request: NegotiationRequest):
-    """Create a new multi-party negotiation session"""
+@app.post("/start-group-negotiation")
+async def start_group_negotiation(max_tenants: int = 10):
+    """
+    启动群体协商
+    
+    这个端点会：
+    1. 获取数据库中的所有租客
+    2. 为每个租客匹配合适的房东和房产
+    3. 开始协商会话
+    """
     try:
-        session = await negotiation_service.create_negotiation_session(
-            property_id=request.property_id,
-            tenant_ids=request.tenant_ids,
-            landlord_id=request.landlord_id
-        )
+        result = await group_service.start_group_negotiation(max_tenants=max_tenants)
         
-        logger.info(f"Created negotiation session {session.session_id}")
+        if "error" in result:
+            raise HTTPException(status_code=400, detail=result["error"])
         
-        return NegotiationResponse(
-            session_id=session.session_id,
-            status=session.status.value,
-            message="Negotiation session created successfully",
-            participants=session.participants
-        )
-        
-    except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
-    except Exception as e:
-        logger.error(f"Failed to create negotiation: {str(e)}")
-        raise HTTPException(status_code=500, detail="Failed to create negotiation session")
-
-
-@app.post("/negotiation/{session_id}/join", response_model=NegotiationResponse)
-async def join_negotiation(session_id: str, request: JoinNegotiationRequest):
-    """Join an existing negotiation session"""
-    try:
-        # In a real application, determine role from authentication context
-        # For now, assume tenant role
-        role = ParticipantRole.TENANT
-        
-        success = await negotiation_service.add_participant(
-            session_id=session_id,
-            participant_id=request.participant_id,
-            role=role
-        )
-        
-        if not success:
-            raise HTTPException(status_code=404, detail="Session not found or failed to join")
-        
-        session = await negotiation_service.get_session(session_id)
-        
-        logger.info(f"Participant {request.participant_id} joined session {session_id}")
-        
-        return NegotiationResponse(
-            session_id=session.session_id,
-            status=session.status.value,
-            message="Successfully joined negotiation",
-            participants=session.participants
-        )
+        logger.info(f"成功启动群体协商: {result['successful_matches']} 个匹配")
+        return result
         
     except Exception as e:
-        logger.error(f"Failed to join negotiation: {str(e)}")
+        logger.error(f"启动群体协商失败: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.get("/negotiation/{session_id}")
-async def get_negotiation(session_id: str):
-    """Get negotiation session details"""
+@app.post("/start-auto-negotiation")
+async def start_auto_negotiation(max_rounds: int = 5):
+    """
+    启动自动协商
+    
+    让所有活跃的协商会话自动进行多轮对话，无需用户干预
+    """
     try:
-        session = await negotiation_service.get_session(session_id)
+        result = await group_service.start_auto_negotiation(max_rounds=max_rounds)
+        
+        if "error" in result:
+            raise HTTPException(status_code=400, detail=result["error"])
+        
+        logger.info(f"成功启动自动协商: {result.get('message', '')}")
+        return result
+        
+    except Exception as e:
+        logger.error(f"启动自动协商失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/start-auto-negotiation-live")
+async def start_auto_negotiation_live(max_rounds: int = 5):
+    """
+    启动实时自动协商
+    
+    让所有活跃的协商会话实时进行多轮对话，通过WebSocket推送每一条消息
+    """
+    try:
+        result = await group_service.start_auto_negotiation_live(max_rounds=max_rounds, websocket_manager=manager)
+        
+        if "error" in result:
+            raise HTTPException(status_code=400, detail=result["error"])
+        
+        logger.info(f"成功启动实时自动协商: {result.get('message', '')}")
+        return result
+        
+    except Exception as e:
+        logger.error(f"启动实时自动协商失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/sessions")
+async def get_all_sessions():
+    """获取所有活跃的协商会话"""
+    try:
+        sessions = await group_service.get_all_active_sessions()
+        return {
+            "total_sessions": len(sessions),
+            "sessions": sessions
+        }
+    except Exception as e:
+        logger.error(f"获取会话失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/sessions/{session_id}")
+async def get_session(session_id: str):
+    """获取特定协商会话的详细信息"""
+    try:
+        session = await group_service.get_session_info(session_id)
         if not session:
-            raise HTTPException(status_code=404, detail="Negotiation session not found")
+            raise HTTPException(status_code=404, detail="会话不存在")
         
         return session
-        
     except Exception as e:
-        logger.error(f"Failed to get negotiation: {str(e)}")
+        logger.error(f"获取会话 {session_id} 失败: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.get("/participant/{participant_id}/negotiations")
-async def get_participant_negotiations(participant_id: str):
-    """Get all active negotiations for a participant"""
+@app.post("/sessions/{session_id}/message", response_model=MessageResponse)
+async def send_message(session_id: str, request: MessageRequest):
+    """向协商会话发送消息"""
     try:
-        sessions = await negotiation_service.get_active_sessions_for_participant(participant_id)
-        return {"sessions": sessions}
+        # 获取会话信息确定发送者ID
+        session = await group_service.get_session_info(session_id)
+        if not session:
+            raise HTTPException(status_code=404, detail="会话不存在")
         
+        # 根据发送者类型确定发送者ID
+        if request.sender_type == "tenant":
+            sender_id = session["tenant_id"]
+        else:
+            sender_id = session["landlord_id"]
+        
+        result = await group_service.send_message_to_session(
+            session_id=session_id,
+            sender_id=sender_id,
+            message=request.message,
+            sender_type=request.sender_type
+        )
+        
+        if "error" in result:
+            raise HTTPException(status_code=400, detail=result["error"])
+        
+        return MessageResponse(
+            response=result["response"],
+            session_id=session_id,
+            message_count=result["message_count"]
+        )
+        
+    except HTTPException:
+        raise
     except Exception as e:
-        logger.error(f"Failed to get participant negotiations: {str(e)}")
+        logger.error(f"发送消息失败: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.post("/chat")
-async def chat(chat_message: ChatMessage):
-    """Simple chat endpoint (legacy support)"""
+@app.post("/simulate-tenant-interests")
+async def simulate_all_tenant_interests():
+    """模拟所有租客表达对房产的兴趣"""
     try:
+        results = await group_service.simulate_all_tenant_interests()
+        
+        successful = sum(1 for r in results if "error" not in r["result"])
+        
         return {
-            "response": f"Received message from {chat_message.participant_id}: {chat_message.message}",
-            "note": "This is a legacy endpoint. Use WebSocket endpoints for real-time communication."
+            "total_sessions": len(results),
+            "successful_simulations": successful,
+            "results": results
         }
         
     except Exception as e:
-        logger.error(f"Chat error: {str(e)}")
+        logger.error(f"模拟租客兴趣失败: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.websocket("/ws/negotiation/{session_id}")
+@app.get("/stats")
+async def get_negotiation_stats():
+    """获取协商统计信息"""
+    try:
+        stats = group_service.get_negotiation_stats()
+        return stats
+    except Exception as e:
+        logger.error(f"获取统计信息失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.websocket("/ws/{session_id}")
 async def websocket_negotiation(websocket: WebSocket, session_id: str):
-    """WebSocket endpoint for real-time negotiation"""
-    await websocket.accept()
-    logger.info(f"WebSocket connected for session {session_id}")
+    """WebSocket端点，用于实时协商通信"""
+    await manager.connect(websocket, session_id)
     
     try:
-        # Verify session exists
-        session = await negotiation_service.get_session(session_id)
+        # 验证会话存在
+        session = await group_service.get_session_info(session_id)
         if not session:
-            await websocket.send_json({"error": "Negotiation session not found"})
+            await websocket.send_json({"error": "协商会话不存在"})
             return
         
-        # Send session info
+        # 发送会话信息
         await websocket.send_json({
             "type": "session_info",
             "session_id": session_id,
-            "participants": [
-                {"id": p.participant_id, "name": p.name, "role": p.role}
-                for p in session.participants
-            ],
-            "property": session.context.get("property", {}),
-            "status": session.status.value
+            "tenant_name": session["tenant_name"],
+            "landlord_name": session["landlord_name"],
+            "property_address": session["property_address"],
+            "monthly_rent": session["monthly_rent"],
+            "match_score": session["match_score"],
+            "status": session["status"]
         })
         
         while True:
             data = await websocket.receive_json()
             
-            if "message" not in data or "participant_id" not in data:
+            if "message" not in data or "sender_type" not in data:
                 await websocket.send_json({
-                    "error": "Invalid message format. Required fields: 'message' and 'participant_id'"
+                    "error": "无效的消息格式。需要字段: 'message' 和 'sender_type'"
                 })
                 continue
             
             try:
-                # Get participant role
-                participant_role = None
-                participant_name = None
-                for participant in session.participants:
-                    if participant.participant_id == data["participant_id"]:
-                        participant_role = participant.role
-                        participant_name = participant.name
-                        break
+                # 确定发送者ID
+                if data["sender_type"] == "tenant":
+                    sender_id = session["tenant_id"]
+                else:
+                    sender_id = session["landlord_id"]
                 
-                if not participant_role:
-                    await websocket.send_json({"error": "Participant not found in session"})
-                    continue
-                
-                # Send message info
+                # 发送消息接收确认
                 await websocket.send_json({
                     "type": "message_received",
-                    "from": participant_name,
-                    "role": participant_role,
+                    "from": data["sender_type"],
                     "message": data["message"]
                 })
                 
-                # Send initial streaming indicator
-                await websocket.send_json({"type": "response_start", "streaming": True})
+                # 开始响应流
+                await websocket.send_json({"type": "response_start"})
                 
-                # Stream response
-                full_response = ""
-                async for chunk in message_router.route_message(
-                    message=data["message"],
-                    participant_id=data["participant_id"],
+                # 发送消息并获取响应
+                result = await group_service.send_message_to_session(
                     session_id=session_id,
-                    participant_role=ParticipantRole(participant_role)
-                ):
-                    full_response += chunk
+                    sender_id=sender_id,
+                    message=data["message"],
+                    sender_type=data["sender_type"]
+                )
+                
+                if "error" in result:
                     await websocket.send_json({
-                        "type": "response_chunk",
-                        "chunk": chunk
+                        "type": "error",
+                        "error": result["error"]
+                    })
+                else:
+                    # 发送完整响应
+                    await websocket.send_json({
+                        "type": "response_complete",
+                        "response": result["response"],
+                        "message_count": result["message_count"]
                     })
                 
-                # Send final response
-                await websocket.send_json({
-                    "type": "response_complete",
-                    "response": full_response,
-                    "streaming": False,
-                    "participant_id": data["participant_id"]
-                })
-                
             except Exception as e:
-                logger.error(f"Error in websocket message processing: {str(e)}")
+                logger.error(f"WebSocket消息处理错误: {str(e)}")
                 await websocket.send_json({
-                    "type": "error", 
+                    "type": "error",
                     "error": str(e)
                 })
     
     except WebSocketDisconnect:
-        logger.info(f"WebSocket disconnected for session {session_id}")
+        manager.disconnect(websocket, session_id)
     except Exception as e:
-        logger.error(f"WebSocket error: {str(e)}")
-
-
-@app.websocket("/ws/chat")
-async def websocket_chat(websocket: WebSocket):
-    """Legacy WebSocket endpoint for backward compatibility"""
-    await websocket.accept()
-    
-    try:
-        await websocket.send_json({
-            "type": "info",
-            "message": "Connected to legacy chat endpoint. Consider using /ws/negotiation/{session_id} for full features."
-        })
-        
-        while True:
-            data = await websocket.receive_json()
-            
-            if "message" not in data or "participant_id" not in data:
-                await websocket.send_json({
-                    "error": "Invalid message format. Required fields: 'message' and 'participant_id'"
-                })
-                continue
-            
-            # Simple echo response for legacy support
-            await websocket.send_json({
-                "response": f"Legacy endpoint: {data['message']}",
-                "streaming": False
-            })
-    
-    except WebSocketDisconnect:
-        pass
+        logger.error(f"WebSocket错误: {str(e)}")
 
 
 @app.post("/reset-memory")
 async def reset_conversation():
-    """Resets the conversation state. It deletes the two collections needed for keeping LangGraph state in MongoDB.
-
-    Raises:
-        HTTPException: If there is an error resetting the conversation state.
-    Returns:
-        dict: A dictionary containing the result of the reset operation.
-    """
+    """重置对话状态"""
     try:
         result = await reset_conversation_state()
-        logger.info("Conversation memory reset successfully")
+        logger.info("对话内存重置成功")
         return result
     except Exception as e:
-        logger.error(f"Failed to reset memory: {str(e)}")
+        logger.error(f"重置内存失败: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
