@@ -3,6 +3,7 @@
 """
 import asyncio
 import uuid
+import random
 from typing import List, Dict, Any, Optional, Tuple
 from datetime import datetime
 from loguru import logger
@@ -338,6 +339,50 @@ class GroupNegotiationService:
             })
         return results
     
+    async def _generate_tenant_follow_up(self, session: Dict[str, Any], round_num: int) -> Optional[str]:
+        """生成租客的后续对话内容"""
+        try:
+            # 根据轮数和之前的对话生成不同的后续消息
+            tenant_name = session["tenant_name"]
+            property_address = session["property_address"]
+            monthly_rent = session["monthly_rent"]
+            
+            # 获取之前的消息历史
+            messages = session.get("messages", [])
+            
+            # 根据轮数生成不同类型的后续消息
+            follow_up_templates = {
+                1: [
+                    f"Thank you for the information about {property_address}. Could you provide more details about the deposit requirements and any additional fees?",
+                    f"I'm quite interested in proceeding. What would be the next steps for viewing the property?",
+                    f"The property looks perfect for my needs. Are there any specific requirements for tenants that I should be aware of?"
+                ],
+                2: [
+                    f"I appreciate your quick response. When would be the earliest possible move-in date for {property_address}?",
+                    f"Could you clarify the lease terms? I'm looking for a long-term rental arrangement.",
+                    f"Are utilities included in the £{monthly_rent} monthly rent, or would those be additional costs?"
+                ],
+                3: [
+                    f"Everything sounds good so far. Could we schedule a viewing this week?",
+                    f"I'd like to move forward with the application. What documents would you need from me?",
+                    f"Is there any flexibility on the rent price given my strong rental history?"
+                ]
+            }
+            
+            # 如果轮数超出模板范围，生成通用消息
+            if round_num not in follow_up_templates:
+                return f"I'm still very interested in {property_address}. Could we discuss the final details to move forward?"
+            
+            # 随机选择一个模板
+            templates = follow_up_templates[round_num]
+            selected_message = random.choice(templates)
+            
+            return selected_message
+            
+        except Exception as e:
+            logger.error(f"生成租客后续消息失败: {str(e)}")
+            return None
+    
     async def start_auto_negotiation(self, max_rounds: int = 5) -> Dict[str, Any]:
         """启动自动协商 - 让所有会话自动进行多轮对话"""
         try:
@@ -554,3 +599,4 @@ class GroupNegotiationService:
             "average_messages_per_session": round(avg_messages, 2),
             "average_match_score": round(avg_score, 2)
         }
+           
