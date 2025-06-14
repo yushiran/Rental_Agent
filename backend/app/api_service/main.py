@@ -4,6 +4,7 @@
 """
 from contextlib import asynccontextmanager
 import json
+import asyncio
 from datetime import datetime
 
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
@@ -133,7 +134,20 @@ async def get_session(session_id: str):
         if not session:
             raise HTTPException(status_code=404, detail="会话不存在")
         
-        return session
+        # 特别处理：检查是否存在WebSocket连接，如果存在则告知前端保持连接
+        has_websocket = session_id in manager.active_connections
+        
+        # 返回会话信息和WebSocket连接状态
+        response_data = {
+            **session,
+            "websocket_status": {
+                "has_active_connection": has_websocket,
+                "connection_count": len(manager.active_connections.get(session_id, set())),
+                "timestamp": datetime.now().isoformat()
+            }
+        }
+        
+        return response_data
     except Exception as e:
         logger.error(f"获取会话 {session_id} 失败: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -152,7 +166,8 @@ async def websocket_negotiation(websocket: WebSocket, session_id: str):
         await websocket.send_json({
             "type": "connected",
             "session_id": session_id,
-            "message": "WebSocket连接已建立"
+            "message": "WebSocket连接已建立",
+            "timestamp": datetime.now().isoformat()
         })
         
         # 如果是具体会话，验证会话存在并发送会话信息
@@ -167,28 +182,65 @@ async def websocket_negotiation(websocket: WebSocket, session_id: str):
                     "property_address": session["property_address"],
                     "monthly_rent": session["monthly_rent"],
                     "match_score": session["match_score"],
-                    "status": session["status"]
+                    "status": session["status"],
+                    "timestamp": datetime.now().isoformat()
+                })
+                
+                # 额外发送一条确认消息，确保前端知道WebSocket连接正常工作
+                await websocket.send_json({
+                    "type": "websocket_ready",
+                    "message": "实时对话准备就绪，对话将持续进行",
+                    "session_id": session_id,
+                    "timestamp": datetime.now().isoformat()
                 })
         
         # 保持连接活跃，监听消息
+        ping_counter = 0
         while True:
             try:
-                # 接收客户端消息（可用于心跳检测或手动消息发送）
-                data = await websocket.receive_json()
+                # 使用较短的超时以便能够定期发送心跳
+                data = await asyncio.wait_for(websocket.receive_json(), timeout=15)
                 
                 # 处理心跳
                 if data.get("type") == "ping":
-                    await websocket.send_json({"type": "pong"})
+                    await websocket.send_json({
+                        "type": "pong", 
+                        "timestamp": datetime.now().isoformat()
+                    })
+                    ping_counter += 1
+                    # 每隔5次心跳，发送一次会话状态更新
+                    if ping_counter % 5 == 0:
+                        await websocket.send_json({
+                            "type": "connection_status",
+                            "status": "active",
+                            "session_id": session_id,
+                            "timestamp": datetime.now().isoformat()
+                        })
                     continue
                 
                 # 处理其他消息类型（如果需要）
                 await websocket.send_json({
                     "type": "message_received",
-                    "data": data
+                    "data": data,
+                    "timestamp": datetime.now().isoformat()
                 })
                 
+            except asyncio.TimeoutError:
+                # 超时时发送主动心跳，保持连接
+                try:
+                    await websocket.send_json({
+                        "type": "server_ping", 
+                        "timestamp": datetime.now().isoformat()
+                    })
+                except Exception as e:
+                    logger.debug(f"发送心跳失败，可能连接已断开: {str(e)}")
+                    break
+            
             except Exception as e:
-                logger.debug(f"WebSocket消息处理: {str(e)}")
+                if isinstance(e, WebSocketDisconnect):
+                    logger.debug(f"WebSocket客户端断开连接: {str(e)}")
+                else:
+                    logger.debug(f"WebSocket消息处理错误: {str(e)}")
                 break
     
     except WebSocketDisconnect:
