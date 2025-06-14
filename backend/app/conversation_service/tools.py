@@ -2,7 +2,7 @@ from langchain.tools.retriever import create_retriever_tool
 from langchain_core.tools import tool
 from app.rag import get_retriever
 from app.config import config
-from app.latex import RentalLatex, RentalInfo
+from app.utils import RentalLatex, RentalInfo
 from typing import Dict, Any
 import os
 from datetime import datetime

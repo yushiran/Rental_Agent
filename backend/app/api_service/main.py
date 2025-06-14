@@ -4,6 +4,7 @@
 """
 from contextlib import asynccontextmanager
 import json
+from datetime import datetime
 
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
@@ -18,25 +19,6 @@ from .group_negotiation import GroupNegotiationService
 from .websocket import ConnectionManager
 
 configure()
-
-
-# 简化的API模型
-class TenantGenerationRequest(BaseModel):
-    """生成租客请求"""
-    max_tenants: int = 10
-    max_rounds: int = 5
-
-
-class SessionInfo(BaseModel):
-    """会话信息"""
-    session_id: str
-    tenant_name: str
-    landlord_name: str
-    property_address: str
-    monthly_rent: float
-    match_score: float
-    status: str
-
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -86,17 +68,15 @@ async def root():
     }
 
 
-
-
-
 @app.post("/start-auto-negotiation-live")
-async def start_auto_negotiation_live(max_tenants: int = 10, max_rounds: int = 5):
+async def start_auto_negotiation_live(max_tenants: int = 10):
     """
     启动实时自动协商
     
     1. 生成指定数量的租客
     2. 为每个租客匹配房东和房产
     3. 开始实时协商，通过WebSocket推送每一条消息
+    4. 无限轮次，持续对话直到手动停止
     """
     try:
         # 首先启动群体协商创建会话
@@ -105,22 +85,23 @@ async def start_auto_negotiation_live(max_tenants: int = 10, max_rounds: int = 5
         if "error" in negotiation_result:
             raise HTTPException(status_code=400, detail=negotiation_result["error"])
         
-        # 然后启动实时协商
-        result = await group_service.start_auto_negotiation_live(
-            max_rounds=max_rounds, 
+        # 然后启动实时协商（无轮次限制）
+        # 启动为异步任务，避免阻塞API响应
+        manager.start_background_task(
+            group_service.start_auto_negotiation_live,
             websocket_manager=manager
         )
-        
-        if "error" in result:
-            raise HTTPException(status_code=400, detail=result["error"])
         
         # 合并结果
         final_result = {
             "message": "成功启动实时自动协商",
             "tenants_generated": negotiation_result.get('successful_matches', 0),
-            "active_sessions": result.get('active_sessions', 0),
-            "max_rounds": max_rounds
+            "active_sessions": len(negotiation_result.get('sessions', [])),
+            "unlimited_rounds": True
         }
+        
+        logger.info(f"成功启动实时自动协商: {final_result}")
+        return final_result
         
         logger.info(f"成功启动实时自动协商: {final_result}")
         return final_result
@@ -227,6 +208,30 @@ async def reset_conversation():
         return result
     except Exception as e:
         logger.error(f"重置内存失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/stop-auto-negotiation")
+async def stop_auto_negotiation():
+    """
+    停止自动协商
+    
+    取消当前运行的自动协商任务
+    """
+    try:
+        # 通过WebSocket广播停止消息
+        await manager.broadcast_to_all_sessions({
+            "type": "auto_negotiation_stopped",
+            "message": "自动协商已停止",
+            "timestamp": datetime.now().isoformat()
+        })
+        
+        # 取消任务在WebSocket连接管理器中处理
+        manager.cancel_all_tasks()
+        
+        return {"message": "自动协商已停止"}
+    except Exception as e:
+        logger.error(f"停止自动协商失败: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 

@@ -43,12 +43,12 @@ class SimpleDemo:
         except Exception as e:
             return {"error": str(e)}
     
-    def start_negotiation(self, max_tenants: int, max_rounds: int) -> Dict:
+    def start_negotiation(self, max_tenants: int) -> Dict:
         """启动协商"""
         try:
             response = requests.post(
                 f"{self.api_base_url}/start-auto-negotiation-live",
-                params={"max_tenants": max_tenants, "max_rounds": max_rounds},
+                params={"max_tenants": max_tenants},
                 timeout=30
             )
             return response.json()
@@ -99,15 +99,22 @@ class SimpleDemo:
                         data = json.loads(message)
                         
                         # 处理不同类型的消息
-                        if data.get("type") == "tenant_message_start":
+                        if data.get("type") == "tenant_message_start" or data.get("type") == "tenant_message":
                             self.add_message(session_id, "tenant", data.get("message", ""), data.get("sender_name", ""))
-                        elif data.get("type") == "landlord_response":
-                            self.add_message(session_id, "landlord", data.get("response", ""), data.get("sender_name", ""))
+                        elif data.get("type") == "landlord_response" or data.get("type") == "response_complete":
+                            self.add_message(session_id, "landlord", data.get("response", "") or data.get("full_response", ""), data.get("sender_name", ""))
+                        elif data.get("type") == "response_chunk":
+                            # 实时更新当前消息（这需要更复杂的实现，此处简化）
+                            pass
                         elif data.get("type") == "tenant_interest_complete":
                             self.add_message(session_id, "tenant", data.get("tenant_message", ""), "租客")
                             self.add_message(session_id, "landlord", data.get("landlord_response", ""), "房东")
                         elif data.get("type") == "error":
                             self.add_message(session_id, "system", f"错误: {data.get('message', '')}", "系统")
+                        elif data.get("type") == "auto_negotiation_start":
+                            self.add_message(session_id, "system", "自动对话开始 (持续进行中...)", "系统")
+                        elif data.get("type") == "auto_negotiation_cancelled" or data.get("type") == "auto_negotiation_stopped":
+                            self.add_message(session_id, "system", f"自动对话已停止，总计 {data.get('completed_rounds', '?')} 轮", "系统")
                         
                         # 强制刷新页面以显示新消息
                         st.rerun()
@@ -201,19 +208,31 @@ def main():
     with col2:
         st.subheader("🚀 启动协商")
         max_tenants = st.number_input("租客数量", 1, 20, 5)
-        max_rounds = st.number_input("对话轮数", 1, 10, 3)
         
-        if st.button("开始协商"):
-            with st.spinner("启动中..."):
-                result = demo.start_negotiation(max_tenants, max_rounds)
-                if "error" in result:
-                    st.error(f"启动失败: {result['error']}")
-                else:
-                    st.success("启动成功")
-                    st.json(result)
-                    # 清空之前的消息
-                    st.session_state.messages = {}
-                    st.session_state.live_sessions = {}
+        col2_1, col2_2 = st.columns(2)
+        with col2_1:
+            if st.button("开始协商", key="start_negotiation"):
+                with st.spinner("启动中..."):
+                    result = demo.start_negotiation(max_tenants)
+                    if "error" in result:
+                        st.error(f"启动失败: {result['error']}")
+                    else:
+                        st.success("启动成功！对话将持续进行")
+                        st.json(result)
+                        # 清空之前的消息
+                        st.session_state.messages = {}
+                        st.session_state.live_sessions = {}
+                        st.rerun()
+        
+        with col2_2:
+            if st.button("停止对话", key="stop_negotiation", type="primary"):
+                with st.spinner("停止中..."):
+                    try:
+                        # 调用API终止无限对话
+                        requests.post(f"{demo.api_base_url}/stop-auto-negotiation", timeout=10)
+                        st.success("已停止自动对话")
+                    except Exception as e:
+                        st.error(f"停止失败: {str(e)}")
                     st.rerun()
     
     with col3:
@@ -255,12 +274,20 @@ def main():
                 
                 # 显示对话消息
                 if session_id in st.session_state.messages and st.session_state.messages[session_id]:
-                    st.markdown("**💬 实时对话:**")
+                    # 添加状态指示器
+                    status_col1, status_col2 = st.columns([3, 1])
+                    with status_col1:
+                        st.markdown("**💬 实时对话 (持续进行中...):**")
+                    with status_col2:
+                        # 添加一个小的动态指示器，表明对话是持续的
+                        if session_id in st.session_state.live_sessions:
+                            st.markdown("🔄 **自动对话进行中**")
                     
                     # 创建消息容器
                     message_container = st.container()
                     with message_container:
-                        for msg in st.session_state.messages[session_id][-10:]:  # 只显示最近10条消息
+                        # 显示最近15条消息，因为是持续对话可能会有更多
+                        for msg in st.session_state.messages[session_id][-15:]:  
                             timestamp = msg["timestamp"]
                             sender_name = msg["sender_name"]
                             message = msg["message"]
@@ -276,7 +303,8 @@ def main():
                     # 自动滚动到最新消息
                     if len(st.session_state.messages[session_id]) > 0:
                         st.markdown("---")
-                        st.caption(f"共 {len(st.session_state.messages[session_id])} 条消息")
+                        # 显示总消息数和提示此为持续对话
+                        st.caption(f"共 {len(st.session_state.messages[session_id])} 条消息 | 对话将持续进行，直到手动停止")
                 else:
                     st.info("暂无对话消息。点击'连接实时对话'开始监听。")
     

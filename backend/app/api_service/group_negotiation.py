@@ -36,8 +36,6 @@ class GroupNegotiationService:
         
         # 活跃的协商会话
         self.active_negotiations: Dict[str, Dict[str, Any]] = {}
-        # 租客匹配状态
-        self.tenant_matching: Dict[str, List[str]] = {}
 
         agent_factory = AgentDataInitializer()
         agent_factory.initialize_all_data()
@@ -67,10 +65,16 @@ class GroupNegotiationService:
             
             # 4. 开始协商对话
             negotiation_sessions = []
-            for match in matching_results:
-                session = await self._start_negotiation_session(match)
-                if session:
-                    negotiation_sessions.append(session)
+            # 4. 开始协商对话 - 使用异步并发处理
+            tasks = [self._start_negotiation_session(match) for match in matching_results]
+            session_results = await asyncio.gather(*tasks, return_exceptions=True)
+            
+            # 过滤成功的会话
+            for result in session_results:
+                if isinstance(result, dict) and result is not None:
+                    negotiation_sessions.append(result)
+                elif isinstance(result, Exception):
+                    logger.error(f"创建协商会话时出错: {str(result)}")
             
             logger.info(f"成功启动 {len(negotiation_sessions)} 个协商会话")
             
@@ -97,7 +101,7 @@ class GroupNegotiationService:
     async def _get_all_landlords(self) -> List[LandlordModel]:
         """获取所有房东"""
         try:
-            results = self.landlords_db.fetch_documents(100, {})
+            results = self.landlords_db.fetch_documents(0, {})  # 0 means no limit
             return results  # MongoDB client now returns Pydantic models directly
         except Exception as e:
             logger.error(f"获取房东失败: {str(e)}")
@@ -199,30 +203,15 @@ class GroupNegotiationService:
             logger.error(f"创建协商会话失败: {str(e)}")
             return None
     
-    def _get_tenant_by_id(self, tenant_id: str) -> Optional[TenantModel]:
-        """根据ID获取租客信息"""
-        try:
-            results = self.tenants_db.fetch_documents(1, {"tenant_id": tenant_id})
-            return results[0] if results else None
-        except Exception as e:
-            logger.error(f"获取租客失败: {str(e)}")
-            return None
-    
-    def _get_landlord_by_id(self, landlord_id: str) -> Optional[LandlordModel]:
-        """根据ID获取房东信息"""
-        try:
-            results = self.landlords_db.fetch_documents(1, {"landlord_id": landlord_id})
-            return results[0] if results else None
-        except Exception as e:
-            logger.error(f"获取房东失败: {str(e)}")
-            return None
+
 
     async def send_message_to_session(
         self, 
         session_id: str, 
         sender_id: str, 
         message: str,
-        sender_type: str = "tenant"
+        sender_type: str = "tenant",
+        websocket_manager=None
     ) -> Dict[str, Any]:
         """向协商会话发送消息"""
         try:
@@ -277,12 +266,46 @@ class GroupNegotiationService:
                     }
                 )
             
-            # 收集流式响应
+            # 收集流式响应并实时推送
             full_response = ""
             response_chunks = []
+            
+            # 先推送开始响应的消息
+            response_sender_type = "landlord" if sender_type == "tenant" else "tenant"
+            response_sender_name = session["landlord_name"] if sender_type == "tenant" else session["tenant_name"]
+            
+            if websocket_manager:
+                await websocket_manager.send_message_to_session(session_id, {
+                    "type": "response_start",
+                    "sender": response_sender_type,
+                    "sender_name": response_sender_name,
+                    "timestamp": datetime.utcnow().isoformat()
+                })
+            
+            # 流式收集响应并实时推送每个chunk
             async for chunk in response_generator:
                 full_response += chunk
                 response_chunks.append(chunk)
+                
+                # 实时推送每个chunk到前端
+                if websocket_manager:
+                    await websocket_manager.send_message_to_session(session_id, {
+                        "type": "response_chunk",
+                        "sender": response_sender_type,
+                        "sender_name": response_sender_name,
+                        "chunk": chunk,
+                        "timestamp": datetime.utcnow().isoformat()
+                    })
+            
+            # 推送响应完成消息
+            if websocket_manager:
+                await websocket_manager.send_message_to_session(session_id, {
+                    "type": "response_complete",
+                    "sender": response_sender_type,
+                    "sender_name": response_sender_name,
+                    "full_response": full_response,
+                    "timestamp": datetime.utcnow().isoformat()
+                })
             
             # 添加响应到会话历史
             response_data = {
@@ -312,130 +335,73 @@ class GroupNegotiationService:
         """获取所有活跃的协商会话"""
         return list(self.active_negotiations.values())
     
-    async def simulate_tenant_interest(self, session_id: str) -> Dict[str, Any]:
-        """模拟租客表达兴趣"""
-        session = self.active_negotiations.get(session_id)
-        if not session:
-            return {"error": "会话不存在"}
-        
-        # 生成租客兴趣消息
-        interest_message = f"Hi, I'm interested in your property at {session['property_address']}. The monthly rent of £{session['monthly_rent']} fits my budget. Could you tell me more about the viewing arrangements?"
-        
-        return await self.send_message_to_session(
-            session_id=session_id,
-            sender_id=session["tenant_id"],
-            message=interest_message,
-            sender_type="tenant"
-        )
-    
-    async def simulate_all_tenant_interests(self) -> List[Dict[str, Any]]:
-        """模拟所有租客表达兴趣"""
-        results = []
-        for session_id in self.active_negotiations.keys():
-            result = await self.simulate_tenant_interest(session_id)
-            results.append({
-                "session_id": session_id,
-                "result": result
-            })
-        return results
-    
-    async def _generate_tenant_follow_up(self, session: Dict[str, Any], round_num: int) -> Optional[str]:
-        """生成租客的后续对话内容"""
+    async def _generate_tenant_message(self, session: Dict[str, Any]) -> Optional[str]:
+        """让租客Agent根据对话历史自动生成消息"""
         try:
-            # 根据轮数和之前的对话生成不同的后续消息
-            tenant_name = session["tenant_name"]
-            property_address = session["property_address"]
-            monthly_rent = session["monthly_rent"]
-            
-            # 获取之前的消息历史
+            # 获取对话历史
             messages = session.get("messages", [])
             
-            # 根据轮数生成不同类型的后续消息
-            follow_up_templates = {
-                1: [
-                    f"Thank you for the information about {property_address}. Could you provide more details about the deposit requirements and any additional fees?",
-                    f"I'm quite interested in proceeding. What would be the next steps for viewing the property?",
-                    f"The property looks perfect for my needs. Are there any specific requirements for tenants that I should be aware of?"
-                ],
-                2: [
-                    f"I appreciate your quick response. When would be the earliest possible move-in date for {property_address}?",
-                    f"Could you clarify the lease terms? I'm looking for a long-term rental arrangement.",
-                    f"Are utilities included in the £{monthly_rent} monthly rent, or would those be additional costs?"
-                ],
-                3: [
-                    f"Everything sounds good so far. Could we schedule a viewing this week?",
-                    f"I'd like to move forward with the application. What documents would you need from me?",
-                    f"Is there any flexibility on the rent price given my strong rental history?"
-                ]
-            }
+            # 获取租客信息
+            tenant_id = session["tenant_id"]
+            tenant = self._get_tenant_by_id(tenant_id)
             
-            # 如果轮数超出模板范围，生成通用消息
-            if round_num not in follow_up_templates:
-                return f"I'm still very interested in {property_address}. Could we discuss the final details to move forward?"
+            if not tenant:
+                return None
             
-            # 随机选择一个模板
-            templates = follow_up_templates[round_num]
-            selected_message = random.choice(templates)
+            # 构建对话历史字符串
+            conversation_history = ""
+            for msg in messages[-8:]:  # 取最近8条消息保持上下文
+                sender = "Tenant" if msg["sender_type"] == "tenant" else "Landlord"
+                conversation_history += f"{sender}: {msg['message']}\n"
             
-            return selected_message
+            # 如果是第一条消息，让租客自我介绍
+            if not messages:
+                property_address = session["property_address"]
+                monthly_rent = session["monthly_rent"]
+                
+                intro_message = f"Hi, I'm {tenant.name}. I'm very interested in your property at {property_address}. "
+                intro_message += f"I have an annual income of £{tenant.annual_income:,.0f}"
+                if tenant.has_guarantor:
+                    intro_message += " and I have a guarantor for additional security"
+                intro_message += f". My budget is up to £{tenant.max_budget:,.0f} per month, and the rent of £{monthly_rent} fits well within my range. "
+                intro_message += "Could you tell me more about the property details and viewing arrangements?"
+                
+                return intro_message
+            
+            # 使用租客Agent生成响应
+            response_generator = get_tenant_streaming_response(
+                messages=conversation_history,
+                tenant_id=tenant_id,
+                tenant_name=tenant.name,
+                budget_info={
+                    "annual_income": tenant.annual_income,
+                    "max_budget": tenant.max_budget,
+                    "has_guarantor": tenant.has_guarantor
+                },
+                preferences={
+                    "min_bedrooms": tenant.min_bedrooms,
+                    "max_bedrooms": tenant.max_bedrooms,
+                    "preferred_locations": tenant.preferred_locations,
+                    "is_student": tenant.is_student,
+                    "has_pets": tenant.has_pets,
+                    "is_smoker": tenant.is_smoker,
+                    "num_occupants": tenant.num_occupants
+                }
+            )
+            
+            # 收集流式响应
+            full_response = ""
+            async for chunk in response_generator:
+                full_response += chunk
+            
+            return full_response.strip() if full_response.strip() else None
             
         except Exception as e:
-            logger.error(f"生成租客后续消息失败: {str(e)}")
+            logger.error(f"生成租客消息失败: {str(e)}")
             return None
     
-    async def start_auto_negotiation(self, max_rounds: int = 5) -> Dict[str, Any]:
-        """启动自动协商 - 让所有会话自动进行多轮对话"""
-        try:
-            if not self.active_negotiations:
-                return {"error": "没有活跃的协商会话"}
-            
-            logger.info(f"开始自动协商，最大轮数: {max_rounds}")
-            results = []
-            
-            # 首先让所有租客表达兴趣
-            await self.simulate_all_tenant_interests()
-            
-            # 进行多轮自动对话
-            for round_num in range(1, max_rounds):
-                logger.info(f"开始第 {round_num} 轮自动对话")
-                round_results = []
-                
-                for session_id, session in self.active_negotiations.items():
-                    if session["status"] != "active":
-                        continue
-                    
-                    # 租客继续对话
-                    tenant_msg = await self._generate_tenant_follow_up(session, round_num)
-                    if tenant_msg:
-                        result = await self.send_message_to_session(
-                            session_id=session_id,
-                            sender_id=session["tenant_id"],
-                            message=tenant_msg,
-                            sender_type="tenant"
-                        )
-                        round_results.append({
-                            "session_id": session_id,
-                            "round": round_num,
-                            "type": "tenant_message",
-                            "result": result
-                        })
-                
-                results.extend(round_results)
-                # 在每轮之间稍作延迟
-                await asyncio.sleep(1)
-            
-            return {
-                "message": f"完成 {max_rounds-1} 轮自动协商",
-                "total_sessions": len(self.active_negotiations),
-                "total_exchanges": len(results)
-            }
-            
-        except Exception as e:
-            logger.error(f"自动协商失败: {str(e)}")
-            return {"error": str(e)}
-    
-    async def start_auto_negotiation_live(self, max_rounds: int = 5, websocket_manager=None) -> Dict[str, Any]:
-        """启动实时自动协商 - 通过WebSocket实时推送每一条消息"""
+    async def start_auto_negotiation_live(self, websocket_manager=None) -> Dict[str, Any]:
+        """启动实时自动协商 - 通过WebSocket实时推送每一条消息，无轮次限制"""
         try:
             if not self.active_negotiations:
                 return {"error": "没有活跃的协商会话"}
@@ -443,97 +409,90 @@ class GroupNegotiationService:
             if not websocket_manager:
                 return {"error": "WebSocket管理器未提供"}
             
-            logger.info(f"开始实时自动协商，最大轮数: {max_rounds}")
+            logger.info("开始实时自动协商，无轮次限制")
             
             # 广播开始消息
             await websocket_manager.broadcast_to_all_sessions({
                 "type": "auto_negotiation_start",
-                "max_rounds": max_rounds,
+                "unlimited_rounds": True,
                 "total_sessions": len(self.active_negotiations),
                 "timestamp": datetime.now().isoformat()
             })
             
-            # 首先让所有租客表达兴趣
-            await self._simulate_all_tenant_interests_live(websocket_manager)
-            
-            # 进行多轮自动对话
-            for round_num in range(1, max_rounds):
-                logger.info(f"开始第 {round_num} 轮实时自动对话")
-                
-                # 广播轮次开始
-                await websocket_manager.broadcast_to_all_sessions({
-                    "type": "round_start",
-                    "round_number": round_num,
-                    "timestamp": datetime.now().isoformat()
-                })
-                
-                for session_id, session in self.active_negotiations.items():
-                    if session["status"] != "active":
-                        continue
+            # 持续对话，直到用户手动停止
+            round_num = 0
+            try:
+                while True:  # 无限循环，持续对话
+                    round_num += 1
+                    logger.info(f"开始第 {round_num} 轮实时自动对话")
                     
-                    # 租客继续对话
-                    tenant_msg = await self._generate_tenant_follow_up(session, round_num)
-                    if tenant_msg:
-                        # 先通过WebSocket推送租客将要发送的消息
-                        await websocket_manager.send_message_to_session(session_id, {
-                            "type": "tenant_message_start",
-                            "sender": "tenant",
-                            "sender_name": session["tenant_name"],
-                            "message": tenant_msg,
-                            "round": round_num,
-                            "timestamp": datetime.now().isoformat()
-                        })
+                    # 广播轮次开始
+                    await websocket_manager.broadcast_to_all_sessions({
+                        "type": "round_start",
+                        "round_number": round_num,
+                        "timestamp": datetime.now().isoformat()
+                    })
+                    
+                    # 对每个会话进行一次对话
+                    for session_id, session in self.active_negotiations.items():
+                        if session["status"] != "active":
+                            continue
                         
-                        # 发送消息并获取响应
-                        result = await self.send_message_to_session(
-                            session_id=session_id,
-                            sender_id=session["tenant_id"],
-                            message=tenant_msg,
-                            sender_type="tenant"
-                        )
-                        
-                        if "error" not in result:
-                            # 推送房东的响应
+                        # 租客继续对话
+                        tenant_msg = await self._generate_tenant_message(session)
+                        if tenant_msg:
+                            # 推送租客消息到前端
                             await websocket_manager.send_message_to_session(session_id, {
-                                "type": "landlord_response",
-                                "sender": "landlord",
-                                "sender_name": session["landlord_name"],
-                                "response": result["response"],
+                                "type": "tenant_message",
+                                "sender": "tenant",
+                                "sender_name": session["tenant_name"],
+                                "message": tenant_msg,
                                 "round": round_num,
                                 "timestamp": datetime.now().isoformat()
                             })
-                        else:
-                            # 推送错误信息
-                            await websocket_manager.send_message_to_session(session_id, {
-                                "type": "error",
-                                "message": result["error"],
-                                "round": round_num,
-                                "timestamp": datetime.now().isoformat()
-                            })
-                
-                # 在每轮之间延迟，让用户看清楚
-                await asyncio.sleep(2)
-                
-                # 广播轮次结束
+                            
+                            # 发送消息并获取响应（这里会通过websocket实时推送房东的响应）
+                            result = await self.send_message_to_session(
+                                session_id=session_id,
+                                sender_id=session["tenant_id"],
+                                message=tenant_msg,
+                                sender_type="tenant",
+                                websocket_manager=websocket_manager
+                            )
+                            
+                            if "error" in result:
+                                # 推送错误信息
+                                await websocket_manager.send_message_to_session(session_id, {
+                                    "type": "error",
+                                    "message": result["error"],
+                                    "round": round_num,
+                                    "timestamp": datetime.now().isoformat()
+                                })
+                    
+                    # 广播轮次结束
+                    await websocket_manager.broadcast_to_all_sessions({
+                        "type": "round_complete",
+                        "round_number": round_num,
+                        "timestamp": datetime.now().isoformat()
+                    })
+                    
+                    # 添加短暂延迟，避免过于频繁的消息
+                    await asyncio.sleep(2)
+                    
+            except asyncio.CancelledError:
+                # 处理取消事件 - 当用户停止自动对话时
                 await websocket_manager.broadcast_to_all_sessions({
-                    "type": "round_complete",
-                    "round_number": round_num,
+                    "type": "auto_negotiation_cancelled",
+                    "completed_rounds": round_num,
+                    "total_sessions": len(self.active_negotiations),
                     "timestamp": datetime.now().isoformat()
                 })
-            
-            # 广播完成消息
-            await websocket_manager.broadcast_to_all_sessions({
-                "type": "auto_negotiation_complete",
-                "completed_rounds": max_rounds - 1,
-                "total_sessions": len(self.active_negotiations),
-                "timestamp": datetime.now().isoformat()
-            })
-            
-            return {
-                "message": f"完成 {max_rounds-1} 轮实时自动协商",
-                "total_sessions": len(self.active_negotiations),
-                "method": "websocket_live"
-            }
+                
+                return {
+                    "message": f"用户取消了自动协商，已完成 {round_num} 轮对话",
+                    "total_sessions": len(self.active_negotiations),
+                    "method": "websocket_live"
+                }
             
         except Exception as e:
             logger.error(f"实时自动协商失败: {str(e)}")
@@ -545,38 +504,6 @@ class GroupNegotiationService:
                     "timestamp": datetime.now().isoformat()
                 })
             return {"error": str(e)}
-    
-    async def _simulate_all_tenant_interests_live(self, websocket_manager):
-        """实时模拟所有租客表达兴趣"""
-        for session_id, session in self.active_negotiations.items():
-            # 推送租客兴趣表达开始
-            await websocket_manager.send_message_to_session(session_id, {
-                "type": "tenant_interest_start",
-                "sender": "tenant",
-                "sender_name": session["tenant_name"],
-                "timestamp": datetime.now().isoformat()
-            })
-            
-            result = await self.simulate_tenant_interest(session_id)
-            
-            if "error" not in result:
-                # 推送成功的兴趣表达
-                await websocket_manager.send_message_to_session(session_id, {
-                    "type": "tenant_interest_complete",
-                    "tenant_message": result.get("tenant_message", ""),
-                    "landlord_response": result.get("response", ""),
-                    "timestamp": datetime.now().isoformat()
-                })
-            else:
-                # 推送错误
-                await websocket_manager.send_message_to_session(session_id, {
-                    "type": "error",
-                    "message": result["error"],
-                    "timestamp": datetime.now().isoformat()
-                })
-            
-            # 会话间延迟
-            await asyncio.sleep(1)
 
     def get_negotiation_stats(self) -> Dict[str, Any]:
         """获取协商统计信息"""
@@ -599,4 +526,31 @@ class GroupNegotiationService:
             "average_messages_per_session": round(avg_messages, 2),
             "average_match_score": round(avg_score, 2)
         }
-           
+    
+    
+    def _get_tenant_by_id(self, tenant_id: str) -> Optional[TenantModel]:
+        """根据ID获取租客信息"""
+        try:
+            results = self.tenants_db.fetch_documents(1, {"tenant_id": tenant_id})
+            return results[0] if results else None
+        except Exception as e:
+            logger.error(f"获取租客失败: {str(e)}")
+            return None
+    
+    def _get_landlord_by_id(self, landlord_id: str) -> Optional[LandlordModel]:
+        """根据ID获取房东信息"""
+        try:
+            results = self.landlords_db.fetch_documents(1, {"landlord_id": landlord_id})
+            return results[0] if results else None
+        except Exception as e:
+            logger.error(f"获取房东失败: {str(e)}")
+            return None
+
+    def _get_property_by_id(self, property_id: str) -> Optional[PropertyModel]:
+        """根据ID获取房产信息"""
+        try:
+            results = self.properties_db.fetch_documents(1, {"property_id": property_id})
+            return results[0] if results else None
+        except Exception as e:
+            logger.error(f"获取房产失败: {str(e)}")
+            return None

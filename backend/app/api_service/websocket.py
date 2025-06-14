@@ -1,4 +1,5 @@
-from typing import Dict, Optional, Set
+from typing import Dict, Optional, Set, Callable, Any, Coroutine, List
+import asyncio
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 import json
 from loguru import logger
@@ -7,6 +8,7 @@ from loguru import logger
 class ConnectionManager:
     def __init__(self):
         self.active_connections: Dict[str, Set[WebSocket]] = {}
+        self.background_tasks: List[asyncio.Task] = []
     
     async def connect(self, websocket: WebSocket, session_id: str):
         await websocket.accept()
@@ -39,3 +41,18 @@ class ConnectionManager:
         """广播消息到所有会话"""
         for session_id in list(self.active_connections.keys()):
             await self.send_message_to_session(session_id, message)
+    
+    def start_background_task(self, coro_func: Callable[..., Coroutine], *args, **kwargs):
+        """启动一个后台任务"""
+        task = asyncio.create_task(coro_func(*args, **kwargs))
+        self.background_tasks.append(task)
+        return task
+    
+    def cancel_all_tasks(self):
+        """取消所有后台任务"""
+        for task in self.background_tasks:
+            if not task.done():
+                task.cancel()
+        # 清空任务列表
+        self.background_tasks = []
+        logger.info("已取消所有后台任务")
