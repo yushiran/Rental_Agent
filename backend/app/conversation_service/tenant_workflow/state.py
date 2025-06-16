@@ -25,6 +25,14 @@ class TenantState(MessagesState):
     is_smoker: bool
     num_occupants: int
     
+    # Property matching
+    properties: List[Dict[str, Any]]  # 可用于匹配的房产列表
+    match_properties: bool  # 是否需要进行房产匹配
+    matched_properties: List[Dict[str, Any]]  # 已经匹配的房产列表
+    matched_landlord: Dict[str, Any]  # 匹配的房东信息
+    match_score: float  # 匹配分数
+    match_reasons: List[str]  # 匹配原因
+    
     # Conversation management
     conversation_context: str
     summary: str

@@ -25,20 +25,12 @@ def should_summarize_landlord_conversation(
 
 def should_continue_landlord_conversation(
     state: LandlordState,
-) -> Literal["landlord_agent_node", "property_matching_node", "__end__"]:
+) -> Literal["landlord_agent_node", "__end__"]:
     """Determine next step in landlord conversation flow"""
     messages = state["messages"]
     
     if not messages:
         return END
     
-    last_message = messages[-1]
-    
-    # If tenant requirements are being discussed, go to property matching
-    if ("tenant" in last_message.content.lower() or 
-        "requirement" in last_message.content.lower() or
-        "match" in last_message.content.lower()):
-        return "property_matching_node"
-    
-    # Continue with landlord agent by default
+    # Continue with landlord agent by default - no property matching needed as tenants handle matching
     return "landlord_agent_node"

@@ -5,7 +5,6 @@ from langgraph.prebuilt import ToolNode
 
 from app.conversation_service.landlord_workflow import (
     get_landlord_agent_chain,
-    get_property_matching_chain,
     get_rental_conversation_summary_chain,
 )
 from app.conversation_service.landlord_workflow import LandlordState
@@ -16,7 +15,7 @@ retriever_node = ToolNode(tools)
 
 
 async def landlord_agent_node(state: LandlordState, config: RunnableConfig):
-    """Handle landlord agent conversations"""
+    """Handle landlord agent conversations - responding to tenant inquiries about matched properties"""
     summary = state.get("summary", "")
     landlord_chain = get_landlord_agent_chain()
 
@@ -31,7 +30,6 @@ async def landlord_agent_node(state: LandlordState, config: RunnableConfig):
             "preferences": state.get("preferences", {}),
             "conversation_context": state.get("conversation_context", ""),
             "current_property_focus": state.get("current_property_focus", ""),
-            "tenant_requirements": state.get("tenant_requirements", {}),
             "summary": summary,
         },
         config,
@@ -40,19 +38,7 @@ async def landlord_agent_node(state: LandlordState, config: RunnableConfig):
     return {"messages": response}
 
 
-async def property_matching_node(state: LandlordState, config: RunnableConfig):
-    """Handle property matching analysis for landlord"""
-    matching_chain = get_property_matching_chain()
-
-    response = await matching_chain.ainvoke(
-        {
-            "properties": state.get("properties", []),
-            "tenant_requirements": state.get("tenant_requirements", {}),
-        },
-        config,
-    )
-    
-    return {"messages": response}
+# Property matching functionality removed - tenants are now responsible for initiating matching
 
 
 async def summarize_conversation_node(state: LandlordState):

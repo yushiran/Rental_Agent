@@ -9,6 +9,7 @@ from .chains import (
 from .edges import (
     should_summarize_tenant_conversation,
     should_continue_tenant_conversation,
+    should_do_property_matching,
 )
 from .nodes import (
     retriever_node,
@@ -30,6 +31,7 @@ __all__ = [
     "get_rental_conversation_summary_chain",
     "should_summarize_tenant_conversation",
     "should_continue_tenant_conversation",
+    "should_do_property_matching",
     "retriever_node",
     "tenant_agent_node",
     "property_matching_node",

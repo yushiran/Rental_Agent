@@ -3,19 +3,20 @@
 """
 import asyncio
 import uuid
-import random
-from typing import List, Dict, Any, Optional, Tuple
+import sys
+from typing import List, Dict, Any, Optional, TypedDict
 from datetime import datetime
 from loguru import logger
+import time
+
+# 确保日志配置正确，强制显示INFO级别消息
+logger.remove()  # 移除默认处理器
+logger.add(sys.stderr, level="INFO")  # 添加stderr处理器，设置级别为INFO
 
 from app.mongo import MongoClientWrapper
 from app.agents.models import LandlordModel, TenantModel, PropertyModel
 from app.agents import AgentDataInitializer
-from app.conversation_service.generate_response import (
-    get_tenant_streaming_response,
-    get_landlord_streaming_response
-)
-
+from app.conversation_service.meta_controller import MetaState, ExtendedMetaState, stream_conversation_with_state_update, meta_controller_graph
 
 class GroupNegotiationService:
     """群体协商服务 - 管理多个租客与房东的匹配和协商"""
@@ -34,49 +35,45 @@ class GroupNegotiationService:
             collection_name="properties"
         )
         
-        # 活跃的协商会话
-        self.active_negotiations: Dict[str, Dict[str, Any]] = {}
+        # 活跃的协商会话 - 使用ExtendedMetaState来存储所有会话状态
+        self.active_negotiations: Dict[str, ExtendedMetaState] = {}
 
         agent_factory = AgentDataInitializer()
         agent_factory.initialize_all_data()
     
-    async def start_group_negotiation(self, max_tenants: int = 10) -> Dict[str, Any]:
+    async def start_group_negotiation(self, max_tenants: int = 2) -> Dict[str, Any]:
         """
-        启动群体协商：
-        1. 获取所有租客
-        2. 为每个租客找到匹配的房东
-        3. 开始协商对话
+        Start tenant-initiated group negotiation
         """
         try:
-            logger.info("开始群体协商流程...")
+            logger.info("Starting tenant-driven group negotiation process...")
             
-            # 1. 获取所有租客
-            tenants = await self._get_all_tenants(limit=max_tenants)
-            if not tenants:
-                return {"error": "没有找到租客数据"}
-            
-            # 2. 获取所有房东和房产
+            tenants = await self._get_all_tenants(limit=max_tenants)      
             landlords = await self._get_all_landlords()
-            if not landlords:
-                return {"error": "没有找到房东数据"}
             
-            # 3. 为每个租客匹配适合的房东和房产
-            matching_results = await self._match_tenants_to_landlords(tenants, landlords)
-            
-            # 4. 开始协商对话
+            # For each tenant, find best property and start negotiation
             negotiation_sessions = []
-            # 4. 开始协商对话 - 使用异步并发处理
-            tasks = [self._start_negotiation_session(match) for match in matching_results]
-            session_results = await asyncio.gather(*tasks, return_exceptions=True)
             
-            # 过滤成功的会话
-            for result in session_results:
-                if isinstance(result, dict) and result is not None:
-                    negotiation_sessions.append(result)
-                elif isinstance(result, Exception):
-                    logger.error(f"创建协商会话时出错: {str(result)}")
+            for tenant in tenants:
+                try:
+                    # Find best property match
+                    best_match = await self.find_best_property_for_tenant(tenant.tenant_id)
+                    
+                    if best_match:
+                        # Create negotiation session
+                        session = await self.create_negotiation_session(tenant, best_match)
+                        if session:
+                            negotiation_sessions.append(session)
+                            logger.info(f"Created negotiation session for tenant {tenant.name} with property {best_match.get('property_id')}")
+                        else:
+                            logger.warning(f"Failed to create negotiation session for tenant {tenant.tenant_id}")
+                    else:
+                        logger.warning(f"No suitable property found for tenant {tenant.tenant_id}")
+                        
+                except Exception as e:
+                    logger.error(f"Error creating negotiation session for tenant {tenant.tenant_id}: {str(e)}")
             
-            logger.info(f"成功启动 {len(negotiation_sessions)} 个协商会话")
+            logger.info(f"Successfully created {len(negotiation_sessions)} negotiation sessions")
             
             return {
                 "total_tenants": len(tenants),
@@ -84,12 +81,360 @@ class GroupNegotiationService:
                 "successful_matches": len(negotiation_sessions),
                 "sessions": negotiation_sessions
             }
-            
         except Exception as e:
-            logger.error(f"群体协商启动失败: {str(e)}")
-            return {"error": str(e)}
+            logger.error(f"Failed to start group negotiation: {str(e)}")
+            return {
+                "error": f"Failed to start group negotiation: {str(e)}",
+                "total_tenants": 0,
+                "total_landlords": 0, 
+                "successful_matches": 0,
+                "sessions": []
+            }
+        
+    async def create_negotiation_session(self, tenant: TenantModel, property_match: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Create a new negotiation session between tenant and property owner
+        
+        Args:
+            tenant: The tenant model
+            property_match: The matched property with score and reasons
+        
+        Returns:
+            Session metadata including ID and status
+        """
+        try:
+            # 1. Get property and landlord details
+            property_id = property_match.get("property_id")
+            property_data = await self._get_property_by_id(property_id)
+            if not property_data:
+                logger.error(f"Cannot find property with ID {property_id}")
+                return None
+                
+            landlord_id = property_data.landlord_id
+            landlord = await self._get_landlord_by_id(landlord_id)
+            if not landlord:
+                logger.error(f"Cannot find landlord with ID {landlord_id}")
+                return None
+            
+            # 2. Generate a unique session ID
+            session_id = f"session_{uuid.uuid4().hex[:8]}_{int(time.time())}"
+            
+            # 3. Create initial state for meta controller
+            initial_state: ExtendedMetaState = {
+                "session_id": session_id,
+                "messages": [],
+                "active_agent": "tenant",  # Always start with tenant
+                "tenant_data": tenant.model_dump(),
+                "landlord_data": landlord.model_dump(),
+                "property_data": property_data.model_dump(),
+                "is_terminated": False,
+                "termination_reason": "",
+                # Extended state
+                "match_score": property_match.get("score", 0),
+                "match_reasons": property_match.get("reasons", []),
+                "status": "active",
+                "created_at": datetime.now().isoformat()
+            }
+            
+            # 4. Define message callback for logging
+            async def message_callback(msg):
+                logger.info(f"Session {session_id}, role: {msg.get('role', 'unknown')}, active_agent: {msg.get('active_agent', 'unknown')}, message: {msg.get('content', '')}")
+
+            # 5. Define the actual negotiation coroutine
+            async def run_negotiation():
+                try:
+                    async for msg in stream_conversation_with_state_update(
+                        initial_state=initial_state,
+                        callback_fn=message_callback,
+                        graph=meta_controller_graph,
+                    ):
+                        time.sleep(10)  # Simulate async delay
+
+                        # Messages are already added to initial_state in the stream function
+                        # Additional monitoring/broadcasting logic could go here
+                        pass
+                    
+                    # Update status when complete
+                    initial_state["status"] = "completed"
+                    logger.info(f"Session {session_id} completed with {len(initial_state['messages'])} messages")
+                    
+                except asyncio.CancelledError:
+                    logger.info(f"Session {session_id} was cancelled")
+                    initial_state["status"] = "cancelled"
+                    initial_state["termination_reason"] = "manually_cancelled"
+                    
+                except Exception as e:
+                    logger.error(f"Error in session {session_id}: {str(e)}")
+                    initial_state["status"] = "error"
+                    initial_state["termination_reason"] = f"Error: {str(e)}"
+            
+            # 6. Create and store the task
+            task = asyncio.create_task(run_negotiation())
+            initial_state["task"] = task
+            
+            # 7. Store in active negotiations
+            self.active_negotiations[session_id] = initial_state
+            
+            # 8. Return session metadata (without internal state)
+            return {
+                "session_id": session_id,
+                "tenant_name": tenant.name,
+                "landlord_name": landlord.name,
+                "property_address": property_data.display_address,
+                "monthly_rent": property_data.monthly_rent,
+                "match_score": property_match.get("score", 0),
+                "match_reasons": property_match.get("reasons", [])[:3],  # Top 3 reasons
+                "status": "active",
+                "created_at": initial_state["created_at"]
+            }
+        except Exception as e:
+            logger.error(f"Failed to create negotiation session: {str(e)}")
+            return None
     
-    async def _get_all_tenants(self, limit: int = 50) -> List[TenantModel]:
+        
+    async def find_best_property_for_tenant(self, tenant_id: str) -> Optional[Dict[str, Any]]:
+        """
+        根据租客ID找到最适配的房产
+        
+        Args:
+            tenant_id: 租客ID
+            
+        Returns:
+            包含最佳匹配房产信息的字典，包括property_id、匹配分数和匹配原因
+        """
+        try:
+            # 获取租客信息
+            tenant = await self._get_tenant_by_id(tenant_id)
+            if not tenant:
+                logger.error(f"找不到租客: {tenant_id}")
+                return None
+            
+            # 获取所有可用房产
+            all_properties = await self._get_all_properties()
+            if not all_properties:
+                logger.error("没有可用房产")
+                return None
+            
+            def calculate_property_match_score(tenant: TenantModel, property_dict: Dict[str, Any]) -> tuple[float, List[str]]:
+                """
+                计算租客与房产的匹配分数
+                
+                Args:
+                    tenant: 租客模型
+                    property_dict: 房产信息字典
+                    
+                Returns:
+                    匹配分数(0-100)和匹配原因列表
+                """
+                score = 0
+                reasons = []
+                
+                try:
+                    # 预算匹配 (权重: 30分)
+                    monthly_rent = property_dict.get("monthly_rent", 0)
+                    if monthly_rent <= tenant.max_budget:
+                        budget_ratio = monthly_rent / tenant.max_budget if tenant.max_budget > 0 else 0
+                        if budget_ratio <= 0.8:  # 租金不超过预算80%
+                            score += 30
+                            reasons.append(f"租金 ${monthly_rent} 在预算范围内")
+                        elif budget_ratio <= 1.0:  # 租金在预算范围内但较高
+                            score += 20
+                            reasons.append(f"租金 ${monthly_rent} 接近预算上限")
+                    else:
+                        reasons.append(f"租金 ${monthly_rent} 超出预算 ${tenant.max_budget}")
+                    
+                    # 卧室数量匹配 (权重: 20分)
+                    bedrooms = property_dict.get("bedrooms", 0)
+                    if tenant.min_bedrooms <= bedrooms <= tenant.max_bedrooms:
+                        score += 20
+                        reasons.append(f"{bedrooms}房满足需求")
+                    elif bedrooms == tenant.min_bedrooms - 1 or bedrooms == tenant.max_bedrooms + 1:
+                        score += 10
+                        reasons.append(f"{bedrooms}房接近需求")
+                    else:
+                        reasons.append(f"{bedrooms}房不符合需求({tenant.min_bedrooms}-{tenant.max_bedrooms}房)")
+                    
+                    # 地理位置匹配 (权重: 20分)
+                    property_location = property_dict.get("district", "").lower()
+                    if property_location and tenant.preferred_locations:
+                        preferred_lower = [loc.lower() for loc in tenant.preferred_locations]
+                        if property_location in preferred_lower:
+                            score += 20
+                            reasons.append(f"位于偏好区域: {property_location}")
+                        elif any(pref in property_location for pref in preferred_lower):
+                            score += 10
+                            reasons.append(f"位于相关区域: {property_location}")
+                    
+                    # 宠物政策匹配 (权重: 10分)
+                    pets_allowed = property_dict.get("pets_allowed", False)
+                    if tenant.has_pets and pets_allowed:
+                        score += 10
+                        reasons.append("允许宠物")
+                    elif not tenant.has_pets:
+                        score += 5
+                        reasons.append("无宠物限制影响")
+                    elif tenant.has_pets and not pets_allowed:
+                        reasons.append("不允许宠物")
+                    
+                    # 吸烟政策匹配 (权重: 5分)
+                    smoking_allowed = property_dict.get("smoking_allowed", False)
+                    if tenant.is_smoker and smoking_allowed:
+                        score += 5
+                        reasons.append("允许吸烟")
+                    elif not tenant.is_smoker:
+                        score += 2
+                        reasons.append("无吸烟限制影响")
+                    elif tenant.is_smoker and not smoking_allowed:
+                        reasons.append("不允许吸烟")
+                    
+                    # 学生友好 (权重: 5分)
+                    student_friendly = property_dict.get("student_friendly", True)
+                    if tenant.is_student and student_friendly:
+                        score += 5
+                        reasons.append("学生友好")
+                    elif not tenant.is_student:
+                        score += 2
+                        reasons.append("非学生无特殊限制")
+                    
+                    # 房产类型偏好 (权重: 10分)
+                    property_type = property_dict.get("property_type", "")
+                    if property_type:
+                        # 根据租客特征推断房产类型偏好
+                        if tenant.is_student and property_type.lower() in ["apartment", "studio"]:
+                            score += 10
+                            reasons.append(f"适合学生的{property_type}")
+                        elif tenant.num_occupants > 2 and property_type.lower() in ["house", "townhouse"]:
+                            score += 10
+                            reasons.append(f"适合多人居住的{property_type}")
+                        elif property_type.lower() in ["apartment", "condo"]:
+                            score += 5
+                            reasons.append(f"常见房产类型: {property_type}")
+                    
+                    # 额外设施加分
+                    amenities = property_dict.get("amenities", [])
+                    if amenities:
+                        amenity_score = 0
+                        if "parking" in amenities:
+                            amenity_score += 2
+                            reasons.append("包含停车位")
+                        if "gym" in amenities or "fitness" in amenities:
+                            amenity_score += 1
+                            reasons.append("包含健身设施")
+                        if "pool" in amenities:
+                            amenity_score += 1
+                            reasons.append("包含游泳池")
+                        score += min(amenity_score, 5)  # 最多5分设施加分
+                    
+                    # 确保分数在0-100范围内
+                    score = max(0, min(100, score))
+                    
+                    if not reasons:
+                        reasons.append("基础匹配评估")
+                    
+                    return score, reasons
+                    
+                except Exception as e:
+                    logger.error(f"计算匹配分数时出错: {str(e)}")
+                    return 0, ["计算出错"]
+            
+            best_match = None
+            best_score = 0
+            
+            for property_model in all_properties:
+                # 将PropertyModel转换为字典以便计算
+                property_dict = property_model.to_dict()
+                # 计算匹配分数
+                score, reasons = calculate_property_match_score(tenant, property_dict)
+                
+                if score > best_score:
+                    best_score = score
+                    property_dict = await self._get_property_by_id(property_dict["property_id"])
+                    property_dict = property_dict.to_dict()
+                    best_match = {
+                        "property_id": property_dict.get("property_id"),
+                        "property": property_dict,
+                        "score": score,
+                        "reasons": reasons,
+                        "landlord_id": property_dict.get("landlord_id"),
+                        # "landlord_name": property_dict.get("landlord_name", "未知房东"),
+                        "monthly_rent": property_dict.get("price", 0),
+                        "display_address": property_dict.get("display_address", "未知地址")
+                    }
+            
+            if best_match:
+                logger.info(f"为租客 {tenant.name} 找到最佳匹配房产: {best_match['property_id']} (分数: {best_score})")
+                return best_match
+            else:
+                logger.warning(f"未找到适合租客 {tenant.name} 的房产")
+                return None
+                
+        except Exception as e:
+            logger.error(f"为租客 {tenant_id} 匹配房产时出错: {str(e)}")
+            return None
+
+    async def get_session_info(self, session_id: str) -> Optional[Dict[str, Any]]:
+        """获取协商会话信息"""
+        return self.active_negotiations.get(session_id)
+    
+    async def get_all_active_sessions(self) -> List[Dict[str, Any]]:
+        """获取所有活跃的协商会话"""
+        return list(self.active_negotiations.values())
+
+    def get_negotiation_stats(self) -> Dict[str, Any]:
+        """获取协商统计信息"""
+        active_count = len([s for s in self.active_negotiations.values() if s["status"] == "active"])
+        completed_count = len([s for s in self.active_negotiations.values() if s["status"] == "completed"])
+        
+        if not self.active_negotiations:
+            return {"active_sessions": 0, "completed_sessions": 0}
+        
+        # 计算平均消息数
+        total_messages = sum(len(session["messages"]) for session in self.active_negotiations.values())
+        avg_messages = total_messages / len(self.active_negotiations) if self.active_negotiations else 0
+        
+        # 计算平均匹配分数
+        total_score = sum(session["match_score"] for session in self.active_negotiations.values())
+        avg_score = total_score / len(self.active_negotiations) if self.active_negotiations else 0
+        
+        return {
+            "active_sessions": active_count,
+            "completed_sessions": completed_count,
+            "total_sessions": len(self.active_negotiations),
+            "total_messages": total_messages,
+            "average_messages_per_session": round(avg_messages, 2),
+            "average_match_score": round(avg_score, 2)
+        }
+    
+
+    
+    async def _get_tenant_by_id(self, tenant_id: str) -> Optional[TenantModel]:
+        """根据ID获取租客信息"""
+        try:
+            results = self.tenants_db.fetch_documents(1, {"tenant_id": tenant_id})
+            return results[0] if results else None
+        except Exception as e:
+            logger.error(f"获取租客失败: {str(e)}")
+            return None
+    
+    async def _get_landlord_by_id(self, landlord_id: str) -> Optional[LandlordModel]:
+        """根据ID获取房东信息"""
+        try:
+            results = self.landlords_db.fetch_documents(1, {"landlord_id": landlord_id})
+            return results[0] if results else None
+        except Exception as e:
+            logger.error(f"获取房东失败: {str(e)}")
+            return None
+
+    async def _get_property_by_id(self, property_id: str) -> Optional[PropertyModel]:
+        """根据ID获取房产信息"""
+        try:
+            results = self.properties_db.fetch_documents(1, {"property_id": property_id})
+            return results[0] if results else None
+        except Exception as e:
+            logger.error(f"获取房产失败: {str(e)}")
+            return None
+        
+    async def _get_all_tenants(self, limit: int = 0) -> List[TenantModel]:
         """获取所有租客"""
         try:
             results = self.tenants_db.fetch_documents(limit, {})
@@ -107,450 +452,11 @@ class GroupNegotiationService:
             logger.error(f"获取房东失败: {str(e)}")
             return []
     
-    async def _match_tenants_to_landlords(
-        self, 
-        tenants: List[TenantModel], 
-        landlords: List[LandlordModel]
-    ) -> List[Dict[str, Any]]:
-        """为租客匹配合适的房东和房产"""
-        matches = []
-        
-        for tenant in tenants:
-            best_matches = self._find_best_properties_for_tenant(tenant, landlords)
-            
-            # 为每个租客选择最佳匹配
-            if best_matches:
-                top_match = best_matches[0]  # 选择最佳匹配
-                matches.append({
-                    "tenant": tenant,
-                    "landlord": top_match["landlord"],
-                    "property": top_match["property"],
-                    "match_score": top_match["score"],
-                    "match_reasons": top_match["reasons"]
-                })
-        
-        logger.info(f"为 {len(matches)} 个租客找到了匹配的房东")
-        return matches
-    
-    def _find_best_properties_for_tenant(
-        self, 
-        tenant: TenantModel, 
-        landlords: List[LandlordModel]
-    ) -> List[Dict[str, Any]]:
-        """为单个租客找到最佳房产匹配"""
-        potential_matches = []
-        
-        for landlord in landlords:
-            for property_model in landlord.properties:
-                # 使用租客模型的匹配方法
-                match_result = tenant.matches_property_criteria(property_model)
-                
-                if match_result["matches"] and match_result["affordability"]:
-                    potential_matches.append({
-                        "landlord": landlord,
-                        "property": property_model,
-                        "score": match_result["score"],
-                        "reasons": match_result["reasons"],
-                        "distance": match_result.get("distance_to_preferred_km")
-                    })
-        
-        # 按匹配分数排序
-        potential_matches.sort(key=lambda x: x["score"], reverse=True)
-        return potential_matches[:3]  # 返回前3个最佳匹配
-    
-    async def _start_negotiation_session(self, match: Dict[str, Any]) -> Optional[Dict[str, Any]]:
-        """开始单个协商会话"""
+    async def _get_all_properties(self) -> List[PropertyModel]:
+        """获取所有房产"""
         try:
-            tenant = match["tenant"]
-            landlord = match["landlord"]
-            property_model = match["property"]
-            
-            session_id = str(uuid.uuid4())
-            
-            # 创建会话数据
-            session_data = {
-                "session_id": session_id,
-                "tenant_id": tenant.tenant_id,
-                "tenant_name": tenant.name,
-                "landlord_id": landlord.landlord_id,
-                "landlord_name": landlord.name,
-                "property_id": property_model.property_id,
-                "property_address": property_model.display_address,
-                "monthly_rent": property_model.monthly_rent,
-                "property": property_model.to_dict(),  # Store full property data
-                "match_score": match["match_score"],
-                "match_reasons": match["match_reasons"],
-                "status": "active",
-                "created_at": datetime.utcnow().isoformat(),
-                "messages": []
-            }
-            
-            # 保存到活跃协商
-            self.active_negotiations[session_id] = session_data
-            
-            logger.info(f"创建协商会话 {session_id}: {tenant.name} <-> {landlord.name} (房产: {property_model.display_address})")
-            
-            return {
-                "session_id": session_id,
-                "tenant_name": tenant.name,
-                "landlord_name": landlord.name,
-                "property_address": property_model.display_address,
-                "monthly_rent": property_model.monthly_rent,
-                "match_score": match["match_score"]
-            }
-            
-        except Exception as e:
-            logger.error(f"创建协商会话失败: {str(e)}")
-            return None
-    
-
-
-    async def send_message_to_session(
-        self, 
-        session_id: str, 
-        sender_id: str, 
-        message: str,
-        sender_type: str = "tenant",
-        websocket_manager=None
-    ) -> Dict[str, Any]:
-        """向协商会话发送消息"""
-        try:
-            if session_id not in self.active_negotiations:
-                return {"error": "协商会话不存在"}
-            
-            session = self.active_negotiations[session_id]
-            
-            # 添加消息到会话历史
-            message_data = {
-                "sender_id": sender_id,
-                "sender_type": sender_type,
-                "message": message,
-                "timestamp": datetime.utcnow().isoformat()
-            }
-            session["messages"].append(message_data)
-            
-            # 根据发送者类型生成响应
-            if sender_type == "tenant":
-                # 租客发送消息，房东响应
-                landlord = self._get_landlord_by_id(session["landlord_id"])
-                response_generator = get_landlord_streaming_response(
-                    messages=message,
-                    landlord_id=session["landlord_id"],
-                    landlord_name=landlord.name if landlord else "Unknown Landlord",
-                    properties=[session.get("property", {})],
-                    business_info={
-                        "branch_name": landlord.branch_name if landlord else None,
-                        "preferences": landlord.preferences if landlord else {}
-                    }
-                )
-            else:
-                # 房东发送消息，租客响应
-                tenant = self._get_tenant_by_id(session["tenant_id"])
-                response_generator = get_tenant_streaming_response(
-                    messages=message,
-                    tenant_id=session["tenant_id"],
-                    tenant_name=tenant.name if tenant else "Unknown Tenant",
-                    budget_info={
-                        "annual_income": tenant.annual_income if tenant else 0,
-                        "max_budget": tenant.max_budget if tenant else 0,
-                        "has_guarantor": tenant.has_guarantor if tenant else False
-                    },
-                    preferences={
-                        "min_bedrooms": tenant.min_bedrooms if tenant else 1,
-                        "max_bedrooms": tenant.max_bedrooms if tenant else 3,
-                        "preferred_locations": tenant.preferred_locations if tenant else [],
-                        "is_student": tenant.is_student if tenant else False,
-                        "has_pets": tenant.has_pets if tenant else False,
-                        "is_smoker": tenant.is_smoker if tenant else False,
-                        "num_occupants": tenant.num_occupants if tenant else 1
-                    }
-                )
-            
-            # 收集流式响应并实时推送
-            full_response = ""
-            response_chunks = []
-            
-            # 先推送开始响应的消息
-            response_sender_type = "landlord" if sender_type == "tenant" else "tenant"
-            response_sender_name = session["landlord_name"] if sender_type == "tenant" else session["tenant_name"]
-            
-            if websocket_manager:
-                await websocket_manager.send_message_to_session(session_id, {
-                    "type": "response_start",
-                    "sender": response_sender_type,
-                    "sender_name": response_sender_name,
-                    "timestamp": datetime.utcnow().isoformat()
-                })
-            
-            # 流式收集响应并实时推送每个chunk
-            async for chunk in response_generator:
-                full_response += chunk
-                response_chunks.append(chunk)
-                
-                # 实时推送每个chunk到前端
-                if websocket_manager:
-                    await websocket_manager.send_message_to_session(session_id, {
-                        "type": "response_chunk",
-                        "sender": response_sender_type,
-                        "sender_name": response_sender_name,
-                        "chunk": chunk,
-                        "timestamp": datetime.utcnow().isoformat()
-                    })
-            
-            # 推送响应完成消息
-            if websocket_manager:
-                await websocket_manager.send_message_to_session(session_id, {
-                    "type": "response_complete",
-                    "sender": response_sender_type,
-                    "sender_name": response_sender_name,
-                    "full_response": full_response,
-                    "timestamp": datetime.utcnow().isoformat()
-                })
-            
-            # 添加响应到会话历史
-            response_data = {
-                "sender_id": session["landlord_id"] if sender_type == "tenant" else session["tenant_id"],
-                "sender_type": "landlord" if sender_type == "tenant" else "tenant",
-                "message": full_response,
-                "timestamp": datetime.utcnow().isoformat()
-            }
-            session["messages"].append(response_data)
-            
-            return {
-                "session_id": session_id,
-                "response": full_response,
-                "response_chunks": response_chunks,
-                "message_count": len(session["messages"])
-            }
-            
-        except Exception as e:
-            logger.error(f"发送消息失败: {str(e)}")
-            return {"error": str(e)}
-    
-    async def get_session_info(self, session_id: str) -> Optional[Dict[str, Any]]:
-        """获取协商会话信息"""
-        return self.active_negotiations.get(session_id)
-    
-    async def get_all_active_sessions(self) -> List[Dict[str, Any]]:
-        """获取所有活跃的协商会话"""
-        return list(self.active_negotiations.values())
-    
-    async def _generate_tenant_message(self, session: Dict[str, Any]) -> Optional[str]:
-        """让租客Agent根据对话历史自动生成消息"""
-        try:
-            # 获取对话历史
-            messages = session.get("messages", [])
-            
-            # 获取租客信息
-            tenant_id = session["tenant_id"]
-            tenant = self._get_tenant_by_id(tenant_id)
-            
-            if not tenant:
-                return None
-            
-            # 构建对话历史字符串
-            conversation_history = ""
-            for msg in messages[-8:]:  # 取最近8条消息保持上下文
-                sender = "Tenant" if msg["sender_type"] == "tenant" else "Landlord"
-                conversation_history += f"{sender}: {msg['message']}\n"
-            
-            # 如果是第一条消息，让租客自我介绍
-            if not messages:
-                property_address = session["property_address"]
-                monthly_rent = session["monthly_rent"]
-                
-                intro_message = f"Hi, I'm {tenant.name}. I'm very interested in your property at {property_address}. "
-                intro_message += f"I have an annual income of £{tenant.annual_income:,.0f}"
-                if tenant.has_guarantor:
-                    intro_message += " and I have a guarantor for additional security"
-                intro_message += f". My budget is up to £{tenant.max_budget:,.0f} per month, and the rent of £{monthly_rent} fits well within my range. "
-                intro_message += "Could you tell me more about the property details and viewing arrangements?"
-                
-                return intro_message
-            
-            # 使用租客Agent生成响应
-            response_generator = get_tenant_streaming_response(
-                messages=conversation_history,
-                tenant_id=tenant_id,
-                tenant_name=tenant.name,
-                budget_info={
-                    "annual_income": tenant.annual_income,
-                    "max_budget": tenant.max_budget,
-                    "has_guarantor": tenant.has_guarantor
-                },
-                preferences={
-                    "min_bedrooms": tenant.min_bedrooms,
-                    "max_bedrooms": tenant.max_bedrooms,
-                    "preferred_locations": tenant.preferred_locations,
-                    "is_student": tenant.is_student,
-                    "has_pets": tenant.has_pets,
-                    "is_smoker": tenant.is_smoker,
-                    "num_occupants": tenant.num_occupants
-                }
-            )
-            
-            # 收集流式响应
-            full_response = ""
-            async for chunk in response_generator:
-                full_response += chunk
-            
-            return full_response.strip() if full_response.strip() else None
-            
-        except Exception as e:
-            logger.error(f"生成租客消息失败: {str(e)}")
-            return None
-    
-    async def start_auto_negotiation_live(self, websocket_manager=None) -> Dict[str, Any]:
-        """启动实时自动协商 - 通过WebSocket实时推送每一条消息，无轮次限制"""
-        try:
-            if not self.active_negotiations:
-                return {"error": "没有活跃的协商会话"}
-            
-            if not websocket_manager:
-                return {"error": "WebSocket管理器未提供"}
-            
-            logger.info("开始实时自动协商，无轮次限制")
-            
-            # 广播开始消息
-            await websocket_manager.broadcast_to_all_sessions({
-                "type": "auto_negotiation_start",
-                "unlimited_rounds": True,
-                "total_sessions": len(self.active_negotiations),
-                "timestamp": datetime.now().isoformat()
-            })
-            
-            # 持续对话，直到用户手动停止
-            round_num = 0
-            try:
-                while True:  # 无限循环，持续对话
-                    round_num += 1
-                    logger.info(f"开始第 {round_num} 轮实时自动对话")
-                    
-                    # 广播轮次开始
-                    await websocket_manager.broadcast_to_all_sessions({
-                        "type": "round_start",
-                        "round_number": round_num,
-                        "timestamp": datetime.now().isoformat()
-                    })
-                    
-                    # 对每个会话进行一次对话
-                    for session_id, session in self.active_negotiations.items():
-                        if session["status"] != "active":
-                            continue
-                        
-                        # 租客继续对话
-                        tenant_msg = await self._generate_tenant_message(session)
-                        if tenant_msg:
-                            # 推送租客消息到前端
-                            await websocket_manager.send_message_to_session(session_id, {
-                                "type": "tenant_message",
-                                "sender": "tenant",
-                                "sender_name": session["tenant_name"],
-                                "message": tenant_msg,
-                                "round": round_num,
-                                "timestamp": datetime.now().isoformat()
-                            })
-                            
-                            # 发送消息并获取响应（这里会通过websocket实时推送房东的响应）
-                            result = await self.send_message_to_session(
-                                session_id=session_id,
-                                sender_id=session["tenant_id"],
-                                message=tenant_msg,
-                                sender_type="tenant",
-                                websocket_manager=websocket_manager
-                            )
-                            
-                            if "error" in result:
-                                # 推送错误信息
-                                await websocket_manager.send_message_to_session(session_id, {
-                                    "type": "error",
-                                    "message": result["error"],
-                                    "round": round_num,
-                                    "timestamp": datetime.now().isoformat()
-                                })
-                    
-                    # 广播轮次结束
-                    await websocket_manager.broadcast_to_all_sessions({
-                        "type": "round_complete",
-                        "round_number": round_num,
-                        "timestamp": datetime.now().isoformat()
-                    })
-                    
-                    # 添加短暂延迟，避免过于频繁的消息
-                    await asyncio.sleep(2)
-                    
-            except asyncio.CancelledError:
-                # 处理取消事件 - 当用户停止自动对话时
-                await websocket_manager.broadcast_to_all_sessions({
-                    "type": "auto_negotiation_cancelled",
-                    "completed_rounds": round_num,
-                    "total_sessions": len(self.active_negotiations),
-                    "timestamp": datetime.now().isoformat()
-                })
-                
-                return {
-                    "message": f"用户取消了自动协商，已完成 {round_num} 轮对话",
-                    "total_sessions": len(self.active_negotiations),
-                    "method": "websocket_live"
-                }
-            
-        except Exception as e:
-            logger.error(f"实时自动协商失败: {str(e)}")
-            # 广播错误消息
-            if websocket_manager:
-                await websocket_manager.broadcast_to_all_sessions({
-                    "type": "auto_negotiation_error",
-                    "error": str(e),
-                    "timestamp": datetime.now().isoformat()
-                })
-            return {"error": str(e)}
-
-    def get_negotiation_stats(self) -> Dict[str, Any]:
-        """获取协商统计信息"""
-        active_count = len(self.active_negotiations)
-        
-        if active_count == 0:
-            return {"active_sessions": 0}
-        
-        # 计算平均消息数
-        total_messages = sum(len(session["messages"]) for session in self.active_negotiations.values())
-        avg_messages = total_messages / active_count if active_count > 0 else 0
-        
-        # 计算平均匹配分数
-        total_score = sum(session["match_score"] for session in self.active_negotiations.values())
-        avg_score = total_score / active_count if active_count > 0 else 0
-        
-        return {
-            "active_sessions": active_count,
-            "total_messages": total_messages,
-            "average_messages_per_session": round(avg_messages, 2),
-            "average_match_score": round(avg_score, 2)
-        }
-    
-    
-    def _get_tenant_by_id(self, tenant_id: str) -> Optional[TenantModel]:
-        """根据ID获取租客信息"""
-        try:
-            results = self.tenants_db.fetch_documents(1, {"tenant_id": tenant_id})
-            return results[0] if results else None
-        except Exception as e:
-            logger.error(f"获取租客失败: {str(e)}")
-            return None
-    
-    def _get_landlord_by_id(self, landlord_id: str) -> Optional[LandlordModel]:
-        """根据ID获取房东信息"""
-        try:
-            results = self.landlords_db.fetch_documents(1, {"landlord_id": landlord_id})
-            return results[0] if results else None
-        except Exception as e:
-            logger.error(f"获取房东失败: {str(e)}")
-            return None
-
-    def _get_property_by_id(self, property_id: str) -> Optional[PropertyModel]:
-        """根据ID获取房产信息"""
-        try:
-            results = self.properties_db.fetch_documents(1, {"property_id": property_id})
-            return results[0] if results else None
+            results = self.properties_db.fetch_documents(0, {})  # 0 means no limit
+            return results  # MongoDB client now returns Pydantic models directly
         except Exception as e:
             logger.error(f"获取房产失败: {str(e)}")
-            return None
+            return []

@@ -5,7 +5,6 @@ from app.conversation_service import tools
 from app.config import config
 from app.conversation_service.prompt import (
     LANDLORD_AGENT_PROMPT,
-    PROPERTY_MATCHING_PROMPT,
     RENTAL_SUMMARY_PROMPT,
 )
 
@@ -36,18 +35,7 @@ def get_landlord_agent_chain():
     return prompt | model
 
 
-def get_property_matching_chain():
-    """Get the chain for property matching analysis"""
-    model = get_chat_model()
-    
-    prompt = ChatPromptTemplate.from_messages(
-        [
-            ("human", PROPERTY_MATCHING_PROMPT.prompt),
-        ],
-        template_format="jinja2",
-    )
-
-    return prompt | model
+# Property matching chain removed - tenant is now responsible for all matching
 
 
 def get_rental_conversation_summary_chain(summary: str = ""):

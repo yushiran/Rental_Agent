@@ -10,14 +10,13 @@ class LandlordState(MessagesState):
     phone: Optional[str]
     
     # Property and business information
-    properties: List[Dict[str, Any]]
-    preferences: Dict[str, Any]
+    properties: List[Dict[str, Any]]  # Properties owned/managed by this landlord
+    preferences: Dict[str, Any]  # Landlord preferences (e.g., payment terms, lease duration)
     
     # Conversation management
     conversation_context: str
     summary: str
-    current_property_focus: Optional[str]
-    tenant_requirements: Dict[str, Any]
+    current_property_focus: Optional[str]  # Currently discussed property (already matched by tenant)
 
 
 def landlord_state_to_str(state: LandlordState) -> str:
@@ -39,6 +38,6 @@ LandlordState(
     branch_name={state.get("branch_name", "N/A")},
     phone={state.get("phone", "N/A")},
     properties={properties_info},
-    current_property_focus={current_focus},
+    current_property_focus={current_focus}, 
     conversation={conversation}
 )"""

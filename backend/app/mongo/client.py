@@ -170,7 +170,7 @@ class MongoClientWrapper(Generic[T]):
         """
         try:
             documents = list(self.collection.find(query).limit(limit))
-            logger.debug(f"Fetched {len(documents)} documents with query: {query}")
+            # logger.debug(f"Fetched {len(documents)} documents with query: {query}")
             return self.__parse_documents(documents)
         except Exception as e:
             logger.error(f"Error fetching documents: {e}")

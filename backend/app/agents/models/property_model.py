@@ -48,6 +48,7 @@ class PropertyModel(BaseModel):
     # Landlord/agent information (from real data)
     customer: Optional[Dict[str, Any]] = None
     formatted_branch_name: Optional[str] = None
+    landlord_id: Optional[str] = None  # For linking to landlord data
     
     def model_post_init(self, __context) -> None:
         """Post-initialization validation and processing"""

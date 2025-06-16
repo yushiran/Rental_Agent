@@ -1,7 +1,7 @@
 {
     "dockerfile_lines": [],
     "graphs": {
-      "agent": "./app/conversation_service/tenant_workflow/graph.py:tenant_graph",
+      "meta_controller": "./app/conversation_service/meta_controller.py:create_meta_controller_graph",
       "tenant": "./app/conversation_service/tenant_workflow/graph.py:tenant_graph",
       "landlord": "./app/conversation_service/landlord_workflow/graph.py:landlord_graph"
     },

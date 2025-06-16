@@ -10,7 +10,6 @@ from app.conversation_service.landlord_workflow import (
 from app.conversation_service.landlord_workflow import (
     retriever_node,
     landlord_agent_node,
-    property_matching_node,
     summarize_conversation_node,
     connector_node,
 )
@@ -24,7 +23,6 @@ def create_landlord_workflow_graph():
 
     # Add all nodes
     graph_builder.add_node("landlord_agent_node", landlord_agent_node)
-    graph_builder.add_node("property_matching_node", property_matching_node)
     graph_builder.add_node("retriever_node", retriever_node)
     graph_builder.add_node("summarize_conversation_node", summarize_conversation_node)
     graph_builder.add_node("connector_node", connector_node)
@@ -40,7 +38,7 @@ def create_landlord_workflow_graph():
         }
     )
     graph_builder.add_edge("retriever_node", "landlord_agent_node")
-    graph_builder.add_conditional_edges("property_matching_node", should_summarize_landlord_conversation)
+    graph_builder.add_conditional_edges("landlord_agent_node", should_summarize_landlord_conversation)
     graph_builder.add_edge("summarize_conversation_node", END)
     
     return graph_builder

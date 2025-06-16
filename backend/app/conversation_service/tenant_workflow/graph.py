@@ -6,6 +6,7 @@ from langgraph.prebuilt import tools_condition
 from app.conversation_service.tenant_workflow import (
     should_summarize_tenant_conversation,
     should_continue_tenant_conversation,
+    should_do_property_matching,
 )
 from app.conversation_service.tenant_workflow import (
     retriever_node,
@@ -32,7 +33,20 @@ def create_tenant_workflow_graph():
     graph_builder.add_node("connector_node", connector_node)
     
     # Define the flow
-    graph_builder.add_edge(START, "tenant_agent_node")
+    # 首先检查是否需要进行房产匹配
+    graph_builder.add_conditional_edges(
+        START,
+        should_do_property_matching,
+        {
+            "property_matching": "property_matching_node",
+            "conversation": "tenant_agent_node"
+        }
+    )
+    
+    # 从匹配节点到会话节点
+    graph_builder.add_edge("property_matching_node", "tenant_agent_node")
+    
+    # 会话节点可能需要使用工具
     graph_builder.add_conditional_edges(
         "tenant_agent_node",
         tools_condition,
@@ -41,8 +55,8 @@ def create_tenant_workflow_graph():
             END: END
         }
     )
+    
     graph_builder.add_edge("retriever_node", "tenant_agent_node")
-    graph_builder.add_conditional_edges("property_matching_node", should_summarize_tenant_conversation)
     graph_builder.add_conditional_edges("viewing_feedback_analysis_node", should_summarize_tenant_conversation)
     graph_builder.add_edge("summarize_conversation_node", END)
     

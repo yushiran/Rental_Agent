@@ -48,7 +48,19 @@ class AgentDataInitializer:
             with open(file_path, 'r', encoding='utf-8') as f:
                 data = json.load(f)
             logger.info(f"Successfully loaded {len(data)} property records")
-            return data
+            
+            # Deduplicate properties by property ID
+            unique_properties = {}
+            for prop in data:
+                # Using property ID as the unique identifier
+                # If no proper ID exists, create a composite key from address and price
+                prop_id = prop.get('id') or prop.get('propertyId') or f"{prop.get('displayAddress', '')}-{prop.get('price', '')}"
+                unique_properties[prop_id] = prop
+            
+            deduplicated_data = list(unique_properties.values())
+            logger.info(f"After deduplication: {len(deduplicated_data)} unique property records")
+            return deduplicated_data
+            
         except Exception as e:
             logger.error(f"Failed to load data: {e}")
             return []
@@ -268,7 +280,7 @@ class AgentDataInitializer:
         logger.info("Data initialization completed!")
         
         # 6. Print statistics
-        self.print_statistics()
+        # self.print_statistics()
     
     def print_statistics(self):
         """Print data statistics"""
