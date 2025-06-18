@@ -6,7 +6,9 @@ between tenant and landlord agents, with proper streaming support and terminatio
 """
 from typing import List, Dict, Any, TypedDict, Literal
 import asyncio
+from langgraph.checkpoint.mongodb.aio import AsyncMongoDBSaver
 
+from app.config import config
 from langgraph.graph import END, StateGraph
 from loguru import logger
 
@@ -79,7 +81,7 @@ def tenant_graph_output_adapter(output: Dict[str, Any], state: MetaState):
     if "messages" in output and output["messages"]:
         last_message = output["messages"][-1]
         state["messages"].append({
-            "role": "ai",  # Use "ai" for LangChain compatibility
+            "role": "user",  # Use "ai" for LangChain compatibility
             "content": last_message.content
         })
     
@@ -118,7 +120,7 @@ def landlord_graph_output_adapter(output: Dict[str, Any], state: MetaState):
     if "messages" in output and output["messages"]:
         last_message = output["messages"][-1]
         state["messages"].append({
-            "role": "ai",  # Use "ai" for LangChain compatibility
+            "role": "assistant",  # Use "ai" for LangChain compatibility
             "content": last_message.content
         })
     
@@ -129,14 +131,28 @@ def landlord_graph_output_adapter(output: Dict[str, Any], state: MetaState):
 
 async def call_tenant(state: MetaState) -> MetaState:
     """Call tenant agent graph and process results."""
-    tenant_graph = create_tenant_workflow_graph().compile()
+    async with AsyncMongoDBSaver.from_conn_string(
+        conn_string=config.mongodb.connection_string,
+        db_name=config.mongodb.database,
+        checkpoint_collection_name=config.mongodb.mongo_state_checkpoint_collection,
+        writes_collection_name=config.mongodb.mongo_state_writes_collection,
+    ) as checkpointer:
+        graph = create_tenant_workflow_graph()
+        tenant_graph = graph.compile(checkpointer=checkpointer)
     intermediate = await tenant_graph.ainvoke(tenant_graph_input_adapter(state))
     return tenant_graph_output_adapter(intermediate, state)
 
 
 async def call_landlord(state: MetaState) -> MetaState:
     """Call landlord agent graph and process results."""
-    landlord_graph = create_landlord_workflow_graph().compile()
+    async with AsyncMongoDBSaver.from_conn_string(
+        conn_string=config.mongodb.connection_string,
+        db_name=config.mongodb.database,
+        checkpoint_collection_name=config.mongodb.mongo_state_checkpoint_collection,
+        writes_collection_name=config.mongodb.mongo_state_writes_collection,
+    ) as checkpointer:
+        graph = create_landlord_workflow_graph()
+        landlord_graph = graph.compile(checkpointer=checkpointer)
     intermediate = await landlord_graph.ainvoke(landlord_graph_input_adapter(state))
     return landlord_graph_output_adapter(intermediate, state)
 

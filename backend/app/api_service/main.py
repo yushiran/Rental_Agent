@@ -15,6 +15,7 @@ from pydantic import BaseModel
 
 from app.conversation_service.reset_conversation import reset_conversation_state
 from app.utils.opik_utils import configure
+from app.mongo import initialize_database
 
 from .group_negotiation import GroupNegotiationService
 from .websocket import ConnectionManager
@@ -25,6 +26,11 @@ configure()
 async def lifespan(app: FastAPI):
     """处理应用启动和关闭事件"""
     logger.info("启动群体Agent沟通API")
+
+    # 初始化数据库
+    await initialize_database()
+    await start_auto_negotiation_live(max_tenants=1)
+
     yield
     logger.info("关闭群体Agent沟通API")
     opik_tracer = OpikTracer()

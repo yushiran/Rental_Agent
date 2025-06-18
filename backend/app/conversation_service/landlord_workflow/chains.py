@@ -19,11 +19,53 @@ def get_chat_model(temperature: float = 0.7, model_name: str = "default") -> Cha
     )
 
 
-def get_landlord_agent_chain():
-    """Get the chain for landlord agent responses"""
+# def get_landlord_agent_chain():
+#     """Get the chain for landlord agent responses"""
+#     model = get_chat_model()
+#     model = model.bind_tools(tools)
+    
+#     prompt = ChatPromptTemplate.from_messages(
+#         [
+#             ("system", LANDLORD_AGENT_PROMPT.prompt),
+#             MessagesPlaceholder(variable_name="messages"),
+#         ],
+#         template_format="jinja2",
+#     )
+
+#     return prompt | model
+
+
+def get_landlord_agent_chain(landlord_info=None, property_info=None, conversation_data=None):
+    """
+    Get the chain for landlord agent responses with proper variable handling
+    
+    Args:
+        landlord_info (dict): Contains landlord details (id, name, branch, etc.)
+        property_info (dict): Information about the property being discussed
+        conversation_data (dict): Context and summary of the conversation
+    """
     model = get_chat_model()
     model = model.bind_tools(tools)
     
+    # Default values to prevent errors when variables are missing
+    landlord_info = landlord_info or {}
+    property_info = property_info or {}
+    conversation_data = conversation_data or {}
+    
+    # Create a template context with all variables the prompt might need
+    template_context = {
+        "landlord_id": landlord_info.get("landlord_id", ""),
+        "landlord_name": landlord_info.get("name", ""),
+        "branch_name": landlord_info.get("branch_name", ""),
+        "phone": landlord_info.get("phone", ""),
+        "properties": landlord_info.get("properties", "No properties listed"),
+        "preferences": landlord_info.get("preferences", "No specific preferences"),
+        "current_property_focus": property_info.get("address", "Not specified"),
+        "conversation_context": conversation_data.get("conversation_context", "No previous context"),
+        "summary": conversation_data.get("summary", "")
+    }
+    
+    # Create the prompt template with the system message including all variables
     prompt = ChatPromptTemplate.from_messages(
         [
             ("system", LANDLORD_AGENT_PROMPT.prompt),
@@ -31,17 +73,35 @@ def get_landlord_agent_chain():
         ],
         template_format="jinja2",
     )
+    
+    # Bind the template context to the prompt
+    formatted_prompt = prompt.partial(**template_context)
 
-    return prompt | model
+    # print(f"Formatted Prompt: {formatted_prompt}")
+
+    return formatted_prompt | model
 
 
 # Property matching chain removed - tenant is now responsible for all matching
 
 
-def get_rental_conversation_summary_chain(summary: str = ""):
-    """Get the chain for summarizing rental conversations"""
+def get_rental_conversation_summary_chain(conversation_data=None, debug_prompt=False):
+    """
+    Get the chain for summarizing rental conversations
+    
+    Args:
+        conversation_data (dict): Contains conversation context and existing summary
+        debug_prompt (bool): If True, will print the formatted prompt for debugging
+    """
     model = get_chat_model()
-
+    
+    conversation_data = conversation_data or {}
+    
+    template_context = {
+        "conversation_context": conversation_data.get("conversation_context", "No previous context"),
+        "summary": conversation_data.get("summary", "")
+    }
+    
     prompt = ChatPromptTemplate.from_messages(
         [
             MessagesPlaceholder(variable_name="messages"),
@@ -49,5 +109,7 @@ def get_rental_conversation_summary_chain(summary: str = ""):
         ],
         template_format="jinja2",
     )
-
-    return prompt | model
+    
+    formatted_prompt = prompt.partial(**template_context)
+    
+    return formatted_prompt | model
