@@ -156,34 +156,71 @@ async def call_landlord(state: MetaState) -> MetaState:
     intermediate = await landlord_graph.ainvoke(landlord_graph_input_adapter(state))
     return landlord_graph_output_adapter(intermediate, state)
 
-
 def should_continue(state: MetaState) -> str:
-    """Determine if the conversation should continue or terminate."""
+    """确定对话是否应继续或终止。"""
+    # 已经标记为终止的情况
     if state.get("is_terminated", False):
         return "end"
 
-    # Check for termination signals in the last message
-    if state["messages"]:
-        last_msg = state["messages"][-1]["content"].lower()
-
-        # Check for agreement signals
-        if any(keyword in last_msg for keyword in ["agreement", "contract", "deal", "offer accepted"]):
-            state["is_terminated"] = True
-            state["termination_reason"] = "agreement_reached"
-            return "end"
+    # 检查最大对话轮数
+    if len(state["messages"]) > 20:
+        state["is_terminated"] = True
+        state["termination_reason"] = "max_turns_reached"
+        return "end"
+    
+    # 需要至少3轮对话
+    if len(state["messages"]) < 3:
+        return "continue"
+    
+    # 获取最近两条消息以分析
+    last_messages = state["messages"][-3:]
+    
+    # 拒绝信号词组 - 非常明确的短语
+    decline_phrases = [
+        "i must decline this property",
+        "i must decline your application", 
+        "i've decided to look for other options",
+        "i've decided to pursue other applicants",
+        "i cannot proceed with this rental",
+        "i cannot proceed with your rental request"
+    ]
+    
+    # 计数看看连续几条消息中包含拒绝短语的数量
+    decline_count = sum(
+        1 for msg in last_messages 
+        if any(phrase in msg.get("content", "").lower() for phrase in decline_phrases)
+    )
+    
+    # 如果最近三条消息中有两条或以上包含拒绝短语，终止对话
+    if decline_count >= 2:
+        state["is_terminated"] = True
+        state["termination_reason"] = "mutual_rejection"
+        return "end"
         
-        # Check for rejection signals
-        if any(keyword in last_msg for keyword in ["not interested", "reject", "stop", "no thanks"]):
-            state["is_terminated"] = True
-            state["termination_reason"] = "conversation_rejected"
-            return "end"
+    # 检查是否一方做出明确拒绝，另一方回应了确认词
+    for i in range(len(state["messages"]) - 1):
+        curr_msg = state["messages"][i]
+        next_msg = state["messages"][i + 1]
         
-        # Check for maximum conversation length
-        if len(state["messages"]) > 30:  # Arbitrary limit to prevent infinite conversations
+        # 检查当前消息是否包含拒绝短语
+        curr_has_decline = any(
+            phrase in curr_msg.get("content", "").lower() 
+            for phrase in decline_phrases
+        )
+        
+        # 下一条消息是否表示确认理解
+        next_has_acknowledgment = any(
+            word in next_msg.get("content", "").lower() 
+            for word in ["understand", "okay", "alright", "i see", "thank you", "best of luck"]
+        )
+        
+        # 如果一方拒绝且另一方确认，终止对话
+        if curr_has_decline and next_has_acknowledgment:
             state["is_terminated"] = True
-            state["termination_reason"] = "max_turns_reached"
+            state["termination_reason"] = "rejection_acknowledged"
             return "end"
     
+    # 默认继续对话
     return "continue"
 
 

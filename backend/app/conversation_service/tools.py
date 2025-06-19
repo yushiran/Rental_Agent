@@ -38,6 +38,10 @@ def generate_rental_contract(
     This tool creates a professional rental agreement PDF by filling in the provided 
     rental information into a LaTeX template and compiling it to PDF.
     
+    Use this tool when a tenant and landlord have reached an agreement and need to formalize
+    the contract. The agent should extract all required information from the conversation 
+    history before calling this tool.
+    
     Args:
         agreement_date: Date when the agreement is signed (format: DD/MM/YYYY)
         landlord_name: Full name of the landlord
@@ -53,6 +57,52 @@ def generate_rental_contract(
     Returns:
         str: Success message with the path to the generated PDF file
     """
+    # Validate required parameters
+    required_params = {
+        "landlord_name": landlord_name,
+        "tenant_name": tenant_name,
+        "property_address": property_address,
+        "monthly_rent": monthly_rent,
+    }
+    
+    missing_params = [key for key, value in required_params.items() if not value]
+    if missing_params:
+        return f"❌ Cannot generate contract: Missing required information: {', '.join(missing_params)}"
+    
+    # Set default values for optional parameters
+    if not agreement_date:
+        agreement_date = datetime.now().strftime("%d/%m/%Y")
+    
+    if not security_deposit:
+        # Default security deposit to 5 weeks rent if not specified
+        try:
+            rent_value = monthly_rent.replace("£", "").replace(",", "")
+            monthly_rent_value = float(rent_value)
+            security_deposit = f"£{(monthly_rent_value * 5/4.3):.2f}"
+        except:
+            security_deposit = monthly_rent  # Fallback to same as monthly rent
+            
+    if not start_date:
+        # Default to first day of next month
+        next_month = datetime.now().replace(day=28) + datetime.timedelta(days=4)
+        start_date = next_month.replace(day=1).strftime("%d/%m/%Y")
+    
+    if not tenancy_duration:
+        tenancy_duration = "12 months"
+        
+    if not tenancy_end_date:
+        # Try to calculate end date from start date and duration
+        try:
+            start = datetime.strptime(start_date, "%d/%m/%Y")
+            months = int(tenancy_duration.split()[0])
+            end = start.replace(month=((start.month - 1 + months) % 12) + 1, 
+                              year=start.year + ((start.month - 1 + months) // 12))
+            tenancy_end_date = end.strftime("%d/%m/%Y")
+        except:
+            # Fallback to one year later
+            end_date = datetime.now().replace(year=datetime.now().year + 1)
+            tenancy_end_date = end_date.strftime("%d/%m/%Y")
+    
     try:
         # Create rental information object
         rental_info = RentalInfo(
@@ -79,16 +129,19 @@ def generate_rental_contract(
         # Generate unique filename with timestamp if default is used
         if output_filename == "rental_agreement.pdf":
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            output_filename = f"rental_agreement_{timestamp}.pdf"
+            tenant_id = tenant_name.lower().replace(" ", "_")
+            output_filename = f"rental_agreement_{tenant_id}_{timestamp}.pdf"
         
         output_path = os.path.join(output_dir, output_filename)
         
         # Generate the PDF
         result_path = latex_generator.generate_pdf(rental_info, output_path)
         
-        return f"✅ Rental agreement PDF successfully generated at: {result_path}"
+        return f"✅ Rental agreement PDF successfully generated at: {result_path}\n\nThe contract includes:\n- Landlord: {landlord_name}\n- Tenant: {tenant_name}\n- Property: {property_address}\n- Monthly Rent: {monthly_rent}\n- Start Date: {start_date}\n- Duration: {tenancy_duration}"
         
     except Exception as e:
-        return f"❌ Failed to generate rental agreement PDF: {str(e)}"
+        import traceback
+        error_details = traceback.format_exc()
+        return f"❌ Failed to generate rental agreement PDF: {str(e)}\n\nError details: {error_details}"
 
 tools = [retriever_tool, generate_rental_contract]

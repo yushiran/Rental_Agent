@@ -148,7 +148,7 @@ class GroupNegotiationService:
                         callback_fn=message_callback,
                         graph=meta_controller_graph,
                     ):
-                        time.sleep(5)  # Simulate async delay
+                        # time.sleep(5)  # Simulate async delay
 
                         # Messages are already added to initial_state in the stream function
                         # Additional monitoring/broadcasting logic could go here
