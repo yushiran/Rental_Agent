@@ -1,0 +1,46 @@
+[gd_scene load_steps=4 format=3 uid="uid://dcyj7fwt7o4h4"]
+
+[ext_resource type="Script" path="res://scripts/Character.gd" id="1_6o5w3"]
+[ext_resource type="Script" path="res://scripts/SpeechBubble.gd" id="3_gnsqp"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_3yw7x"]
+radius = 8.0
+
+[node name="Character" type="CharacterBody2D"]
+y_sort_enabled = true
+script = ExtResource("1_6o5w3")
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("CircleShape2D_3yw7x")
+
+[node name="NavigationAgent2D" type="NavigationAgent2D" parent="."]
+path_desired_distance = 4.0
+target_desired_distance = 4.0
+avoidance_enabled = true
+radius = 12.0
+
+[node name="NameLabel" type="Label" parent="."]
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -58.5
+offset_top = 15.0
+offset_right = 58.5
+offset_bottom = 41.0
+grow_horizontal = 2
+grow_vertical = 0
+text = "Character Name"
+horizontal_alignment = 1
+
+[node name="SpeechBubble" type="Node2D" parent="."]
+position = Vector2(0, -60)
+script = ExtResource("3_gnsqp")
+
+[node name="EmotionIcon" type="Sprite2D" parent="."]
+visible = false
+position = Vector2(0, -50)
+scale = Vector2(0.6, 0.6)

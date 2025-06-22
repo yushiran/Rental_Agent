@@ -18,9 +18,9 @@ from app.conversation_service.landlord_workflow.graph import create_landlord_wor
 
 class MetaState(TypedDict):
     """State maintained by the meta-controller graph."""
-    # 必需字段 - 基本对话状态
+    # Required fields - Basic conversation state
     session_id: str  # Unique identifier for the conversation session
-    messages: List[Dict[str, Any]]  # 历史消息的快照
+    messages: List[Dict[str, Any]]  # Snapshot of message history
     active_agent: Literal["tenant", "landlord"]
     tenant_data: Dict[str, Any]
     landlord_data: Dict[str, Any]
@@ -34,12 +34,12 @@ class ExtendedMetaState(MetaState, total=False):
     Extended state with additional optional fields for group negotiations.
     Inherits required fields from MetaState and adds optional fields.
     """
-    # 可选字段 - 用于群组协商和会话管理
-    match_score: float  # 匹配分数
-    match_reasons: List[str]  # 匹配原因
-    status: str  # 会话状态 (active, completed, etc.)
-    created_at: str  # 创建时间
-    task: Any  # 关联的异步任务，使用Any以避免循环导入
+    # Optional fields - For group negotiations and session management
+    match_score: float  # Match score between tenant and property
+    match_reasons: List[str]  # Reasons for matching
+    status: str  # Session status (active, completed, etc.)
+    created_at: str  # Creation timestamp
+    task: Any  # Associated async task, Any type to avoid circular imports
 
 
 def tenant_graph_input_adapter(state: MetaState):
