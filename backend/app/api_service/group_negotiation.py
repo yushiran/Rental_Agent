@@ -21,7 +21,7 @@ from app.conversation_service.meta_controller import MetaState, ExtendedMetaStat
 class GroupNegotiationService:
     """群体协商服务 - 管理多个租客与房东的匹配和协商"""
     
-    def __init__(self):
+    def __init__(self, websocket_manager=None):
         self.landlords_db = MongoClientWrapper(
             model=LandlordModel,
             collection_name="landlords"
@@ -37,10 +37,59 @@ class GroupNegotiationService:
         
         # 活跃的协商会话 - 使用ExtendedMetaState来存储所有会话状态
         self.active_negotiations: Dict[str, ExtendedMetaState] = {}
+        
+        # WebSocket管理器，用于实时通信
+        self.websocket_manager = websocket_manager
 
-        agent_factory = AgentDataInitializer()
-        agent_factory.initialize_all_data()
+        # 不在初始化时自动创建数据，让API控制
+        # agent_factory = AgentDataInitializer()
+        # agent_factory.initialize_all_data()
     
+    async def start_group_negotiation_with_tenants(self, tenants: List[TenantModel]) -> Dict[str, Any]:
+        """
+        基于给定的租客列表开始群体协商
+        """
+        try:
+            logger.info(f"Starting group negotiation with {len(tenants)} tenants...")
+            
+            # 为每个租客找到最佳房产并创建协商会话
+            negotiation_sessions = []
+            
+            for tenant in tenants:
+                try:
+                    # 找到最佳房产匹配
+                    best_match = await self.find_best_property_for_tenant(tenant.tenant_id)
+                    
+                    if best_match:
+                        # 创建协商会话
+                        session = await self.create_negotiation_session(tenant, best_match)
+                        if session:
+                            negotiation_sessions.append(session)
+                            logger.info(f"Created negotiation session for tenant {tenant.name} with property {best_match.get('property_id')}")
+                        else:
+                            logger.warning(f"Failed to create negotiation session for tenant {tenant.tenant_id}")
+                    else:
+                        logger.warning(f"No suitable property found for tenant {tenant.tenant_id}")
+                        
+                except Exception as e:
+                    logger.error(f"Error creating negotiation session for tenant {tenant.tenant_id}: {str(e)}")
+            
+            logger.info(f"Successfully created {len(negotiation_sessions)} negotiation sessions")
+            
+            return {
+                "total_tenants": len(tenants),
+                "successful_matches": len(negotiation_sessions),
+                "sessions": negotiation_sessions
+            }
+        except Exception as e:
+            logger.error(f"Failed to start group negotiation: {str(e)}")
+            return {
+                "error": f"Failed to start group negotiation: {str(e)}",
+                "total_tenants": 0,
+                "successful_matches": 0,
+                "sessions": []
+            }
+
     async def start_group_negotiation(self, max_tenants: int = 2) -> Dict[str, Any]:
         """
         Start tenant-initiated group negotiation
@@ -136,9 +185,21 @@ class GroupNegotiationService:
                 "created_at": datetime.now().isoformat()
             }
             
-            # 4. Define message callback for logging
+            # 4. Define message callback for logging and WebSocket communication
             async def message_callback(msg):
                 logger.info(f"Session {session_id}, role: {msg.get('role', 'unknown')}, active_agent: {msg.get('active_agent', 'unknown')}, message: {msg.get('content', '')}")
+                
+                # 通过WebSocket发送实时消息
+                if self.websocket_manager:
+                    websocket_message = {
+                        "type": "conversation_message",
+                        "session_id": session_id,
+                        "role": msg.get('role', 'unknown'),
+                        "active_agent": msg.get('active_agent', 'unknown'),
+                        "content": msg.get('content', ''),
+                        "timestamp": datetime.now().isoformat()
+                    }
+                    await self.websocket_manager.send_message_to_session(session_id, websocket_message)
 
             # 5. Define the actual negotiation coroutine
             async def run_negotiation():

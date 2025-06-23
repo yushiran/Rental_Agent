@@ -2,21 +2,28 @@
  * Base Character class for both Tenant and Landlord
  */
 export class Character {
-  constructor(scene, x, y, texture, frame) {
-    this.sprite = scene.physics.add.sprite(x, y, texture, frame);
+  constructor(scene, x, y, characterName = 'ada') {
     this.scene = scene;
+    this.characterName = characterName;
     this.messageQueue = [];
     this.isMoving = false;
     this.isThinking = false;
     this.emotionIcon = null;
+    this.id = null;
+    this.data = null;
+    this.nameText = null;
+    
+    // 创建角色精灵，使用atlas纹理
+    this.sprite = scene.physics.add.sprite(x, y, characterName, `${characterName}-front`);
     
     // Configure physics
     this.sprite.setCollideWorldBounds(true);
+    this.sprite.setDepth(10); // 确保角色在背景之上
     
-    // Create emotion icon (hidden by default)
-    this.emotionIcon = scene.add.sprite(x, y - 40, 'emotion_neutral');
-    this.emotionIcon.setVisible(false);
-    this.emotionIcon.setScale(0.5);
+    // 开始空闲动画
+    if (scene.anims.exists(`${characterName}_idle`)) {
+      this.sprite.play(`${characterName}_idle`);
+    }
     
     // Speech bubble container
     this.speechBubble = {
@@ -25,6 +32,21 @@ export class Character {
       text: null,
       timer: null
     };
+  }
+  
+  setId(id) {
+    this.id = id;
+    return this;
+  }
+  
+  setData(data) {
+    this.data = data;
+    return this;
+  }
+  
+  setCharacterName(name) {
+    this.characterName = name;
+    return this;
   }
   
   /**
@@ -158,31 +180,38 @@ export class Character {
   }
   
   /**
-   * Show an emotion icon above the character
+   * Show an emotion above the character
    */
   showEmotion(emotion, duration = 3000) {
-    // Map the emotion to the corresponding texture
-    const emotionMap = {
-      happy: 'emotion_happy',
-      angry: 'emotion_angry',
-      confused: 'emotion_confused',
-      neutral: 'emotion_neutral',
-      thinking: 'emotion_thinking',
-      agreement: 'emotion_agreement'
+    // Create emotion text instead of icon
+    const emotionEmojis = {
+      'happy': '😊',
+      'angry': '😠',
+      'confused': '😕',
+      'thinking': '🤔',
+      'neutral': '😐',
+      'agreement': '🤝'
     };
     
-    const texture = emotionMap[emotion] || 'emotion_neutral';
+    const emoji = emotionEmojis[emotion] || '😐';
     
-    // Set the emotion icon texture
-    this.emotionIcon.setTexture(texture);
-    this.emotionIcon.setVisible(true);
+    // Remove existing emotion text
+    if (this.emotionText) {
+      this.emotionText.destroy();
+    }
     
-    // Position the emotion icon above the character
-    this.updateEmotionIconPosition();
+    // Create new emotion text
+    this.emotionText = this.scene.add.text(this.sprite.x, this.sprite.y - 50, emoji, {
+      fontSize: '16px'
+    }).setOrigin(0.5);
+    this.emotionText.setDepth(20);
     
-    // Hide the emotion icon after duration
+    // Hide the emotion text after duration
     this.scene.time.delayedCall(duration, () => {
-      this.emotionIcon.setVisible(false);
+      if (this.emotionText) {
+        this.emotionText.destroy();
+        this.emotionText = null;
+      }
     });
   }
   
@@ -216,17 +245,30 @@ export class Character {
     const duration = (distance / speed) * 1000;
     
     // Determine the animation to play
-    let anim = '';
+    let anim = `${this.characterName}_idle`;
     if (Math.abs(dx) > Math.abs(dy)) {
       // Moving more horizontally
-      anim = dx > 0 ? `${this.type}_walk_right` : `${this.type}_walk_left`;
+      anim = dx > 0 ? `${this.characterName}_walk_right` : `${this.characterName}_walk_left`;
     } else {
       // Moving more vertically
-      anim = dy > 0 ? `${this.type}_walk_down` : `${this.type}_walk_up`;
+      anim = dy > 0 ? `${this.characterName}_walk_front` : `${this.characterName}_walk_back`;
     }
     
-    // Play the animation
-    this.sprite.play(anim);
+    // Play the animation if it exists
+    if (this.scene.anims.exists(anim)) {
+      this.sprite.play(anim);
+    }
+    
+    // Update name text position
+    if (this.nameText) {
+      this.scene.tweens.add({
+        targets: this.nameText,
+        x: x,
+        y: y - 30,
+        duration: duration,
+        ease: 'Linear'
+      });
+    }
     
     // Create the tween
     this.scene.tweens.add({
@@ -237,10 +279,12 @@ export class Character {
       ease: 'Linear',
       onUpdate: () => {
         this.updateSpeechBubblePosition();
-        this.updateEmotionIconPosition();
       },
       onComplete: () => {
-        this.sprite.play(`${this.type}_idle`);
+        const idleAnim = `${this.characterName}_idle`;
+        if (this.scene.anims.exists(idleAnim)) {
+          this.sprite.play(idleAnim);
+        }
         this.isMoving = false;
         
         if (onComplete) {
@@ -280,11 +324,11 @@ export class Character {
  * Tenant character class
  */
 export default class Tenant extends Character {
-  constructor(scene, x, y) {
-    super(scene, x, y, 'tenant_idle', 0);
+  constructor(scene, x, y, characterName = 'ada') {
+    super(scene, x, y, characterName);
     this.type = 'tenant';
     
-    // Set the scale if needed
-    this.sprite.setScale(2);
+    // Set appropriate scale for the character
+    this.sprite.setScale(1.5);
   }
 }

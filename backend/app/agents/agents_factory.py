@@ -4,10 +4,7 @@ Data initialization script - Create Landlords and Tenants from real JSON data
 
 import json
 import random
-import uuid
 from typing import List, Dict, Any
-from datetime import datetime, date
-from pathlib import Path
 
 from loguru import logger
 from faker import Faker
@@ -282,6 +279,224 @@ class AgentDataInitializer:
         # 6. Print statistics
         # self.print_statistics()
     
+    async def clear_all_data(self):
+        """清除所有数据"""
+        try:
+            self.landlord_client.collection.delete_many({})
+            self.tenant_client.collection.delete_many({})
+            self.property_client.collection.delete_many({})
+            logger.info("成功清除所有数据")
+        except Exception as e:
+            logger.error(f"清除数据失败: {e}")
+            raise
+
+    async def get_properties_count(self) -> int:
+        """获取房产数量"""
+        return self.property_client.collection.count_documents({})
+
+    async def get_landlords_count(self) -> int:
+        """获取房东数量"""
+        return self.landlord_client.collection.count_documents({})
+
+    async def get_tenants_count(self) -> int:
+        """获取租客数量"""
+        return self.tenant_client.collection.count_documents({})
+
+    async def initialize_properties_and_landlords(self, rightmove_file_path: str = None):
+        """初始化房产和房东数据"""
+        if not rightmove_file_path:
+            rightmove_file_path = f"{config.root_path}/backend/dataset/rent_cast_data/processed/rightmove_data_processed.json"
+        
+        try:
+            # 加载房产数据
+            raw_properties = self.load_rightmove_data(rightmove_file_path)
+            if not raw_properties:
+                logger.warning("无法从文件加载房产数据，使用默认数据")
+                raw_properties = self._get_default_properties()
+            
+            # 清洁房产数据
+            properties = []
+            for raw_prop in raw_properties:
+                try:
+                    prop = self.clean_property_data(raw_prop)
+                    properties.append(prop)
+                except Exception as e:
+                    logger.warning(f"跳过无效房产数据: {e}")
+                    continue
+            
+            if not properties:
+                logger.warning("没有有效的房产数据，创建默认房产")
+                properties = self._create_default_properties()
+            
+            # 创建房东
+            landlords = self.create_landlords_from_properties(properties)
+            
+            # 保存房东和房产数据
+            landlord_dicts = []
+            property_dicts = []
+            
+            for landlord in landlords:
+                landlord_dict = landlord.to_dict()
+                landlord_dicts.append(landlord_dict)
+                
+                # 保存房产数据到独立集合
+                for property_data in landlord.properties:
+                    property_dict = property_data.to_dict()
+                    property_dict['landlord_id'] = landlord.landlord_id
+                    property_dicts.append(property_dict)
+            
+            # 插入数据
+            if landlord_dicts:
+                self.landlord_client.collection.insert_many(landlord_dicts)
+            if property_dicts:
+                self.property_client.collection.insert_many(property_dicts)
+            
+            logger.info(f"成功初始化 {len(landlords)} 个房东和 {len(properties)} 个房产")
+            
+        except Exception as e:
+            logger.error(f"初始化房产和房东数据失败: {e}")
+            # 创建基本的默认数据
+            await self._create_emergency_data()
+    
+    def _get_default_properties(self):
+        """获取默认房产数据"""
+        return [
+            {
+                "id": "prop_001",
+                "bedrooms": 2,
+                "price": {"amount": 2500, "frequency": "monthly", "currencyCode": "GBP"},
+                "displayAddress": "Central London, W1",
+                "location": {"latitude": 51.5074, "longitude": -0.1278},
+                "propertySubType": "Apartment"
+            },
+            {
+                "id": "prop_002", 
+                "bedrooms": 1,
+                "price": {"amount": 1800, "frequency": "monthly", "currencyCode": "GBP"},
+                "displayAddress": "Camden, NW1",
+                "location": {"latitude": 51.5393, "longitude": -0.1435},
+                "propertySubType": "Flat"
+            },
+            {
+                "id": "prop_003",
+                "bedrooms": 3,
+                "price": {"amount": 3200, "frequency": "monthly", "currencyCode": "GBP"},
+                "displayAddress": "Greenwich, SE10",
+                "location": {"latitude": 51.4934, "longitude": 0.0098},
+                "propertySubType": "House"
+            }
+        ]
+    
+    def _create_default_properties(self):
+        """创建默认房产对象"""
+        from app.agents.models.property_model import PropertyModel
+        
+        properties = []
+        default_data = self._get_default_properties()
+        
+        for data in default_data:
+            prop = PropertyModel(
+                property_id=data["id"],
+                bedrooms=data["bedrooms"],
+                price=data["price"],
+                display_address=data["displayAddress"],
+                location=data["location"],
+                property_sub_type=data["propertySubType"]
+            )
+            properties.append(prop)
+        
+        return properties
+    
+    async def _create_emergency_data(self):
+        """创建紧急默认数据"""
+        logger.info("创建紧急默认数据...")
+        
+        # 创建默认房产数据
+        default_properties = [
+            {
+                "property_id": "emergency_001",
+                "bedrooms": 2,
+                "price": {"amount": 2000, "frequency": "monthly", "currencyCode": "GBP"},
+                "display_address": "London Property 1",
+                "location": {"latitude": 51.5074, "longitude": -0.1278},
+                "property_sub_type": "Apartment",
+                "landlord_id": "emergency_landlord_001"
+            },
+            {
+                "property_id": "emergency_002",
+                "bedrooms": 1, 
+                "price": {"amount": 1500, "frequency": "monthly", "currencyCode": "GBP"},
+                "display_address": "London Property 2",
+                "location": {"latitude": 51.5200, "longitude": -0.1000},
+                "property_sub_type": "Flat",
+                "landlord_id": "emergency_landlord_001"
+            }
+        ]
+        
+        # 创建默认房东数据
+        default_landlords = [
+            {
+                "landlord_id": "emergency_landlord_001",
+                "name": "Default Landlord",
+                "phone": "+44 20 1234 5678",
+                "branch_name": "London Properties",
+                "properties": [],
+                "preferences": {"pet_friendly": True, "smoking_allowed": False, "deposit_weeks": 6}
+            }
+        ]
+        
+        # 插入数据
+        if default_properties:
+            self.property_client.collection.insert_many(default_properties)
+        if default_landlords:
+            self.landlord_client.collection.insert_many(default_landlords)
+            
+        logger.info("紧急默认数据创建完成")
+
+    async def generate_tenants(self, count: int) -> List[Dict[str, Any]]:
+        """生成指定数量的租客"""
+        tenants = self.create_random_tenants(count)
+        
+        # 保存到数据库
+        tenant_dicts = [tenant.to_dict() for tenant in tenants]
+        if tenant_dicts:
+            self.tenant_client.collection.insert_many(tenant_dicts)
+        
+        logger.info(f"成功生成 {len(tenants)} 个租客")
+        # 转换ObjectId为字符串
+        return [self._convert_objectid_to_str(tenant_dict) for tenant_dict in tenant_dicts]
+
+    def _convert_objectid_to_str(self, data):
+        """递归转换ObjectId为字符串"""
+        from bson import ObjectId
+        
+        if isinstance(data, ObjectId):
+            return str(data)
+        elif isinstance(data, dict):
+            return {key: self._convert_objectid_to_str(value) for key, value in data.items()}
+        elif isinstance(data, list):
+            return [self._convert_objectid_to_str(item) for item in data]
+        else:
+            return data
+
+    async def get_all_properties(self) -> List[Dict[str, Any]]:
+        """获取所有房产数据"""
+        properties = list(self.property_client.collection.find({}))
+        # 转换ObjectId为字符串
+        return [self._convert_objectid_to_str(prop) for prop in properties]
+
+    async def get_all_landlords(self) -> List[Dict[str, Any]]:
+        """获取所有房东数据"""
+        landlords = list(self.landlord_client.collection.find({}))
+        # 转换ObjectId为字符串
+        return [self._convert_objectid_to_str(landlord) for landlord in landlords]
+
+    async def get_all_tenants(self) -> List[Dict[str, Any]]:
+        """获取所有租客数据"""
+        tenants = list(self.tenant_client.collection.find({}))
+        # 转换ObjectId为字符串
+        return [self._convert_objectid_to_str(tenant) for tenant in tenants]
+
     def print_statistics(self):
         """Print data statistics"""
         try:

@@ -4,20 +4,11 @@ import { Character } from './Tenant';
  * Landlord character class
  */
 export default class Landlord extends Character {
-  constructor(scene, x, y) {
-    super(scene, x, y, 'landlord_idle', 0);
+  constructor(scene, x, y, characterName = 'aristotle') {
+    super(scene, x, y, characterName);
     this.type = 'landlord';
-    this.id = null; // Used to track which landlord this is
     
-    // Set the scale if needed
-    this.sprite.setScale(2);
-  }
-  
-  /**
-   * Set the landlord's ID (used to identify which landlord is being addressed)
-   */
-  setId(id) {
-    this.id = id;
-    return this;
+    // Set appropriate scale for the character
+    this.sprite.setScale(1.5);
   }
 }

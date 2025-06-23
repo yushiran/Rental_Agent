@@ -23,7 +23,24 @@
     #controls {
       margin-top: 15px;
       display: flex;
+      flex-direction: column;
       gap: 10px;
+      align-items: center;
+    }
+    .control-row {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+    input {
+      padding: 5px;
+      border-radius: 3px;
+      border: 1px solid #ccc;
+      width: 60px;
+    }
+    label {
+      color: white;
+      margin-right: 5px;
     }
     button {
       background-color: #4CAF50;
@@ -55,10 +72,18 @@
   <div id="game-container">
     <div id="game"></div>
     <div id="controls">
-      <button id="start-btn">Start Negotiation</button>
-      <button id="reset-btn">Reset</button>
+      <div class="control-row">
+        <label for="tenant-count">Tenants:</label>
+        <input type="number" id="tenant-count" value="3" min="1" max="10">
+        <button id="initialize-btn">Initialize System</button>
+      </div>
+      <div class="control-row">
+        <button id="start-btn" disabled>Start Negotiation</button>
+        <button id="reset-btn">Reset</button>
+      </div>
     </div>
     <div id="status">Backend Status: Checking...</div>
+    <div id="system-status" style="color: white; margin-top: 5px;">System not initialized</div>
   </div>
   <script type="module" src="src/main.js"></script>
 </body>

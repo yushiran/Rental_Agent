@@ -6,6 +6,7 @@ from contextlib import asynccontextmanager
 import asyncio
 from datetime import datetime
 import json
+from typing import List
 
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect, Query
 from fastapi.middleware.cors import CORSMiddleware
@@ -16,9 +17,11 @@ from pydantic import BaseModel
 from app.conversation_service.reset_conversation import reset_conversation_state
 from app.utils.opik_utils import configure
 from app.mongo import initialize_database
+from app.config import config
 
 from .group_negotiation import GroupNegotiationService
 from .websocket import ConnectionManager
+from app.agents.agents_factory import AgentDataInitializer
 
 configure()
 
@@ -52,10 +55,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# 初始化服务
-group_service = GroupNegotiationService()
 # 实例化连接管理器
 manager = ConnectionManager()
+# 初始化Agent工厂
+agent_factory = AgentDataInitializer()
+# 初始化服务（传入WebSocket管理器）
+group_service = GroupNegotiationService(websocket_manager=manager)
 
 @app.get("/")
 async def root():
@@ -73,42 +78,225 @@ async def root():
         ]
     }
 
+@app.get("/config")
+async def get_config():
+    """
+    获取前端需要的配置信息
+    
+    Returns:
+        dict: 包含Google Maps API密钥等配置信息
+    """
+    try:
+        if not config.google_maps or not config.google_maps.api_key:
+            raise HTTPException(status_code=500, detail="Google Maps API密钥未配置")
+        
+        return {
+            "google_maps_api_key": config.google_maps.api_key
+        }
+    except Exception as e:
+        logger.error(f"获取配置失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"获取配置失败: {str(e)}")
+
+class InitializeRequest(BaseModel):
+    tenant_count: int = 3
+    reset_data: bool = False
+
+@app.post("/initialize")
+async def initialize_system(request: InitializeRequest):
+    """
+    初始化系统 - 生成租客和地图数据
+    
+    Args:
+        tenant_count: 要生成的租客数量
+        reset_data: 是否重置现有数据
+    
+    Returns:
+        - tenants: 生成的租客列表
+        - properties: 房产数据（用于地图显示）
+        - landlords: 房东数据
+        - map_data: 地图可视化数据
+    """
+    try:
+        logger.info(f"开始初始化系统: 租客数量={request.tenant_count}, 重置数据={request.reset_data}")
+        
+        # 如果需要重置数据，先清理现有数据
+        if request.reset_data:
+            await agent_factory.clear_all_data()
+            logger.info("已清理现有数据")
+        
+        # 检查是否已有数据
+        existing_properties = await agent_factory.get_properties_count()
+        existing_landlords = await agent_factory.get_landlords_count()
+        
+        # 如果没有房产和房东数据，先初始化基础数据
+        if existing_properties == 0 or existing_landlords == 0:
+            logger.info("初始化房产和房东数据...")
+            await agent_factory.initialize_properties_and_landlords()
+        
+        # 生成指定数量的租客
+        logger.info(f"生成 {request.tenant_count} 个租客...")
+        tenants = await agent_factory.generate_tenants(request.tenant_count)
+        
+        # 获取所有房产数据用于地图展示
+        properties = await agent_factory.get_all_properties()
+        landlords = await agent_factory.get_all_landlords()
+        
+        # 准备地图数据
+        map_data = []
+        for prop in properties:
+            # 安全地获取月租金
+            try:
+                # 如果有price字段，手动计算月租金
+                price_info = prop.get("price", {})
+                if isinstance(price_info, dict) and price_info:
+                    amount = price_info.get("amount", 0)
+                    frequency = price_info.get("frequency", "monthly")
+                    
+                    if frequency == 'weekly':
+                        monthly_rent = amount * 52 / 12
+                    elif frequency == 'yearly':
+                        monthly_rent = amount / 12
+                    else:
+                        monthly_rent = amount
+                else:
+                    # 如果没有price字段，使用默认值
+                    monthly_rent = 2000
+            except Exception as e:
+                logger.warning(f"计算房产 {prop.get('property_id', 'unknown')} 的月租金时出错: {e}")
+                monthly_rent = 2000
+            
+            map_data.append({
+                "id": prop.get("property_id", "unknown"),
+                "latitude": prop.get("location", {}).get("latitude", 51.5074),
+                "longitude": prop.get("location", {}).get("longitude", -0.1278),
+                "address": prop.get("display_address", "Unknown Address"),
+                "price": monthly_rent,
+                "bedrooms": prop.get("bedrooms", 1),
+                "property_type": prop.get("property_sub_type", "Unknown"),
+                "landlord_id": prop.get("landlord_id", "unknown")
+            })
+        
+        result = {
+            "message": "系统初始化成功",
+            "data": {
+                "tenants": tenants,
+                "tenants_count": len(tenants),
+                "properties": properties,
+                "properties_count": len(properties),
+                "landlords": landlords,
+                "landlords_count": len(landlords),
+                "map_data": map_data
+            },
+            "status": "initialized"
+        }
+        
+        logger.info(f"系统初始化完成: {len(tenants)}个租客, {len(properties)}个房产, {len(landlords)}个房东")
+        return result
+        
+    except Exception as e:
+        logger.error(f"系统初始化失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"初始化失败: {str(e)}")
+
 @app.post("/start-session")
 async def start_session(max_tenants: int = Query(1, description="最大租客数量")):
     """启动会话 - 前端兼容接口"""
     return await start_auto_negotiation_live(max_tenants)
 
-@app.post("/start-auto-negotiation-live") 
-async def start_auto_negotiation_live(max_tenants: int = Query(1, description="最大租客数量")):
+class StartNegotiationRequest(BaseModel):
+    tenant_ids: List[str] = []
+    
+@app.post("/start-negotiation")
+async def start_negotiation(request: StartNegotiationRequest):
     """
-    启动租客主导的实时自动协商
+    开始协商流程 - 基于已生成的租客启动协商
     
-    1. 生成指定数量的租客
-    2. 租客主动匹配房产 (Agent内部流程)
-    3. 租客主动联系房东 (Agent内部流程) 
-    4. 开始实时协商，通过WebSocket推送每一条消息
-    5. 无限轮次，持续对话直到手动停止或会话达成协议
+    Args:
+        tenant_ids: 要参与协商的租客ID列表，如果为空则使用所有租客
     
-    所有环节都是租客主动发起，而非系统自动匹配
+    Returns:
+        - 创建的协商会话信息
+        - WebSocket连接信息
     """
     try:
-        # 首先启动群体协商创建会话，但不进行匹配
-        # 匹配将由租客Agent主动发起
-        negotiation_result = await group_service.start_group_negotiation(max_tenants=max_tenants)
+        logger.info(f"开始协商流程，租客IDs: {request.tenant_ids}")
+        
+        # 如果没有指定租客ID，获取所有租客的前几个
+        if not request.tenant_ids:
+            all_tenants = await agent_factory.get_all_tenants()
+            if not all_tenants:
+                raise HTTPException(status_code=400, detail="没有可用的租客数据，请先调用初始化API")
+            # 默认取前3个租客
+            request.tenant_ids = [tenant["tenant_id"] for tenant in all_tenants[:3]]
+        
+        # 验证租客ID是否存在
+        existing_tenants = []
+        for tenant_id in request.tenant_ids:
+            tenant_data = await group_service._get_tenant_by_id(tenant_id)
+            if tenant_data:
+                existing_tenants.append(tenant_data)
+            else:
+                logger.warning(f"租客 {tenant_id} 不存在，跳过")
+        
+        if not existing_tenants:
+            raise HTTPException(status_code=400, detail="没有找到有效的租客")
+        
+        # 开始群体协商
+        negotiation_result = await group_service.start_group_negotiation_with_tenants(existing_tenants)
         
         if "error" in negotiation_result:
             raise HTTPException(status_code=400, detail=negotiation_result["error"])
         
+        # 为每个会话发送初始化消息到WebSocket
+        for session in negotiation_result.get('sessions', []):
+            session_id = session['session_id']
+            await manager.send_message_to_session(session_id, {
+                "type": "negotiation_started",
+                "session_id": session_id,
+                "message": "协商已开始，租客正在寻找房东...",
+                "session_info": session,
+                "timestamp": datetime.now().isoformat()
+            })
         
-        # 合并结果
-        final_result = {
-            "message": "成功启动租客主导的实时自动协商",
-            "active_sessions": len(negotiation_result.get('sessions', [])),
-            "session_ids": [s["session_id"] for s in negotiation_result.get('sessions', [])]
+        result = {
+            "message": "协商流程启动成功",
+            "total_sessions": len(negotiation_result.get('sessions', [])),
+            "sessions": negotiation_result.get('sessions', []),
+            "websocket_info": {
+                "endpoint": "/ws/{session_id}",
+                "description": "连接到WebSocket以接收实时协商消息"
+            }
         }
         
-        logger.info(f"成功启动实时自动协商: {final_result}")
-        return final_result
+        logger.info(f"协商流程启动成功: {len(result['sessions'])} 个会话")
+        return result
+        
+    except Exception as e:
+        logger.error(f"启动协商流程失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"启动协商失败: {str(e)}")
+
+@app.post("/start-auto-negotiation-live") 
+async def start_auto_negotiation_live(max_tenants: int = Query(1, description="最大租客数量")):
+    """
+    启动租客主导的实时自动协商（保持向后兼容）
+    """
+    try:
+        # 获取前N个租客
+        all_tenants = await agent_factory.get_all_tenants()
+        if not all_tenants:
+            raise HTTPException(status_code=400, detail="没有可用的租客数据，请先调用初始化API")
+        
+        tenant_ids = [tenant["tenant_id"] for tenant in all_tenants[:max_tenants]]
+        
+        # 调用新的协商API
+        request = StartNegotiationRequest(tenant_ids=tenant_ids)
+        result = await start_negotiation(request)
+        
+        # 返回向后兼容的格式
+        return {
+            "message": "成功启动租客主导的实时自动协商",
+            "active_sessions": result["total_sessions"],
+            "session_ids": [s["session_id"] for s in result["sessions"]]
+        }
         
     except Exception as e:
         logger.error(f"启动实时自动协商失败: {str(e)}")
