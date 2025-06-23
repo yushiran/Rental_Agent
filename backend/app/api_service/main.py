@@ -29,7 +29,7 @@ async def lifespan(app: FastAPI):
 
     # 初始化数据库
     await initialize_database()
-    await start_auto_negotiation_live(max_tenants=3)
+    # await start_auto_negotiation_live(max_tenants=3)
 
     yield
     logger.info("关闭群体Agent沟通API")

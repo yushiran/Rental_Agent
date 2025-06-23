@@ -1,2 +1,0 @@
-# This is a placeholder for icon.png
-# Replace with an actual 64x64 PNG icon for your project

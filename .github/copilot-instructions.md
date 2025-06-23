@@ -56,40 +56,51 @@
 - 可选支持：WebSocket / SSE — 用于前端的实时数据流传输
 
 ---
-## 🎮 前端沙盒交互（Godot 实现）
+## 🎮 前端沙盒交互（Phaser 实现）
 
-本项目的前端采用 [Godot Engine](https://godotengine.org/) 实现，构建了一个像素风格的沙盒世界，用于可视化多智能体租房对话的全过程。
+本项目的前端采用 [Phaser 3](https://phaser.io/) 实现，构建了一个像素风格的 2D 沙盒世界，用于**可视化多智能体租房对话**全过程。
 
 ### 👥 核心交互逻辑（非玩家控制）
 
-- 用户点击按钮启动一轮模拟，系统从租客智能体（TenantAgent）发起协商流程
-- 多位房东智能体（LandlordAgent）作为静态角色分布在地图中，系统根据匹配逻辑自动选择对象并发起对话
-- 对话过程以 **浮动气泡 + 表情图标** 的方式实时展示，体现角色状态与情绪（如满意 😊、困惑 🤔、拒绝 😠）
-- 整个协商流程由 LangGraph 控制器驱动，用户可以全程旁观系统自主协商的全过程
-- 若成功达成协议，双方将自动移动到“签约区”并触发签约动画；否则显示谈判失败的反馈动画
+- 用户点击网页按钮启动一轮模拟，系统从租客智能体（TenantAgent）发起协商流程。
+- 多位房东智能体（LandlordAgent）作为 NPC 分布在地图中，由后端匹配逻辑选择交互对象。
+- 协商过程通过 **对话气泡 + 表情图标 + 精灵动画** 实时展示角色行为、情绪与对话内容。
+- 角色位置、动画、表情均由后端事件驱动（如 `agent_started`、`message_sent` 等）。
+- 若协商成功，角色自动移动至“签约区域”并触发签约动画；否则展示谈判失败反馈。
 
 ### 🔌 通信机制
 
-Godot 通过 HTTP 和 WebSocket 与后端 `LangGraph Controller` 进行实时通信：
+Phaser 前端通过 HTTP + WebSocket 与后端 LangGraph Controller 实时通信：
 
-- 使用 REST API 触发初始匹配、状态重置等控制指令
-- 使用 WebSocket 接收后端流式事件：  
-  `agent_started`、`message_sent`、`agent_thought`、`agreement_reached` 等
+- ✅ 使用 REST API：
+  - 触发匹配流程：`/start-session`
+  - 重置记忆状态：`/reset-memory`
+- 🔁 使用 WebSocket 接收流式事件：
+  - `agent_started`：某一角色开始响应
+  - `message_sent`：发送了一条文本对话
+  - `agent_thought`：角色内部思考（可视为想法气泡）
+  - `agreement_reached` / `dialogue_ended`：对话达成 / 失败
 
 ### 🧩 项目结构建议
 
 ```bash
 frontend/
-├── scenes/
-│   ├── Main.tscn              # 主场景（包含地图、角色、UI）
-│   ├── Character.tscn         # 租客角色（可移动）
-│   └── Landlord.tscn          # 房东角色（交互对象）
-├── scripts/
-│   ├── Main.gd                # 全局控制逻辑
-│   ├── Character.gd           # 玩家控制脚本
-│   └── WebSocketClient.gd     # 后端通信模块
+├── public/
+│   └── index.html                 # HTML 页面入口
+├── src/
+│   ├── scenes/
+│   │   ├── MainScene.js          # 主场景（地图、UI、角色管理）
+│   │   └── UIScene.js            # 独立 UI 层（按钮、对话气泡）
+│   ├── objects/
+│   │   ├── Tenant.js             # 租客角色类
+│   │   └── Landlord.js           # 房东角色类
+│   ├── network/
+│   │   ├── ApiClient.js          # REST 请求封装
+│   │   └── WebSocketClient.js    # WebSocket 通信模块
+│   └── main.js                   # Phaser 初始化入口
 ├── assets/
-│   ├── tilesets/              # 像素地图素材
-│   ├── characters/            # 角色动画帧
-│   └── ui/                    # 表情贴图、气泡框等
-└── project.godot              # Godot 配置文件
+│   ├── tilesets/                 # 地图图块素材
+│   ├── sprites/                  # 角色动画帧
+│   └── ui/                       # 表情图标、气泡框等 UI 元素
+├── package.json                  # npm 脚本及依赖
+└── vite.config.js                # 构建配置（推荐使用 Vite 或 Webpack）
