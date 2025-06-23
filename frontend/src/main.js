@@ -21,7 +21,7 @@ const config = {
 
 // Initialize the game
 window.addEventListener('load', () => {
-  const game = new Phaser.Game(config);
+  window.phaserGame = new Phaser.Game(config);
 
   // Check backend connection
   checkBackendStatus();
@@ -58,14 +58,16 @@ async function startNegotiation() {
     const response = await fetch('http://localhost:8000/start-session', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({})
+      body: JSON.stringify({ max_tenants: 1 })
     });
     
     if (response.ok) {
       const result = await response.json();
       console.log('Negotiation started:', result);
-      // The game scene will handle the WebSocket connection
-      window.game.events.emit('negotiation-started', result);
+      // Store game instance properly
+      if (window.phaserGame) {
+        window.phaserGame.events.emit('negotiation-started', result);
+      }
     } else {
       throw new Error('Failed to start negotiation');
     }
@@ -89,7 +91,9 @@ async function resetMemory() {
       console.log('Memory reset successful');
       document.getElementById('start-btn').disabled = false;
       document.getElementById('reset-btn').disabled = false;
-      window.game.events.emit('memory-reset');
+      if (window.phaserGame) {
+        window.phaserGame.events.emit('memory-reset');
+      }
     } else {
       throw new Error('Failed to reset memory');
     }

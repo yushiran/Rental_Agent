@@ -281,7 +281,7 @@ export class Character {
  */
 export default class Tenant extends Character {
   constructor(scene, x, y) {
-    super(scene, x, y, 'tenant', 0);
+    super(scene, x, y, 'tenant_idle', 0);
     this.type = 'tenant';
     
     // Set the scale if needed

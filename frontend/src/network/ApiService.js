@@ -17,7 +17,7 @@ export default class ApiService {
       this.ws.close();
     }
 
-    this.ws = new WebSocket('ws://localhost:8000/ws');
+    this.ws = new WebSocket('ws://localhost:8000/ws/global');
 
     this.ws.onopen = () => {
       console.log('WebSocket connected');

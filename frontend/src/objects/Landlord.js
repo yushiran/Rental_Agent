@@ -5,7 +5,7 @@ import { Character } from './Tenant';
  */
 export default class Landlord extends Character {
   constructor(scene, x, y) {
-    super(scene, x, y, 'landlord', 0);
+    super(scene, x, y, 'landlord_idle', 0);
     this.type = 'landlord';
     this.id = null; // Used to track which landlord this is
     

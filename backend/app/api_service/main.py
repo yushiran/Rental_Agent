@@ -73,7 +73,12 @@ async def root():
         ]
     }
 
-@app.post("/start-auto-negotiation-live")
+@app.post("/start-session")
+async def start_session(max_tenants: int = Query(1, description="最大租客数量")):
+    """启动会话 - 前端兼容接口"""
+    return await start_auto_negotiation_live(max_tenants)
+
+@app.post("/start-auto-negotiation-live") 
 async def start_auto_negotiation_live(max_tenants: int = Query(1, description="最大租客数量")):
     """
     启动租客主导的实时自动协商
@@ -163,124 +168,107 @@ async def get_stats():
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# @app.websocket("/ws/{session_id}")
-# async def websocket_negotiation(websocket: WebSocket, session_id: str):
-#     """WebSocket端点，用于实时协商通信和流式消息推送"""
-#     await manager.connect(websocket, session_id)
+@app.websocket("/ws/{session_id}")
+async def websocket_negotiation(websocket: WebSocket, session_id: str):
+    """WebSocket端点，用于实时协商通信和流式消息推送"""
+    await manager.connect(websocket, session_id)
     
-#     try:
-#         # 发送连接成功消息
-#         await websocket.send_json({
-#             "type": "connected",
-#             "session_id": session_id,
-#             "message": "WebSocket连接已建立",
-#             "timestamp": datetime.now().isoformat()
-#         })
+    try:
+        # 发送连接成功消息
+        await websocket.send_json({
+            "type": "connected",
+            "session_id": session_id,
+            "message": "WebSocket连接已建立",
+            "timestamp": datetime.now().isoformat()
+        })
         
-#         # 如果是具体会话，验证会话存在并发送会话信息
-#         if session_id != "global":
-#             session = await group_service.get_session_info(session_id)
-#             if session:
-#                 await websocket.send_json({
-#                     "type": "session_info",
-#                     "session_id": session_id,
-#                     "tenant_name": session["tenant_name"],
-#                     "landlord_name": session["landlord_name"],
-#                     "property_address": session["property_address"],
-#                     "monthly_rent": session["monthly_rent"],
-#                     "match_score": session["match_score"],
-#                     "status": session["status"],
-#                     "timestamp": datetime.now().isoformat()
-#                 })
+        # 如果是具体会话，验证会话存在并发送会话信息
+        if session_id != "global":
+            session = await group_service.get_session_info(session_id)
+            if session:
+                await websocket.send_json({
+                    "type": "session_info",
+                    "session_id": session_id,
+                    "tenant_name": session["tenant_name"],
+                    "landlord_name": session["landlord_name"],
+                    "property_address": session["property_address"],
+                    "monthly_rent": session["monthly_rent"],
+                    "match_score": session["match_score"],
+                    "status": session["status"],
+                    "timestamp": datetime.now().isoformat()
+                })
                 
-#                 # 额外发送一条确认消息，确保前端知道WebSocket连接正常工作
-#                 await websocket.send_json({
-#                     "type": "websocket_ready",
-#                     "message": "实时对话准备就绪，对话将持续进行",
-#                     "session_id": session_id,
-#                     "timestamp": datetime.now().isoformat()
-#                 })
+                # 额外发送一条确认消息，确保前端知道WebSocket连接正常工作
+                await websocket.send_json({
+                    "type": "websocket_ready",
+                    "message": "实时对话准备就绪，对话将持续进行",
+                    "session_id": session_id,
+                    "timestamp": datetime.now().isoformat()
+                })
                 
-#                 # 发送会话的历史消息
-#                 if session.get("messages"):
-#                     await websocket.send_json({
-#                         "type": "history",
-#                         "messages": session["messages"],
-#                         "timestamp": datetime.now().isoformat()
-#                     })
+                # 发送会话的历史消息
+                if session.get("messages"):
+                    await websocket.send_json({
+                        "type": "history",
+                        "messages": session["messages"],
+                        "timestamp": datetime.now().isoformat()
+                    })
         
-#         # 保持连接活跃，监听消息
-#         ping_counter = 0
-#         while True:
-#             try:
-#                 # 使用较短的超时以便能够定期发送心跳
-#                 data = await asyncio.wait_for(websocket.receive_json(), timeout=15)
+        # 保持连接活跃，监听消息
+        ping_counter = 0
+        while True:
+            try:
+                # 使用较短的超时以便能够定期发送心跳
+                data = await asyncio.wait_for(websocket.receive_json(), timeout=15)
                 
-#                 # 处理心跳
-#                 if data.get("type") == "ping":
-#                     await websocket.send_json({
-#                         "type": "pong", 
-#                         "timestamp": datetime.now().isoformat()
-#                     })
-#                     ping_counter += 1
-#                     # 每隔5次心跳，发送一次会话状态更新
-#                     if ping_counter % 5 == 0:
-#                         await websocket.send_json({
-#                             "type": "connection_status",
-#                             "status": "active",
-#                             "session_id": session_id,
-#                             "timestamp": datetime.now().isoformat()
-#                         })
-#                     continue
+                # 处理心跳
+                if data.get("type") == "ping":
+                    await websocket.send_json({
+                        "type": "pong", 
+                        "timestamp": datetime.now().isoformat()
+                    })
+                    ping_counter += 1
+                    # 每隔5次心跳，发送一次会话状态更新
+                    if ping_counter % 5 == 0:
+                        await websocket.send_json({
+                            "type": "connection_status",
+                            "status": "active",
+                            "session_id": session_id,
+                            "timestamp": datetime.now().isoformat()
+                        })
+                    continue
                 
-#                 # 处理发送消息请求
-#                 if data.get("type") == "send_message" and data.get("message") and data.get("sender_type"):
-#                     # 直接在WebSocket连接中处理消息发送
-#                     session = await group_service.get_session_info(session_id)
-#                     if session:
-#                         sender_id = session["tenant_id"] if data["sender_type"] == "tenant" else session["landlord_id"]
-                        
-#                         # 这里使用websocket_manager参数，这样响应会直接通过WebSocket发送
-#                         await group_service.send_negotiation_message(
-#                             session_id=session_id,
-#                             sender_id=sender_id,
-#                             message=data["message"],
-#                             sender_type=data["sender_type"],
-#                             websocket_manager=manager
-#                         )
-#                     continue
+                # 处理其他消息类型
+                await websocket.send_json({
+                    "type": "message_received",
+                    "data": data,
+                    "timestamp": datetime.now().isoformat()
+                })
                 
-#                 # 处理其他消息类型
-#                 await websocket.send_json({
-#                     "type": "message_received",
-#                     "data": data,
-#                     "timestamp": datetime.now().isoformat()
-#                 })
-                
-#             except asyncio.TimeoutError:
-#                 # 超时时发送主动心跳，保持连接
-#                 try:
-#                     await websocket.send_json({
-#                         "type": "server_ping", 
-#                         "timestamp": datetime.now().isoformat()
-#                     })
-#                 except Exception as e:
-#                     logger.debug(f"发送心跳失败，可能连接已断开: {str(e)}")
-#                     break
+            except asyncio.TimeoutError:
+                # 超时时发送主动心跳，保持连接
+                try:
+                    await websocket.send_json({
+                        "type": "server_ping", 
+                        "timestamp": datetime.now().isoformat()
+                    })
+                except Exception as e:
+                    logger.debug(f"发送心跳失败，可能连接已断开: {str(e)}")
+                    break
             
-#             except Exception as e:
-#                 if isinstance(e, WebSocketDisconnect):
-#                     logger.debug(f"WebSocket客户端断开连接: {str(e)}")
-#                 else:
-#                     logger.debug(f"WebSocket消息处理错误: {str(e)}")
-#                 break
+            except Exception as e:
+                if isinstance(e, WebSocketDisconnect):
+                    logger.debug(f"WebSocket客户端断开连接: {str(e)}")
+                else:
+                    logger.debug(f"WebSocket消息处理错误: {str(e)}")
+                break
     
-#     except WebSocketDisconnect:
-#         logger.info(f"WebSocket断开连接: {session_id}")
-#     except Exception as e:
-#         logger.error(f"WebSocket错误: {str(e)}")
-#     finally:
-#         manager.disconnect(websocket, session_id)
+    except WebSocketDisconnect:
+        logger.info(f"WebSocket断开连接: {session_id}")
+    except Exception as e:
+        logger.error(f"WebSocket错误: {str(e)}")
+    finally:
+        manager.disconnect(websocket, session_id)
 
 
 @app.post("/reset-memory")

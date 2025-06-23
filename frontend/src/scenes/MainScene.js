@@ -16,25 +16,25 @@ export default class MainScene extends Phaser.Scene {
 
   preload() {
     // Load tileset images
-    this.load.image('grass_tile', '../assets/tilesets/grass_tile.png');
-    this.load.image('floor_tile', '../assets/tilesets/floor_tile.png');
-    this.load.image('path_tile', '../assets/tilesets/path_tile.png');
-    this.load.image('special_tile', '../assets/tilesets/special_tile.png');
+    this.load.image('grass_tile', 'assets/tilesets/grass_tile.png');
+    this.load.image('floor_tile', 'assets/tilesets/floor_tile.png');
+    this.load.image('path_tile', 'assets/tilesets/path_tile.png');
+    this.load.image('special_tile', 'assets/tilesets/special_tile.png');
     
     // Load character spritesheets
-    this.load.spritesheet('tenant_idle', '../assets/sprites/tenant_idle.png', { 
+    this.load.spritesheet('tenant_idle', 'assets/sprites/tenant_idle.png', { 
       frameWidth: 32, frameHeight: 32 
     });
-    this.load.spritesheet('tenant_walk_down', '../assets/sprites/tenant_walk_down.png', { 
+    this.load.spritesheet('tenant_walk_down', 'assets/sprites/tenant_walk_down.png', { 
       frameWidth: 32, frameHeight: 32 
     });
-    this.load.spritesheet('tenant_walk_up', '../assets/sprites/tenant_walk_up.png', { 
+    this.load.spritesheet('tenant_walk_up', 'assets/sprites/tenant_walk_up.png', { 
       frameWidth: 32, frameHeight: 32 
     });
-    this.load.spritesheet('tenant_walk_right', '../assets/sprites/tenant_walk_side.png', { 
+    this.load.spritesheet('tenant_walk_right', 'assets/sprites/tenant_walk_side.png', { 
       frameWidth: 32, frameHeight: 32 
     });
-    this.load.spritesheet('tenant_walk_left', '../assets/sprites/tenant_walk_side.png', { 
+    this.load.spritesheet('tenant_walk_left', 'assets/sprites/tenant_walk_side.png', { 
       frameWidth: 32, frameHeight: 32 
     });
     this.load.spritesheet('tenant_celebrate', 'assets/sprites/tenant_celebrate.png', { 
@@ -58,7 +58,7 @@ export default class MainScene extends Phaser.Scene {
       frameWidth: 32, frameHeight: 32 
     });
     this.load.spritesheet('landlord_walk_left', 'assets/sprites/landlord_walk_side.png', { 
-      frameWidth: 32, frameHeight: 32, flip: true 
+      frameWidth: 32, frameHeight: 32 
     });
     this.load.spritesheet('landlord_celebrate', 'assets/sprites/landlord_celebrate.png', { 
       frameWidth: 32, frameHeight: 32 
@@ -367,8 +367,9 @@ export default class MainScene extends Phaser.Scene {
     });
     
     // Listen for button events (handled in main.js)
-    this.game.events.on('negotiation-started', () => {
+    this.game.events.on('negotiation-started', (result) => {
       this.isNegotiationActive = true;
+      console.log('Negotiation started in MainScene:', result);
       // Move tenant to center initially
       this.tenant.moveTo(12 * 32, 9 * 32);
     });
