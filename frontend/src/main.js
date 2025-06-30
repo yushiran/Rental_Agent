@@ -441,8 +441,8 @@ class RentalAgentApp {
             
             // 检查响应是否包含data字段，说明初始化成功
             if (response.data && response.status === 'initialized') {
-                this.updateStatus(`系统初始化成功: ${response.data.tenants_count}个租客, ${response.data.landlords_count}个房东`);
-                this.addLog('success', `系统初始化完成 - 租客:${response.data.tenants_count}, 房东:${response.data.landlords_count}`);
+                this.updateStatus(`系统初始化成功: ${response.data.tenants_count}个租客, ${response.data.landlords_count}个房东， ${response.data.properties_count}个房产`);
+                this.addLog('success', `系统初始化完成 - 租客:${response.data.tenants_count}, 房东:${response.data.landlords_count}, 房产:${response.data.properties_count}`);
                 
                 // 启用开始协商按钮
                 const startBtn = document.getElementById('start-negotiation');
@@ -481,21 +481,83 @@ class RentalAgentApp {
         // 添加租客
         if (data.tenants && Array.isArray(data.tenants)) {
             for (const tenant of data.tenants) {
+                // 构建偏好信息
+                const preferences = [];
+                if (tenant.min_bedrooms || tenant.max_bedrooms) {
+                    preferences.push(`${tenant.min_bedrooms || 1}-${tenant.max_bedrooms || '任意'}卧室`);
+                }
+                if (tenant.max_budget) {
+                    preferences.push(`预算£${tenant.max_budget}/月`);
+                }
+                if (tenant.has_pets) {
+                    preferences.push('携带宠物');
+                }
+                if (tenant.is_student) {
+                    preferences.push('学生');
+                }
+                if (tenant.num_occupants > 1) {
+                    preferences.push(`${tenant.num_occupants}人居住`);
+                }
+
+                // 获取租客的偏好位置
+                let tenantPosition = null;
+                if (tenant.preferred_locations && tenant.preferred_locations.length > 0) {
+                    // 使用第一个偏好位置
+                    const preferredLocation = tenant.preferred_locations[0];
+                    tenantPosition = {
+                        lat: preferredLocation.latitude,
+                        lng: preferredLocation.longitude
+                    };
+                    console.log(`[RentalAgentApp] 租客 ${tenant.name} 偏好位置: ${tenantPosition.lat}, ${tenantPosition.lng}`);
+                }
+
                 await this.mapController.addAgent(tenant.tenant_id, 'tenant', {
-                    name: `${tenant.name || '租客'}(租客)`,
-                    budget: tenant.budget || 8000,
-                    preferences: tenant.preferences || '寻找合适房源'
-                });
+                    name: tenant.name || '租客',
+                    budget: tenant.max_budget || 0,
+                    preferences: preferences.join(', ') || '寻找合适房源',
+                    income: tenant.annual_income || 0,
+                    email: tenant.email || '',
+                    phone: tenant.phone || '',
+                    hasGuarantor: tenant.has_guarantor || false,
+                    isStudent: tenant.is_student || false,
+                    hasPets: tenant.has_pets || false,
+                    isSmoker: tenant.is_smoker || false
+                }, tenantPosition); // 传递租客的偏好位置
             }
         }
 
         // 添加房东
         if (data.landlords && Array.isArray(data.landlords)) {
             for (const landlord of data.landlords) {
+                // 统计房东的房产信息
+                const propertyCount = landlord.properties ? landlord.properties.length : 0;
+                const propertyTypes = landlord.properties 
+                    ? [...new Set(landlord.properties.map(p => p.property_sub_type || p.property_type_full_description))]
+                    : [];
+
+                // 获取房东的位置（基于第一个房产的位置）
+                let landlordPosition = null;
+                if (landlord.properties && landlord.properties.length > 0) {
+                    const firstProperty = landlord.properties[0];
+                    if (firstProperty.location) {
+                        landlordPosition = {
+                            lat: firstProperty.location.latitude,
+                            lng: firstProperty.location.longitude
+                        };
+                        console.log(`[RentalAgentApp] 房东 ${landlord.name} 位置: ${landlordPosition.lat}, ${landlordPosition.lng}`);
+                    }
+                }
+
                 await this.mapController.addAgent(landlord.landlord_id, 'landlord', {
-                    name: `${landlord.name || '房东'}(房东)`,
-                    properties: landlord.properties || ['待分配房产']
-                });
+                    name: landlord.name || '房东',
+                    properties: `${propertyCount}套房产`,
+                    propertyTypes: propertyTypes.join(', ') || '待分配房产',
+                    branchName: landlord.branch_name || '',
+                    phone: landlord.phone || '',
+                    petFriendly: landlord.preferences?.pet_friendly || false,
+                    smokingAllowed: landlord.preferences?.smoking_allowed || false,
+                    depositWeeks: landlord.preferences?.deposit_weeks || 0
+                }, landlordPosition); // 传递房东基于房产的位置
             }
         }
 

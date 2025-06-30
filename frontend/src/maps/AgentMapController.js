@@ -105,15 +105,22 @@ class AgentMapController {
     /**
      * 添加智能体
      */
-    async addAgent(agentId, type, info = {}) {
+    async addAgent(agentId, type, info = {}, customPosition = null) {
         if (!this.isInitialized) {
             console.warn('[AgentMapController] 控制器未初始化');
             return;
         }
 
-        // 为智能体分配位置
-        const positionIndex = this.agents.size % this.agentPositions.length;
-        const position = this.agentPositions[positionIndex];
+        let position;
+        
+        // 如果提供了自定义位置，使用自定义位置
+        if (customPosition) {
+            position = customPosition;
+        } else {
+            // 否则使用预设位置
+            const positionIndex = this.agents.size % this.agentPositions.length;
+            position = this.agentPositions[positionIndex];
+        }
 
         // 生成头像
         const avatarDataUri = await this.avatarGenerator.generateAvatar(agentId, type, info.name);
@@ -134,7 +141,7 @@ class AgentMapController {
             ...info
         });
 
-        console.log(`[AgentMapController] 添加智能体: ${agentId} (${type})`);
+        console.log(`[AgentMapController] 添加智能体: ${agentId} (${type}) at ${position.lat}, ${position.lng}`);
         return marker;
     }
 

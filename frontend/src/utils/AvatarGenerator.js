@@ -23,7 +23,7 @@ class AvatarGenerator {
 
         const avatar = createAvatar(pixelArt, {
             seed: name || agentId, // 使用名字作为种子
-            size: 48, // 地图标记合适的大小
+            size: 32, // 地图标记合适的大小
             // 租客使用明亮活泼的背景色
             backgroundColor: ['b6e3f4', 'c0aede', 'd1d4f9', 'ffd5dc', 'ffdfbf'],
             backgroundType: ['solid'],
@@ -80,7 +80,7 @@ class AvatarGenerator {
 
         const avatar = createAvatar(pixelArt, {
             seed: name || agentId, // 使用名字作为种子
-            size: 48, // 地图标记合适的大小
+            size: 32, // 地图标记合适的大小
             // 房东使用深色商务风格的背景色
             backgroundColor: ['264653', '2a9d8f', 'e9c46a', 'f4a261', 'e76f51'],
             backgroundType: ['solid'],
