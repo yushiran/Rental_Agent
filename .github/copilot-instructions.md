@@ -2,6 +2,9 @@
 Always ensure code clarity, readability, reusability, and efficiency.
 Also, feel free to delete any unnecessary files
 
+后端的启动方法是cd backend然后fastapi run app/api_service/main.py
+前端的启动方法是cd frontend然后npm run dev
+
 ## 📌 Project Overview
 
 This project implements a **multi-agent dialogue system** based on [LangGraph](https://github.com/langchain-ai/langgraph), emphasizing **modular design**, **code clarity**, and **reusability**.

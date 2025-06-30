@@ -13,7 +13,7 @@ class MapManager {
         
         // 地图配置
         this.config = {
-            center: { lat: 39.9042, lng: 116.4074 }, // 北京天安门
+            center: { lat: 51.5074, lng: -0.1278 }, // London city center
             zoom: 13,
             styles: this.getMapStyles()
         };
@@ -69,7 +69,7 @@ class MapManager {
     /**
      * 添加智能体标记
      */
-    addAgentMarker(agentId, position, type, info = {}) {
+    addAgentMarker(agentId, position, type, info = {}, avatarDataUri = null) {
         if (!this.isInitialized) {
             console.warn('[MapManager] 地图未初始化');
             return null;
@@ -79,7 +79,7 @@ class MapManager {
             position: position,
             map: this.map,
             title: info.name || agentId,
-            icon: this.getAgentIcon(type, info.status),
+            icon: this.getAgentIcon(type, info.status, avatarDataUri),
             animation: google.maps.Animation.DROP
         });
 
@@ -117,13 +117,13 @@ class MapManager {
     /**
      * 更新智能体状态
      */
-    updateAgentStatus(agentId, status, info = {}) {
+    updateAgentStatus(agentId, status, info = {}, avatarDataUri = null) {
         const marker = this.agentMarkers.get(agentId);
         const infoWindow = this.infoWindows.get(agentId);
         
         if (marker) {
             const agentType = info.type || 'tenant';
-            marker.setIcon(this.getAgentIcon(agentType, status));
+            marker.setIcon(this.getAgentIcon(agentType, status, avatarDataUri));
         }
         
         if (infoWindow) {
@@ -189,7 +189,18 @@ class MapManager {
     /**
      * 获取智能体图标
      */
-    getAgentIcon(type, status = 'idle') {
+    getAgentIcon(type, status = 'idle', avatarDataUri = null) {
+        // 如果有头像，使用头像
+        if (avatarDataUri) {
+            return {
+                url: avatarDataUri,
+                scaledSize: new google.maps.Size(48, 48),
+                origin: new google.maps.Point(0, 0),
+                anchor: new google.maps.Point(24, 48) // 底部中心对齐
+            };
+        }
+
+        // 后备方案：使用原来的彩色图钉
         const baseUrl = 'https://maps.google.com/mapfiles/ms/icons/';
         const colors = {
             tenant: { idle: 'blue', active: 'green', thinking: 'yellow' },

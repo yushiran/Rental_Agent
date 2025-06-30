@@ -1,6 +1,6 @@
 import MapManager from './MapManager.js';
-import FallbackMapManager from './FallbackMapManager.js';
 import googleMapsLoader from './GoogleMapsLoader.js';
+import AvatarGenerator from '../utils/AvatarGenerator.js';
 
 /**
  * AgentMapController - 智能体地图控制器
@@ -9,6 +9,7 @@ import googleMapsLoader from './GoogleMapsLoader.js';
 class AgentMapController {
     constructor() {
         this.mapManager = null;
+        this.avatarGenerator = new AvatarGenerator();
         this.agents = new Map();
         this.properties = new Map();
         this.negotiationSessions = new Map();
@@ -59,18 +60,13 @@ class AgentMapController {
 
         } catch (error) {
             console.warn('[AgentMapController] Google Maps 初始化失败，使用后备地图:', error);
-            
-            // 使用后备地图管理器
-            this.mapManager = new FallbackMapManager();
-            await this.mapManager.initialize(containerId);
-            console.log('[AgentMapController] 使用后备画布地图');
         }
 
         // 设置事件监听
         this.setupEventListeners();
 
         // 不再自动添加初始房产，等待从后端获取真实数据
-        // this.addInitialProperties();
+        this.addInitialProperties();
 
         this.isInitialized = true;
         console.log('[AgentMapController] 初始化完成');
@@ -109,7 +105,7 @@ class AgentMapController {
     /**
      * 添加智能体
      */
-    addAgent(agentId, type, info = {}) {
+    async addAgent(agentId, type, info = {}) {
         if (!this.isInitialized) {
             console.warn('[AgentMapController] 控制器未初始化');
             return;
@@ -119,11 +115,14 @@ class AgentMapController {
         const positionIndex = this.agents.size % this.agentPositions.length;
         const position = this.agentPositions[positionIndex];
 
+        // 生成头像
+        const avatarDataUri = await this.avatarGenerator.generateAvatar(agentId, type, info.name);
+
         // 添加到地图
         const marker = this.mapManager.addAgentMarker(agentId, position, type, {
             ...info,
             status: 'idle'
-        });
+        }, avatarDataUri);
 
         // 记录智能体信息
         this.agents.set(agentId, {
@@ -131,6 +130,7 @@ class AgentMapController {
             position,
             marker,
             status: 'idle',
+            avatarDataUri,
             ...info
         });
 
@@ -156,7 +156,7 @@ class AgentMapController {
             status,
             currentMessage: message,
             ...agent
-        });
+        }, agent.avatarDataUri);
 
         console.log(`[AgentMapController] 更新智能体状态: ${agentId} -> ${status}`);
     }
@@ -318,6 +318,7 @@ class AgentMapController {
         this.agents.clear();
         this.negotiationSessions.clear();
         this.properties.clear(); // 也清除房产，准备接收新数据
+        this.avatarGenerator.clearCache(); // 清除头像缓存
         if (this.mapManager) {
             this.mapManager.clearAllMarkers();
         }

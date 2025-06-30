@@ -42,6 +42,9 @@ class RentalAgentApp {
             // 设置事件监听
             this.setupEventListeners();
             
+            // 手动检查一次连接状态
+            this.updateConnectionStatus(this.networkManager.connectionStatus === 'connected');
+            
             // 更新UI状态
             this.updateUI();
             
@@ -104,15 +107,6 @@ class RentalAgentApp {
         if (clearLogsBtn) {
             clearLogsBtn.addEventListener('click', () => this.clearLogs());
         }
-
-        // API Key 输入框变化事件
-        const apiKeyInput = document.getElementById('api-key-input');
-        if (apiKeyInput) {
-            apiKeyInput.addEventListener('change', (e) => {
-                this.config.apiKey = e.target.value;
-                console.log('[RentalAgentApp] API Key 已更新');
-            });
-        }
     }
 
     /**
@@ -148,8 +142,8 @@ class RentalAgentApp {
             // 连接WebSocket
             await this.networkManager.connectWebSocket(this.currentSession);
             
-            // 添加智能体到地图
-            this.addInitialAgents();
+            // // 添加智能体到地图
+            // this.addInitialAgents();
             
             this.updateStatus('协商已开始');
             this.addLog('info', `协商会话开始: ${this.currentSession}`);
@@ -192,41 +186,7 @@ class RentalAgentApp {
         }
     }
 
-    /**
-     * 添加初始智能体
-     */
-    addInitialAgents() {
-        // 获取租客数量设置
-        const tenantCount = parseInt(document.getElementById('tenant-count')?.value || 3);
-        
-        // 添加租客
-        const tenantNames = ['张三', '李四', '王五', '赵六', '钱七'];
-        for (let i = 0; i < tenantCount; i++) {
-            this.mapController.addAgent(`tenant_${i + 1}`, 'tenant', {
-                name: `${tenantNames[i] || '租客' + (i + 1)}(租客)`,
-                budget: 8000 + i * 2000,
-                preferences: i % 2 === 0 ? '市中心, 交通便利' : '安静环境, 学区房'
-            });
-        }
-        
-        // 添加多个房东
-        const landlords = [
-            { id: 'landlord_1', name: '刘老板(房东)', properties: ['东城区公寓'] },
-            { id: 'landlord_2', name: '陈老板(房东)', properties: ['西城区住宅'] },
-            { id: 'landlord_3', name: '杨老板(房东)', properties: ['朝阳区复式'] },
-            { id: 'landlord_4', name: '周老板(房东)', properties: ['海淀区学区房'] },
-            { id: 'landlord_5', name: '吴老板(房东)', properties: ['丰台区新房'] }
-        ];
-        
-        landlords.forEach(landlord => {
-            this.mapController.addAgent(landlord.id, 'landlord', {
-                name: landlord.name,
-                properties: landlord.properties
-            });
-        });
-        
-        this.addLog('info', `已添加 ${tenantCount} 个租客和 ${landlords.length} 个房东到地图`);
-    }
+
 
     /**
      * 处理WebSocket消息
@@ -339,7 +299,11 @@ class RentalAgentApp {
     updateConnectionStatus(connected) {
         const statusEl = document.getElementById('connection-status');
         if (statusEl) {
-            statusEl.textContent = connected ? '已连接' : '未连接';
+            // 使用 data 属性中的文本，如果没有则使用默认值
+            const connectedText = statusEl.dataset.connectedText || '已连接';
+            const disconnectedText = statusEl.dataset.disconnectedText || '未连接';
+            
+            statusEl.textContent = connected ? connectedText : disconnectedText;
             statusEl.className = `status ${connected ? 'connected' : 'disconnected'}`;
         }
     }
@@ -487,7 +451,7 @@ class RentalAgentApp {
                 }
                 
                 // 添加从后端获取的真实数据到地图
-                this.addRealDataToMap(response.data);
+                await this.addRealDataToMap(response.data);
                 
             } else {
                 throw new Error(response.message || '初始化失败');
@@ -505,7 +469,7 @@ class RentalAgentApp {
     /**
      * 将从后端获取的真实数据添加到地图
      */
-    addRealDataToMap(data) {
+    async addRealDataToMap(data) {
         if (!this.mapController || !this.mapController.isInitialized) {
             console.warn('[RentalAgentApp] 地图控制器未初始化');
             return;
@@ -516,23 +480,23 @@ class RentalAgentApp {
 
         // 添加租客
         if (data.tenants && Array.isArray(data.tenants)) {
-            data.tenants.forEach((tenant, index) => {
-                this.mapController.addAgent(tenant.tenant_id, 'tenant', {
-                    name: `${tenant.name || '租客' + (index + 1)}(租客)`,
+            for (const tenant of data.tenants) {
+                await this.mapController.addAgent(tenant.tenant_id, 'tenant', {
+                    name: `${tenant.name || '租客'}(租客)`,
                     budget: tenant.budget || 8000,
                     preferences: tenant.preferences || '寻找合适房源'
                 });
-            });
+            }
         }
 
         // 添加房东
         if (data.landlords && Array.isArray(data.landlords)) {
-            data.landlords.forEach((landlord, index) => {
-                this.mapController.addAgent(landlord.landlord_id, 'landlord', {
-                    name: `${landlord.name || '房东' + (index + 1)}(房东)`,
+            for (const landlord of data.landlords) {
+                await this.mapController.addAgent(landlord.landlord_id, 'landlord', {
+                    name: `${landlord.name || '房东'}(房东)`,
                     properties: landlord.properties || ['待分配房产']
                 });
-            });
+            }
         }
 
         // 添加房产标记（使用map_data）
@@ -568,9 +532,9 @@ const app = new RentalAgentApp();
 // 应用启动
 document.addEventListener('DOMContentLoaded', async () => {
     try {
-        // 可以在这里配置 Google Maps API Key
+        // 配置后端URL
         const config = {
-            apiKey: 'AIzaSyDSflr_l6w6IZIhqcFO2J_0WJacRga2UiU', // 如果有API Key请取消注释并填入
+            apiKey: 'AIzaSyDSflr_l6w6IZIhqcFO2J_0WJacRga2UiU', // Google Maps API Key
             backendUrl: 'http://localhost:8000'
         };
         

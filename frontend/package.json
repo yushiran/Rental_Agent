@@ -22,10 +22,13 @@
   ],
   "author": "Rental Agent Team",
   "license": "MIT",
-  "dependencies": {},
+  "dependencies": {
+    "@dicebear/collection": "^9.2.3",
+    "@dicebear/core": "^9.2.3"
+  },
   "devDependencies": {
-    "vite": "^5.0.0",
-    "@vitejs/plugin-legacy": "^5.0.0"
+    "@vitejs/plugin-legacy": "^5.0.0",
+    "vite": "^5.0.0"
   },
   "engines": {
     "node": ">=16.0.0"
