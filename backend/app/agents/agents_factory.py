@@ -305,7 +305,7 @@ class AgentDataInitializer:
     async def initialize_properties_and_landlords(self, rightmove_file_path: str = None):
         """初始化房产和房东数据"""
         if not rightmove_file_path:
-            rightmove_file_path = f"{config.root_path}/backend/dataset/rent_cast_data/processed/rightmove_data_processed.json"
+            rightmove_file_path = f"{config.root_path}/dataset/rent_cast_data/processed/rightmove_data_processed.json"
         
         try:
             # 加载房产数据
@@ -551,7 +551,7 @@ if __name__ == "__main__":
     initializer = AgentDataInitializer()
     
     # Use actual JSON file path
-    rightmove_file = f"{config.root_path}/backend/dataset/rent_cast_data/processed/rightmove_data_processed.json"
+    rightmove_file = f"{config.root_path}/dataset/rent_cast_data/processed/rightmove_data_processed.json"
 
     # Initialize all data
     initializer.initialize_all_data(rightmove_file, tenant_count=50)

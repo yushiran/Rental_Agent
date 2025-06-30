@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+  <rect width="32" height="32" fill="#4CAF50"/>
+  <rect x="4" y="8" width="24" height="16" fill="#ffffff" stroke="#333" stroke-width="1"/>
+  <rect x="6" y="12" width="4" height="8" fill="#4CAF50"/>
+  <rect x="12" y="12" width="4" height="8" fill="#4CAF50"/>
+  <rect x="18" y="12" width="4" height="8" fill="#4CAF50"/>
+  <rect x="24" y="12" width="4" height="8" fill="#4CAF50"/>
+  <text x="16" y="6" text-anchor="middle" font-family="Arial" font-size="4" fill="#333">🏠</text>
+</svg>

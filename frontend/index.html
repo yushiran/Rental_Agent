@@ -1,90 +1,308 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Rental Agent Simulation</title>
-  <style>
-    body {
-      margin: 0;
-      padding: 0;
-      background-color: #000;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      font-family: Arial, sans-serif;
-    }
-    #game-container {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-    #controls {
-      margin-top: 15px;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      align-items: center;
-    }
-    .control-row {
-      display: flex;
-      gap: 10px;
-      align-items: center;
-    }
-    input {
-      padding: 5px;
-      border-radius: 3px;
-      border: 1px solid #ccc;
-      width: 60px;
-    }
-    label {
-      color: white;
-      margin-right: 5px;
-    }
-    button {
-      background-color: #4CAF50;
-      border: none;
-      color: white;
-      padding: 10px 20px;
-      text-align: center;
-      text-decoration: none;
-      display: inline-block;
-      font-size: 16px;
-      margin: 4px 2px;
-      cursor: pointer;
-      border-radius: 5px;
-    }
-    button:hover {
-      background-color: #45a049;
-    }
-    button:disabled {
-      background-color: #cccccc;
-      cursor: not-allowed;
-    }
-    #status {
-      color: white;
-      margin-top: 10px;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cross-Origin-Opener-Policy" content="same-origin">
+    <meta http-equiv="Cross-Origin-Embedder-Policy" content="require-corp">
+    <title>Agent Sandbox - 租房协商模拟</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: #fff;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 1rem;
+            text-align: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        h1 {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        .subtitle {
+            font-size: 1rem;
+            opacity: 0.8;
+        }
+
+        main {
+            flex: 1;
+            display: flex;
+            gap: 1rem;
+            padding: 1rem;
+        }
+
+        #game-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        #game {
+            width: 800px;
+            height: 600px;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .legend {
+            margin-top: 1rem;
+            padding: 0.5rem;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 4px;
+            font-size: 0.9rem;
+            text-align: center;
+        }
+
+        #controls {
+            width: 350px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            padding: 1rem;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            height: fit-content;
+        }
+
+        .control-section {
+            margin-bottom: 1.5rem;
+        }
+
+        .control-section h3 {
+            margin-bottom: 0.8rem;
+            color: #fff;
+            font-size: 1.1rem;
+        }
+
+        .button-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        button {
+            padding: 0.8rem 1.2rem;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+            color: white;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(76, 175, 80, 0.4);
+        }
+
+        .btn-info {
+            background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%);
+            color: white;
+        }
+
+        .btn-info:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(33, 150, 243, 0.4);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #f44336 0%, #d32f2f 100%);
+            color: white;
+        }
+
+        .btn-danger:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(244, 67, 54, 0.4);
+        }
+
+        button:disabled {
+            background: #666 !important;
+            cursor: not-allowed;
+            opacity: 0.6;
+            transform: none !important;
+            box-shadow: none !important;
+        }
+
+        .input-group {
+            margin-bottom: 0.8rem;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 0.3rem;
+            font-size: 0.9rem;
+            color: #ccc;
+        }
+
+        input[type="number"] {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            font-size: 0.9rem;
+        }
+
+        input[type="number"]:focus {
+            outline: none;
+            border-color: #4CAF50;
+            box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
+        }
+
+        input[type="checkbox"] {
+            margin-right: 0.5rem;
+        }
+
+        .status-section {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 0.8rem;
+            border-radius: 6px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        #status {
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.5rem;
+            font-size: 0.8rem;
+            color: #ccc;
+        }
+
+        footer {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 1rem;
+            text-align: center;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            font-size: 0.8rem;
+            opacity: 0.7;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 1024px) {
+            main {
+                flex-direction: column;
+            }
+            
+            #controls {
+                width: 100%;
+            }
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 1.5rem;
+            }
+            
+            #game {
+                width: 100%;
+                max-width: 600px;
+            }
+        }
+    </style>
 </head>
 <body>
-  <div id="game-container">
-    <div id="game"></div>
-    <div id="controls">
-      <div class="control-row">
-        <label for="tenant-count">Tenants:</label>
-        <input type="number" id="tenant-count" value="3" min="1" max="10">
-        <button id="initialize-btn">Initialize System</button>
-      </div>
-      <div class="control-row">
-        <button id="start-btn" disabled>Start Negotiation</button>
-        <button id="reset-btn">Reset</button>
-      </div>
-    </div>
-    <div id="status">Backend Status: Checking...</div>
-    <div id="system-status" style="color: white; margin-top: 5px;">System not initialized</div>
-  </div>
-  <script type="module" src="src/main.js"></script>
+    <header>
+        <h1>🏠 Agent Sandbox</h1>
+        <p class="subtitle">智能租房协商模拟系统</p>
+    </header>
+
+    <main>
+        <div id="game-container">
+            <div id="game"></div>
+            <div class="legend">
+                💡 <strong>操作提示:</strong> 点击租客查看预算信息，点击房东查看房产信息
+            </div>
+        </div>
+
+        <div id="controls">
+            <div class="control-section">
+                <h3>🎮 系统控制</h3>
+                <div class="button-group">
+                    <button id="initialize-btn" class="btn-primary">
+                        初始化系统
+                    </button>
+                    <button id="start-btn" class="btn-info" disabled>
+                        开始协商
+                    </button>
+                    <button id="reset-btn" class="btn-danger">
+                        重置记忆
+                    </button>
+                </div>
+            </div>
+
+            <div class="control-section">
+                <h3>⚙️ 参数设置</h3>
+                <div class="input-group">
+                    <label for="tenant-count">租客数量:</label>
+                    <input type="number" id="tenant-count" value="3" min="1" max="10">
+                </div>
+                <div class="input-group">
+                    <label>
+                        <input type="checkbox" id="reset-data"> 重置现有数据
+                    </label>
+                </div>
+            </div>
+
+            <div class="control-section">
+                <h3>📊 系统状态</h3>
+                <div class="status-section">
+                    <div id="status">状态: 等待初始化</div>
+                    <div class="stats">
+                        <div>租客: <span id="tenant-count-display">0</span></div>
+                        <div>房东: <span id="landlord-count-display">0</span></div>
+                        <div>活跃协商: <span id="active-negotiations">0</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="control-section">
+                <h3>📖 说明</h3>
+                <div class="legend">
+                    <strong>🟢 租客:</strong> 主动寻找房东并发起协商<br>
+                    <strong>🔵 房东:</strong> 等待租客联系并参与协商<br>
+                    <strong>💬 对话:</strong> 实时显示协商过程<br>
+                    <strong>💭 思考:</strong> 显示智能体内部思考
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <p>Agent Sandbox - 基于 LangGraph 的多智能体租房协商系统 | Powered by Phaser 3</p>
+    </footer>
+
+    <script type="module" src="src/main.js"></script>
 </body>
 </html>
