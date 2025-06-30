@@ -27,18 +27,33 @@ class NetworkManager {
      */
     async checkConnection() {
         try {
-            const response = await fetch(`${this.baseUrl}/`);
+            const response = await fetch(`${this.baseUrl}/`, {
+                method: 'GET',
+                mode: 'cors',
+                headers: {
+                    'Accept': 'application/json'
+                }
+            });
+            
             if (response.ok) {
                 this.connectionStatus = 'connected';
                 this.retryAttempts = 0;
                 this.emit('connection:established', { status: 'connected' });
                 console.log('[NetworkManager] 后端连接成功');
                 return true;
+            } else {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             }
         } catch (error) {
             this.connectionStatus = 'disconnected';
             this.emit('connection:lost', { error: error.message });
             console.error('[NetworkManager] 后端连接失败:', error);
+            
+            // 如果是网络错误，显示更友好的提示
+            if (error.name === 'TypeError' || error.message.includes('fetch')) {
+                console.warn('[NetworkManager] 提示：请确保后端服务正在运行在 http://localhost:8000');
+            }
+            
             return false;
         }
     }

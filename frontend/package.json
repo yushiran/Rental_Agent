@@ -1,7 +1,7 @@
 {
-  "name": "rental-agent-sandbox-frontend",
+  "name": "rental-agent-maps-frontend",
   "version": "2.0.0",
-  "description": "Agent Sandbox Frontend - 基于Phaser 3的多智能体租房协商可视化系统",
+  "description": "Rental Agent Frontend - 基于Google Maps的多智能体租房协商可视化系统",
   "main": "src/main.js",
   "type": "module",
   "scripts": {
@@ -11,19 +11,18 @@
     "serve": "vite preview --host 0.0.0.0 --port 3000"
   },
   "keywords": [
-    "phaser",
+    "google-maps",
     "agent",
     "simulation",
     "rental",
     "negotiation",
     "langgraph",
-    "ai"
+    "ai",
+    "geospatial"
   ],
   "author": "Rental Agent Team",
   "license": "MIT",
-  "dependencies": {
-    "phaser": "^3.70.0"
-  },
+  "dependencies": {},
   "devDependencies": {
     "vite": "^5.0.0",
     "@vitejs/plugin-legacy": "^5.0.0"
