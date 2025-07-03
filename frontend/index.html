@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="Cross-Origin-Opener-Policy" content="same-origin">
     <meta http-equiv="Cross-Origin-Embedder-Policy" content="require-corp">
-    <title>Rental Agent Maps - 租房协商地图可视化</title>
+    <title>Rental Agent Maps - Multi-Agent Rental Negotiation Visualization</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg">
     <style>
         * {
@@ -280,7 +280,7 @@
             margin-bottom: 0.3rem;
         }
 
-        /* 响应式设计 */
+        /* Responsive Design */
         @media (max-width: 768px) {
             main {
                 flex-direction: column;
@@ -300,7 +300,7 @@
 <body>
     <header>
         <h1>🏠 Rental Agent Maps</h1>
-        <p class="subtitle">基于Google Maps的多智能体租房协商可视化系统</p>
+        <p class="subtitle">Multi-Agent Rental Negotiation Visualization System Based on Google Maps</p>
     </header>
 
     <main>
@@ -310,57 +310,57 @@
 
         <aside class="controls-panel">
             <div class="panel status-panel">
-                <h3>🔗 系统状态</h3>
+                <h3>🔗 System Status</h3>
                 <div class="status-item">
-                    <span>后端连接:</span>
-                    <span id="connection-status" class="status disconnected" data-connected-text="已连接" data-disconnected-text="未连接">未连接</span>
+                    <span>Backend Connection:</span>
+                    <span id="connection-status" class="status disconnected" data-connected-text="Connected" data-disconnected-text="Disconnected">Disconnected</span>
                 </div>
                 <div class="status-item">
-                    <span>当前状态:</span>
-                    <span id="current-status">就绪</span>
+                    <span>Current Status:</span>
+                    <span id="current-status">Ready</span>
                 </div>
             </div>
 
             <div class="panel">
-                <h3>🎮 控制操作</h3>
-                <button id="initialize-system" data-original-text="初始化系统" data-loading-text="初始化中...">
-                    初始化系统
+                <h3>🎮 Control Operations</h3>
+                <button id="initialize-system" data-original-text="Initialize System" data-loading-text="Initializing...">
+                    Initialize System
                 </button>
-                <button id="start-negotiation" data-original-text="开始协商" data-loading-text="启动中..." disabled>
-                    开始协商
+                <button id="start-negotiation" data-original-text="Start Negotiation" data-loading-text="Starting..." disabled>
+                    Start Negotiation
                 </button>
-                <button id="reset-session" data-original-text="重置会话" data-loading-text="重置中..." disabled>
-                    重置会话
+                <button id="reset-session" data-original-text="Reset Session" data-loading-text="Resetting..." disabled>
+                    Reset Session
                 </button>
                 <button id="clear-logs">
-                    清除日志
+                    Clear Logs
                 </button>
             </div>
 
             <div class="panel">
-                <h3>⚙️ 参数设置</h3>
+                <h3>⚙️ Parameter Settings</h3>
                 <div class="input-group">
-                    <label for="tenant-count">租客数量:</label>
+                    <label for="tenant-count">Number of Tenants:</label>
                     <select id="tenant-count">
-                        <option value="1">1个租客</option>
-                        <option value="2">2个租客</option>
-                        <option value="3" selected>3个租客</option>
-                        <option value="5">5个租客</option>
+                        <option value="1">1 Tenant</option>
+                        <option value="2">2 Tenants</option>
+                        <option value="3" selected>3 Tenants</option>
+                        <option value="5">5 Tenants</option>
                     </select>
                 </div>
                 <div class="checkbox-group">
                     <label>
-                        <input type="checkbox" id="reset-data"> 重置现有数据
+                        <input type="checkbox" id="reset-data"> Reset Existing Data
                     </label>
                 </div>
             </div>
 
             <div class="panel logs-panel">
-                <h3>📋 事件日志</h3>
+                <h3>📋 Event Log</h3>
                 <div id="logs-container" class="logs-container">
                     <div class="log-entry log-info">
-                        <span class="timestamp">[初始化]</span>
-                        <span class="message">系统准备就绪</span>
+                        <span class="timestamp">[Initialize]</span>
+                        <span class="message">System Ready</span>
                     </div>
                 </div>
             </div>

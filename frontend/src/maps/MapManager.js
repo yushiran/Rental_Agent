@@ -1,6 +1,6 @@
 /**
- * MapManager - Google Maps 管理器
- * 负责地图初始化、标记管理和交互处理
+ * MapManager - Google Maps Manager
+ * Responsible for map initialization, marker management and interaction handling
  */
 class MapManager {
     constructor() {
@@ -11,46 +11,46 @@ class MapManager {
         this.isInitialized = false;
         this.eventListeners = new Map();
         
-        // 标记位置缓存，用于重叠检测
+        // Marker position cache for overlap detection
         this.markerPositions = new Map(); // key: "lat,lng", value: count
         
-        // 地图配置
+        // Map configuration
         this.config = {
             center: { lat: 51.5074, lng: -0.1278 }, // London city center
             zoom: 13,
             styles: this.getMapStyles()
         };
         
-        // 重叠检测配置
+        // Overlap detection configuration
         this.overlapConfig = {
-            threshold: 0.0001, // 约10米的阈值
-            offsetDistance: 0.0002, // 约20米的偏移距离
-            maxAttempts: 8 // 最多尝试8个方向
+            threshold: 0.0001, // About 10 meters threshold
+            offsetDistance: 0.0002, // About 20 meters offset distance
+            maxAttempts: 8 // Maximum 8 direction attempts
         };
     }
 
     /**
-     * 初始化Google Maps
+     * Initialize Google Maps
      */
     async initialize(containerId) {
         if (!window.google || !window.google.maps) {
-            throw new Error('Google Maps API 未加载');
+            throw new Error('Google Maps API not loaded');
         }
 
         const container = document.getElementById(containerId);
         if (!container) {
-            throw new Error(`找不到容器元素: ${containerId}`);
+            throw new Error(`Container element not found: ${containerId}`);
         }
 
         this.map = new google.maps.Map(container, this.config);
         this.isInitialized = true;
         
-        console.log('[MapManager] Google Maps 初始化完成');
+        console.log('[MapManager] Google Maps initialization completed');
         this.emit('map:initialized', { map: this.map });
     }
 
     /**
-     * 获取地图样式
+     * Get Map Styles
      */
     getMapStyles() {
         return [
@@ -77,17 +77,17 @@ class MapManager {
     }
 
     /**
-     * 检测位置是否与现有标记重叠
+     * Check if position overlaps with existing markers
      */
     isPositionOverlapped(position) {
         const positionKey = `${position.lat.toFixed(6)},${position.lng.toFixed(6)}`;
         
-        // 检查精确位置
+        // Check exact position
         if (this.markerPositions.has(positionKey)) {
             return true;
         }
         
-        // 检查附近位置（阈值范围内）
+        // Check nearby positions (within threshold)
         for (const [existingKey, count] of this.markerPositions) {
             if (count > 0) {
                 const [latStr, lngStr] = existingKey.split(',');
@@ -109,18 +109,18 @@ class MapManager {
     }
 
     /**
-     * 计算避免重叠的位置偏移
+     * Calculate non-overlapping position offset
      */
     calculateNonOverlappingPosition(originalPosition) {
         if (!this.isPositionOverlapped(originalPosition)) {
             return originalPosition;
         }
 
-        // 尝试8个方向的偏移
-        const angles = [0, 45, 90, 135, 180, 225, 270, 315]; // 度数
+        // Try offsets in 8 directions
+        const angles = [0, 45, 90, 135, 180, 225, 270, 315]; // degrees
         
         for (let attempt = 0; attempt < this.overlapConfig.maxAttempts; attempt++) {
-            const angle = angles[attempt] * Math.PI / 180; // 转换为弧度
+            const angle = angles[attempt] * Math.PI / 180; // convert to radians
             const distance = this.overlapConfig.offsetDistance * (attempt + 1);
             
             const offsetPosition = {
@@ -129,16 +129,16 @@ class MapManager {
             };
             
             if (!this.isPositionOverlapped(offsetPosition)) {
-                console.log(`[MapManager] 位置偏移: ${attempt + 1} 次尝试, 角度: ${angles[attempt]}°`);
+                console.log(`[MapManager] Position offset: ${attempt + 1} attempts, angle: ${angles[attempt]}°`);
                 return offsetPosition;
             }
         }
         
-        // 如果所有偏移都重叠，使用随机偏移
+        // If all offsets overlap, use random offset
         const randomAngle = Math.random() * 2 * Math.PI;
         const randomDistance = this.overlapConfig.offsetDistance * (1 + Math.random());
         
-        console.log('[MapManager] 使用随机位置偏移');
+        console.log('[MapManager] Using random position offset');
         return {
             lat: originalPosition.lat + Math.cos(randomAngle) * randomDistance,
             lng: originalPosition.lng + Math.sin(randomAngle) * randomDistance
@@ -155,7 +155,7 @@ class MapManager {
     }
 
     /**
-     * 取消注册标记位置
+     * Unregister marker position
      */
     unregisterMarkerPosition(position) {
         const positionKey = `${position.lat.toFixed(6)},${position.lng.toFixed(6)}`;
@@ -168,15 +168,15 @@ class MapManager {
     }
 
     /**
-     * 添加智能体标记
+     * Add agent marker
      */
     addAgentMarker(agentId, position, type, info = {}, avatarDataUri = null) {
         if (!this.isInitialized) {
-            console.warn('[MapManager] 地图未初始化');
+            console.warn('[MapManager] Map not initialized');
             return null;
         }
 
-        // 计算避免重叠的位置
+        // Calculate non-overlapping position
         const finalPosition = this.calculateNonOverlappingPosition(position);
         
         const marker = new google.maps.Marker({
@@ -187,10 +187,10 @@ class MapManager {
             animation: google.maps.Animation.DROP
         });
 
-        // 注册标记位置
+        // Register marker position
         this.registerMarkerPosition(finalPosition);
 
-        // 创建信息窗口
+        // Create info window
         const infoWindow = new google.maps.InfoWindow({
             content: this.createAgentInfoContent(agentId, type, info)
         });
@@ -459,14 +459,14 @@ class MapManager {
     }
 
     /**
-     * 移除房产标记
+     * Remove property marker
      */
     removePropertyMarker(propertyId) {
         const marker = this.propertyMarkers.get(propertyId);
         const infoWindow = this.infoWindows.get(`property_${propertyId}`);
         
         if (marker) {
-            // 取消注册位置
+            // Unregister position
             this.unregisterMarkerPosition(marker.getPosition().toJSON());
             marker.setMap(null);
             this.propertyMarkers.delete(propertyId);
@@ -479,16 +479,16 @@ class MapManager {
     }
 
     /**
-     * 清除所有标记
+     * Clear all markers
      */
     clearAllMarkers() {
-        // 清除智能体标记
+        // Clear agent markers
         this.agentMarkers.forEach(marker => {
             this.unregisterMarkerPosition(marker.getPosition().toJSON());
             marker.setMap(null);
         });
         
-        // 清除房产标记
+        // Clear property markers
         this.propertyMarkers.forEach(marker => {
             this.unregisterMarkerPosition(marker.getPosition().toJSON());
             marker.setMap(null);
@@ -499,11 +499,11 @@ class MapManager {
         this.agentMarkers.clear();
         this.propertyMarkers.clear();
         this.infoWindows.clear();
-        this.markerPositions.clear(); // 清空位置缓存
+        this.markerPositions.clear(); // Clear position cache
     }
 
     /**
-     * 聚焦到特定位置
+     * Focus on specific position
      */
     focusOn(position, zoom = 15) {
         if (this.map) {
@@ -513,7 +513,7 @@ class MapManager {
     }
 
     /**
-     * 事件系统
+     * Event system
      */
     on(event, callback) {
         if (!this.eventListeners.has(event)) {
@@ -530,7 +530,7 @@ class MapManager {
     }
 
     /**
-     * 销毁
+     * Destroy
      */
     destroy() {
         this.clearAllMarkers();

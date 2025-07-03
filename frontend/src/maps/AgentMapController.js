@@ -3,8 +3,8 @@ import googleMapsLoader from './GoogleMapsLoader.js';
 import AvatarGenerator from '../utils/AvatarGenerator.js';
 
 /**
- * AgentMapController - 智能体地图控制器
- * 专门处理智能体在地图上的可视化和交互
+ * AgentMapController - Agent Map Controller
+ * Specialized in handling agent visualization and interaction on the map
  */
 class AgentMapController {
     constructor() {
@@ -14,7 +14,7 @@ class AgentMapController {
         this.properties = new Map();
         this.negotiationSessions = new Map();
         this.isInitialized = false;
-        // 预设位置 (Central London)
+        // Preset positions (Central London)
         this.agentPositions = [
             { lat: 51.5074, lng: -0.1278 }, // Trafalgar Square
             { lat: 51.5101, lng: -0.1344 }, // Piccadilly Circus
@@ -36,44 +36,44 @@ class AgentMapController {
     }
 
     /**
-     * 初始化地图控制器
+     * Initialize map controller
      */
     async initialize(apiKey = '', containerId = 'map') {
         try {
-            console.log('[AgentMapController] 尝试加载 Google Maps...');
+            console.log('[AgentMapController] Attempting to load Google Maps...');
             
-            // 加载 Google Maps API
+            // Load Google Maps API
             if (apiKey) {
                 googleMapsLoader.setApiKey(apiKey);
             }
             await googleMapsLoader.load();
 
-            // 检查 Google Maps 是否真正可用
+            // Check if Google Maps is really available
             if (window.google && window.google.maps) {
-                // 使用 Google Maps
+                // Use Google Maps
                 this.mapManager = new MapManager();
                 await this.mapManager.initialize(containerId);
-                console.log('[AgentMapController] 使用 Google Maps');
+                console.log('[AgentMapController] Using Google Maps');
             } else {
-                throw new Error('Google Maps 不可用');
+                throw new Error('Google Maps not available');
             }
 
         } catch (error) {
-            console.warn('[AgentMapController] Google Maps 初始化失败，使用后备地图:', error);
+            console.warn('[AgentMapController] Google Maps initialization failed, using fallback map:', error);
         }
 
-        // 设置事件监听
+        // Set up event listeners
         this.setupEventListeners();
 
-        // 不再自动添加初始房产，等待从后端获取真实数据
+        // No longer automatically add initial properties, wait for real data from backend
         this.addInitialProperties();
 
         this.isInitialized = true;
-        console.log('[AgentMapController] 初始化完成');
+        console.log('[AgentMapController] Initialization completed');
     }
 
     /**
-     * 设置事件监听
+     * Set up event listeners
      */
     setupEventListeners() {
         if (!this.mapManager) return;
@@ -88,7 +88,7 @@ class AgentMapController {
     }
 
     /**
-     * 添加初始房产
+     * Add initial properties
      */
     addInitialProperties() {
         this.propertyPositions.forEach((property, index) => {
@@ -103,35 +103,35 @@ class AgentMapController {
     }
 
     /**
-     * 添加智能体
+     * Add agent
      */
     async addAgent(agentId, type, info = {}, customPosition = null) {
         if (!this.isInitialized) {
-            console.warn('[AgentMapController] 控制器未初始化');
+            console.warn('[AgentMapController] Controller not initialized');
             return;
         }
 
         let position;
         
-        // 如果提供了自定义位置，使用自定义位置
+        // If custom position is provided, use it
         if (customPosition) {
             position = customPosition;
         } else {
-            // 否则使用预设位置
+            // Otherwise use preset position
             const positionIndex = this.agents.size % this.agentPositions.length;
             position = this.agentPositions[positionIndex];
         }
 
-        // 生成头像
+        // Generate avatar
         const avatarDataUri = await this.avatarGenerator.generateAvatar(agentId, type, info.name);
 
-        // 添加到地图
+        // Add to map
         const marker = this.mapManager.addAgentMarker(agentId, position, type, {
             ...info,
             status: 'idle'
         }, avatarDataUri);
 
-        // 记录智能体信息
+        // Record agent information
         this.agents.set(agentId, {
             type,
             position,
@@ -141,17 +141,17 @@ class AgentMapController {
             ...info
         });
 
-        console.log(`[AgentMapController] 添加智能体: ${agentId} (${type}) at ${position.lat}, ${position.lng}`);
+        console.log(`[AgentMapController] Added agent: ${agentId} (${type}) at ${position.lat}, ${position.lng}`);
         return marker;
     }
 
     /**
-     * 更新智能体状态
+     * Update agent status
      */
     updateAgentStatus(agentId, status, message = '') {
         const agent = this.agents.get(agentId);
         if (!agent) {
-            console.warn(`[AgentMapController] 智能体不存在: ${agentId}`);
+            console.warn(`[AgentMapController] Agent does not exist: ${agentId}`);
             return;
         }
 
@@ -165,34 +165,34 @@ class AgentMapController {
             ...agent
         }, agent.avatarDataUri);
 
-        console.log(`[AgentMapController] 更新智能体状态: ${agentId} -> ${status}`);
+        console.log(`[AgentMapController] Updated agent status: ${agentId} -> ${status}`);
     }
 
     /**
-     * 显示智能体对话
+     * Show agent dialogue
      */
     showAgentDialogue(agentId, message, duration = 5000) {
         if (this.agents.has(agentId)) {
             this.mapManager.showDialogueBubble(agentId, message, duration);
-            console.log(`[AgentMapController] 显示对话: ${agentId} -> ${message}`);
+            console.log(`[AgentMapController] Show dialogue: ${agentId} -> ${message}`);
         }
     }
 
     /**
-     * 开始协商会话
+     * Start negotiation session
      */
     startNegotiation(sessionId, tenantId, landlordId, propertyId) {
-        // 更新智能体状态
+        // Update agent statuses
         this.updateAgentStatus(tenantId, 'negotiating');
         this.updateAgentStatus(landlordId, 'negotiating');
 
-        // 更新房产状态
+        // Update property status
         if (this.properties.has(propertyId)) {
             const property = this.properties.get(propertyId);
             property.status = 'negotiating';
         }
 
-        // 记录协商会话
+        // Record negotiation session
         this.negotiationSessions.set(sessionId, {
             tenantId,
             landlordId,
@@ -201,17 +201,17 @@ class AgentMapController {
             status: 'active'
         });
 
-        // 聚焦到相关位置
+        // Focus on relevant location
         const tenant = this.agents.get(tenantId);
         if (tenant) {
             this.mapManager.focusOn(tenant.position, 14);
         }
 
-        console.log(`[AgentMapController] 开始协商: ${sessionId}`);
+        console.log(`[AgentMapController] Started negotiation: ${sessionId}`);
     }
 
     /**
-     * 结束协商会话
+     * End negotiation session
      */
     endNegotiation(sessionId, result = 'completed') {
         const session = this.negotiationSessions.get(sessionId);
@@ -219,26 +219,26 @@ class AgentMapController {
 
         const { tenantId, landlordId, propertyId } = session;
 
-        // 更新智能体状态
+        // Update agent statuses
         const finalStatus = result === 'agreement' ? 'active' : 'idle';
         this.updateAgentStatus(tenantId, finalStatus);
         this.updateAgentStatus(landlordId, finalStatus);
 
-        // 更新房产状态
+        // Update property status
         if (this.properties.has(propertyId)) {
             const property = this.properties.get(propertyId);
             property.status = result === 'agreement' ? 'rented' : 'available';
         }
 
-        // 更新会话状态
+        // Update session status
         session.status = result;
         session.endTime = new Date();
 
-        console.log(`[AgentMapController] 结束协商: ${sessionId} -> ${result}`);
+        console.log(`[AgentMapController] Ended negotiation: ${sessionId} -> ${result}`);
     }
 
     /**
-     * 移动智能体到指定位置
+     * Move agent to specific location
      */
     moveAgent(agentId, newPosition) {
         const agent = this.agents.get(agentId);
@@ -302,14 +302,14 @@ class AgentMapController {
     }
 
     /**
-     * 获取智能体信息
+     * Get agent information
      */
     getAgent(agentId) {
         return this.agents.get(agentId);
     }
 
     /**
-     * 获取所有智能体
+     * Get all agents
      */
     getAllAgents() {
         return Array.from(this.agents.entries()).map(([id, agent]) => ({
@@ -319,20 +319,20 @@ class AgentMapController {
     }
 
     /**
-     * 清除所有智能体
+     * Clear all agents
      */
     clearAllAgents() {
         this.agents.clear();
         this.negotiationSessions.clear();
-        this.properties.clear(); // 也清除房产，准备接收新数据
-        this.avatarGenerator.clearCache(); // 清除头像缓存
+        this.properties.clear(); // Also clear properties, prepare to receive new data
+        this.avatarGenerator.clearCache(); // Clear avatar cache
         if (this.mapManager) {
             this.mapManager.clearAllMarkers();
         }
     }
 
     /**
-     * 销毁控制器
+     * Destroy controller
      */
     destroy() {
         if (this.mapManager) {

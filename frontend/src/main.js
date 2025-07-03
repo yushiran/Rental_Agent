@@ -2,8 +2,8 @@ import AgentMapController from './maps/AgentMapController.js';
 import NetworkManager from './network/NetworkManager.js';
 
 /**
- * RentalAgentApp - 租房智能体应用主类
- * 基于 Google Maps 的多智能体租房协商可视化系统
+ * RentalAgentApp - Rental Agent Application Main Class
+ * Multi-Agent Rental Negotiation Visualization System Based on Google Maps
  */
 class RentalAgentApp {
     constructor() {
@@ -22,47 +22,47 @@ class RentalAgentApp {
     }
 
     /**
-     * 初始化应用
+     * Initialize Application
      */
     async initialize(config = {}) {
-        console.log('[RentalAgentApp] 应用初始化开始...');
+        console.log('[RentalAgentApp] Application initialization started...');
         
         try {
-            // 合并配置
+            // Merge configuration
             this.config = { ...this.config, ...config };
             
-            // 初始化网络管理器
+            // Initialize network manager
             this.networkManager = new NetworkManager();
             await this.networkManager.initialize();
             
-            // 初始化地图控制器
+            // Initialize map controller
             this.mapController = new AgentMapController();
             await this.mapController.initialize(this.config.apiKey, this.config.mapContainer);
             
-            // 设置事件监听
+            // Setup event listeners
             this.setupEventListeners();
             
-            // 手动检查一次连接状态
+            // Manually check connection status once
             this.updateConnectionStatus(this.networkManager.connectionStatus === 'connected');
             
-            // 更新UI状态
+            // Update UI state
             this.updateUI();
             
             this.isInitialized = true;
-            console.log('[RentalAgentApp] 应用初始化完成');
+            console.log('[RentalAgentApp] Application initialization completed');
             
         } catch (error) {
-            console.error('[RentalAgentApp] 初始化失败:', error);
-            this.showError('应用初始化失败: ' + error.message);
+            console.error('[RentalAgentApp] Initialization failed:', error);
+            this.showError('Application initialization failed: ' + error.message);
             throw error;
         }
     }
 
     /**
-     * 设置事件监听
+     * Setup Event Listeners
      */
     setupEventListeners() {
-        // 网络事件
+        // Network events
         this.networkManager.on('connection:established', () => {
             this.updateConnectionStatus(true);
         });
@@ -71,38 +71,38 @@ class RentalAgentApp {
             this.updateConnectionStatus(false);
         });
         
-        // WebSocket 事件
+        // WebSocket events
         this.networkManager.on('websocket:message', (data) => {
             this.handleWebSocketMessage(data);
         });
         
-        // UI 事件
+        // UI events
         this.setupUIEventListeners();
     }
 
     /**
-     * 设置UI事件监听
+     * Setup UI Event Listeners
      */
     setupUIEventListeners() {
-        // 初始化系统按钮
+        // Initialize system button
         const initBtn = document.getElementById('initialize-system');
         if (initBtn) {
             initBtn.addEventListener('click', () => this.initializeSystem());
         }
         
-        // 开始协商按钮
+        // Start negotiation button
         const startBtn = document.getElementById('start-negotiation');
         if (startBtn) {
             startBtn.addEventListener('click', () => this.startNegotiation());
         }
         
-        // 重置按钮
+        // Reset button
         const resetBtn = document.getElementById('reset-session');
         if (resetBtn) {
             resetBtn.addEventListener('click', () => this.resetSession());
         }
         
-        // 清除日志按钮
+        // Clear logs button
         const clearLogsBtn = document.getElementById('clear-logs');
         if (clearLogsBtn) {
             clearLogsBtn.addEventListener('click', () => this.clearLogs());
@@ -110,91 +110,91 @@ class RentalAgentApp {
     }
 
     /**
-     * 开始协商
+     * Start Negotiation
      */
     async startNegotiation() {
         if (!this.isInitialized) {
-            this.showError('应用未初始化');
+            this.showError('Application not initialized');
             return;
         }
 
         try {
-            this.updateStatus('正在启动协商...');
+            this.updateStatus('Starting negotiation...');
             this.setButtonLoading('start-negotiation', true);
             
-            // 发送开始协商请求
+            // Send start negotiation request
             const response = await this.networkManager.request('/start-session', {
                 method: 'POST',
                 body: JSON.stringify({
                     tenant_preferences: {
                         budget: 10000,
-                        location: '北京市中心',
+                        location: 'Beijing City Center',
                         area: '80-120㎡'
                     }
                 })
             });
             
-            // 从响应中获取第一个会话ID（兼容后端格式）
+            // Get the first session ID from response (compatible with backend format)
             this.currentSession = response.session_ids && response.session_ids.length > 0 
                 ? response.session_ids[0] 
                 : `session_${Date.now()}`;
             
-            // 连接WebSocket
+            // Connect WebSocket
             await this.networkManager.connectWebSocket(this.currentSession);
             
-            // // 添加智能体到地图
+            // // Add agents to map
             // this.addInitialAgents();
             
-            this.updateStatus('协商已开始');
-            this.addLog('info', `协商会话开始: ${this.currentSession}`);
+            this.updateStatus('Negotiation started');
+            this.addLog('info', `Negotiation session started: ${this.currentSession}`);
             
         } catch (error) {
-            console.error('[RentalAgentApp] 启动协商失败:', error);
-            this.showError('启动协商失败: ' + error.message);
-            this.updateStatus('协商启动失败');
+            console.error('[RentalAgentApp] Failed to start negotiation:', error);
+            this.showError('Failed to start negotiation: ' + error.message);
+            this.updateStatus('Failed to start negotiation');
         } finally {
             this.setButtonLoading('start-negotiation', false);
         }
     }
 
     /**
-     * 重置会话
+     * Reset Session
      */
     async resetSession() {
         try {
-            this.updateStatus('正在重置会话...');
+            this.updateStatus('Resetting session...');
             
-            // 重置后端状态
+            // Reset backend state
             await this.networkManager.request('/reset-memory', {
                 method: 'POST'
             });
             
-            // 清除地图上的智能体
+            // Clear agents from map
             this.mapController.clearAllAgents();
             
-            // 清除当前会话
+            // Clear current session
             this.currentSession = null;
             
-            // 更新UI
-            this.updateStatus('会话已重置');
-            this.addLog('info', '会话已重置');
+            // Update UI
+            this.updateStatus('Session reset');
+            this.addLog('info', 'Session has been reset');
             this.updateUI();
             
         } catch (error) {
-            console.error('[RentalAgentApp] 重置会话失败:', error);
-            this.showError('重置会话失败: ' + error.message);
+            console.error('[RentalAgentApp] Failed to reset session:', error);
+            this.showError('Failed to reset session: ' + error.message);
         }
     }
 
 
 
     /**
-     * 处理WebSocket消息
+     * Handle WebSocket Messages
      */
     handleWebSocketMessage(data) {
         const { sessionId, event, payload } = data;
         
-        console.log(`[RentalAgentApp] 收到事件: ${event}`, payload);
+        console.log(`[RentalAgentApp] Received event: ${event}`, payload);
         
         switch (event) {
             case 'agent_started':
@@ -216,55 +216,55 @@ class RentalAgentApp {
                 this.handleDialogueEnded(payload);
                 break;
             default:
-                console.log(`[RentalAgentApp] 未知事件: ${event}`);
+                console.log(`[RentalAgentApp] Unknown event: ${event}`);
         }
     }
 
     /**
-     * 处理智能体开始事件
+     * Handle Agent Started Event
      */
     handleAgentStarted(payload) {
         const { agent_id, agent_type } = payload;
         this.mapController.updateAgentStatus(agent_id, 'active');
-        this.addLog('info', `${agent_type} ${agent_id} 开始行动`);
+        this.addLog('info', `${agent_type} ${agent_id} started action`);
     }
 
     /**
-     * 处理消息发送事件
+     * Handle Message Sent Event
      */
     handleMessageSent(payload) {
         const { agent_id, message, agent_type } = payload;
         
-        // 在地图上显示对话气泡
+        // Show dialogue bubble on map
         this.mapController.showAgentDialogue(agent_id, message);
         
-        // 添加到日志
+        // Add to log
         this.addLog('message', `${agent_type} ${agent_id}: ${message}`);
     }
 
     /**
-     * 处理智能体思考事件
+     * Handle Agent Thought Event
      */
     handleAgentThought(payload) {
         const { agent_id, thought } = payload;
         this.mapController.updateAgentStatus(agent_id, 'thinking');
-        this.addLog('thought', `${agent_id} 思考: ${thought}`);
+        this.addLog('thought', `${agent_id} thinking: ${thought}`);
     }
 
     /**
-     * 处理协商更新事件
+     * Handle Negotiation Update Event
      */
     handleNegotiationUpdate(payload) {
         const { progress, details } = payload;
-        this.updateStatus(`协商进行中 (${progress}%)`);
+        this.updateStatus(`Negotiation in progress (${progress}%)`);
         
         if (details) {
-            this.addLog('info', `协商进展: ${details}`);
+            this.addLog('info', `Negotiation progress: ${details}`);
         }
     }
 
     /**
-     * 处理达成协议事件
+     * Handle Agreement Reached Event
      */
     handleAgreementReached(payload) {
         const { tenant_id, landlord_id, agreement_details } = payload;
@@ -272,36 +272,36 @@ class RentalAgentApp {
         this.mapController.updateAgentStatus(tenant_id, 'active');
         this.mapController.updateAgentStatus(landlord_id, 'active');
         
-        this.updateStatus('协商成功！');
-        this.addLog('success', '协议达成！');
-        this.addLog('info', `协议详情: ${JSON.stringify(agreement_details, null, 2)}`);
+        this.updateStatus('Negotiation successful!');
+        this.addLog('success', 'Agreement reached!');
+        this.addLog('info', `Agreement details: ${JSON.stringify(agreement_details, null, 2)}`);
         
-        this.showSuccess('协商成功！双方已达成协议');
+        this.showSuccess('Negotiation successful! Both parties reached an agreement');
     }
 
     /**
-     * 处理对话结束事件
+     * Handle Dialogue Ended Event
      */
     handleDialogueEnded(payload) {
         const { reason, final_status } = payload;
         
-        this.updateStatus('协商结束');
-        this.addLog('info', `协商结束原因: ${reason}`);
+        this.updateStatus('Negotiation ended');
+        this.addLog('info', `Negotiation end reason: ${reason}`);
         
         if (final_status === 'failed') {
-            this.showError('协商失败');
+            this.showError('Negotiation failed');
         }
     }
 
     /**
-     * 更新连接状态
+     * Update Connection Status
      */
     updateConnectionStatus(connected) {
         const statusEl = document.getElementById('connection-status');
         if (statusEl) {
-            // 使用 data 属性中的文本，如果没有则使用默认值
-            const connectedText = statusEl.dataset.connectedText || '已连接';
-            const disconnectedText = statusEl.dataset.disconnectedText || '未连接';
+            // Use text from data attributes, fallback to default values if not available
+            const connectedText = statusEl.dataset.connectedText || 'Connected';
+            const disconnectedText = statusEl.dataset.disconnectedText || 'Disconnected';
             
             statusEl.textContent = connected ? connectedText : disconnectedText;
             statusEl.className = `status ${connected ? 'connected' : 'disconnected'}`;
@@ -309,7 +309,7 @@ class RentalAgentApp {
     }
 
     /**
-     * 更新状态显示
+     * Update Status Display
      */
     updateStatus(status) {
         const statusEl = document.getElementById('current-status');
@@ -319,19 +319,19 @@ class RentalAgentApp {
     }
 
     /**
-     * 更新UI状态
+     * Update UI State
      */
     updateUI() {
         const hasSession = !!this.currentSession;
         
-        // 更新按钮状态
+        // Update button states
         const startBtn = document.getElementById('start-negotiation');
         const resetBtn = document.getElementById('reset-session');
         const initBtn = document.getElementById('initialize-system');
         
         if (startBtn) {
             startBtn.disabled = hasSession;
-            startBtn.textContent = hasSession ? '协商进行中...' : '开始协商';
+            startBtn.textContent = hasSession ? 'Negotiation in progress...' : 'Start Negotiation';
         }
         
         if (resetBtn) {
@@ -344,14 +344,14 @@ class RentalAgentApp {
     }
 
     /**
-     * 设置按钮加载状态
+     * Set Button Loading State
      */
     setButtonLoading(buttonId, loading) {
         const button = document.getElementById(buttonId);
         if (button) {
             button.disabled = loading;
             if (loading) {
-                button.textContent = button.dataset.loadingText || '加载中...';
+                button.textContent = button.dataset.loadingText || 'Loading...';
             } else {
                 button.textContent = button.dataset.originalText || button.textContent;
             }
@@ -359,7 +359,7 @@ class RentalAgentApp {
     }
 
     /**
-     * 添加日志
+     * Add Log Entry
      */
     addLog(type, message) {
         const logsContainer = document.getElementById('logs-container');
@@ -379,7 +379,7 @@ class RentalAgentApp {
     }
 
     /**
-     * 清除日志
+     * Clear Logs
      */
     clearLogs() {
         const logsContainer = document.getElementById('logs-container');
@@ -389,24 +389,24 @@ class RentalAgentApp {
     }
 
     /**
-     * 显示错误消息
+     * Show Error Message
      */
     showError(message) {
         this.showNotification(message, 'error');
     }
 
     /**
-     * 显示成功消息
+     * Show Success Message
      */
     showSuccess(message) {
         this.showNotification(message, 'success');
     }
 
     /**
-     * 显示通知
+     * Show Notification
      */
     showNotification(message, type = 'info') {
-        // 简单的通知实现
+        // Simple notification implementation
         const notification = document.createElement('div');
         notification.className = `notification notification-${type}`;
         notification.textContent = message;
@@ -419,18 +419,18 @@ class RentalAgentApp {
     }
 
     /**
-     * 初始化系统
+     * Initialize System
      */
     async initializeSystem() {
         try {
-            this.updateStatus('正在初始化系统...');
+            this.updateStatus('Initializing system...');
             this.setButtonLoading('initialize-system', true);
             
-            // 获取参数
+            // Get parameters
             const tenantCount = document.getElementById('tenant-count')?.value || 3;
             const resetData = document.getElementById('reset-data')?.checked || false;
             
-            // 发送初始化请求
+            // Send initialization request
             const response = await this.networkManager.request('/initialize', {
                 method: 'POST',
                 body: JSON.stringify({
@@ -439,82 +439,82 @@ class RentalAgentApp {
                 })
             });
             
-            // 检查响应是否包含data字段，说明初始化成功
+            // Check if response contains data field, indicating successful initialization
             if (response.data && response.status === 'initialized') {
-                this.updateStatus(`系统初始化成功: ${response.data.tenants_count}个租客, ${response.data.landlords_count}个房东， ${response.data.properties_count}个房产`);
-                this.addLog('success', `系统初始化完成 - 租客:${response.data.tenants_count}, 房东:${response.data.landlords_count}, 房产:${response.data.properties_count}`);
+                this.updateStatus(`System initialization successful: ${response.data.tenants_count} tenants, ${response.data.landlords_count} landlords, ${response.data.properties_count} properties`);
+                this.addLog('success', `System initialization completed - Tenants: ${response.data.tenants_count}, Landlords: ${response.data.landlords_count}, Properties: ${response.data.properties_count}`);
                 
-                // 启用开始协商按钮
+                // Enable start negotiation button
                 const startBtn = document.getElementById('start-negotiation');
                 if (startBtn) {
                     startBtn.disabled = false;
                 }
                 
-                // 添加从后端获取的真实数据到地图
+                // Add real data from backend to map
                 await this.addRealDataToMap(response.data);
                 
             } else {
-                throw new Error(response.message || '初始化失败');
+                throw new Error(response.message || 'Initialization failed');
             }
             
         } catch (error) {
-            console.error('[RentalAgentApp] 系统初始化失败:', error);
-            this.showError('系统初始化失败: ' + error.message);
-            this.updateStatus('初始化失败');
+            console.error('[RentalAgentApp] System initialization failed:', error);
+            this.showError('System initialization failed: ' + error.message);
+            this.updateStatus('Initialization failed');
         } finally {
             this.setButtonLoading('initialize-system', false);
         }
     }
 
     /**
-     * 将从后端获取的真实数据添加到地图
+     * Add Real Data from Backend to Map
      */
     async addRealDataToMap(data) {
         if (!this.mapController || !this.mapController.isInitialized) {
-            console.warn('[RentalAgentApp] 地图控制器未初始化');
+            console.warn('[RentalAgentApp] Map controller not initialized');
             return;
         }
 
-        // 清除现有的智能体标记
+        // Clear existing agent markers
         this.mapController.clearAllAgents();
 
-        // 添加租客
+        // Add tenants
         if (data.tenants && Array.isArray(data.tenants)) {
             for (const tenant of data.tenants) {
-                // 构建偏好信息
+                // Build preference information
                 const preferences = [];
                 if (tenant.min_bedrooms || tenant.max_bedrooms) {
-                    preferences.push(`${tenant.min_bedrooms || 1}-${tenant.max_bedrooms || '任意'}卧室`);
+                    preferences.push(`${tenant.min_bedrooms || 1}-${tenant.max_bedrooms || 'any'} bedrooms`);
                 }
                 if (tenant.max_budget) {
-                    preferences.push(`预算£${tenant.max_budget}/月`);
+                    preferences.push(`Budget £${tenant.max_budget}/month`);
                 }
                 if (tenant.has_pets) {
-                    preferences.push('携带宠物');
+                    preferences.push('With pets');
                 }
                 if (tenant.is_student) {
-                    preferences.push('学生');
+                    preferences.push('Student');
                 }
                 if (tenant.num_occupants > 1) {
-                    preferences.push(`${tenant.num_occupants}人居住`);
+                    preferences.push(`${tenant.num_occupants} occupants`);
                 }
 
-                // 获取租客的偏好位置
+                // Get tenant's preferred location
                 let tenantPosition = null;
                 if (tenant.preferred_locations && tenant.preferred_locations.length > 0) {
-                    // 使用第一个偏好位置
+                    // Use first preferred location
                     const preferredLocation = tenant.preferred_locations[0];
                     tenantPosition = {
                         lat: preferredLocation.latitude,
                         lng: preferredLocation.longitude
                     };
-                    console.log(`[RentalAgentApp] 租客 ${tenant.name} 偏好位置: ${tenantPosition.lat}, ${tenantPosition.lng}`);
+                    console.log(`[RentalAgentApp] Tenant ${tenant.name} preferred location: ${tenantPosition.lat}, ${tenantPosition.lng}`);
                 }
 
                 await this.mapController.addAgent(tenant.tenant_id, 'tenant', {
-                    name: tenant.name || '租客',
+                    name: tenant.name || 'Tenant',
                     budget: tenant.max_budget || 0,
-                    preferences: preferences.join(', ') || '寻找合适房源',
+                    preferences: preferences.join(', ') || 'Looking for suitable property',
                     income: tenant.annual_income || 0,
                     email: tenant.email || '',
                     phone: tenant.phone || '',
@@ -522,20 +522,20 @@ class RentalAgentApp {
                     isStudent: tenant.is_student || false,
                     hasPets: tenant.has_pets || false,
                     isSmoker: tenant.is_smoker || false
-                }, tenantPosition); // 传递租客的偏好位置
+                }, tenantPosition); // Pass tenant's preferred position
             }
         }
 
-        // 添加房东
+        // Add landlords
         if (data.landlords && Array.isArray(data.landlords)) {
             for (const landlord of data.landlords) {
-                // 统计房东的房产信息
+                // Count landlord's property information
                 const propertyCount = landlord.properties ? landlord.properties.length : 0;
                 const propertyTypes = landlord.properties 
                     ? [...new Set(landlord.properties.map(p => p.property_sub_type || p.property_type_full_description))]
                     : [];
 
-                // 获取房东的位置（基于第一个房产的位置）
+                // Get landlord's location (based on first property's location)
                 let landlordPosition = null;
                 if (landlord.properties && landlord.properties.length > 0) {
                     const firstProperty = landlord.properties[0];
@@ -544,35 +544,35 @@ class RentalAgentApp {
                             lat: firstProperty.location.latitude,
                             lng: firstProperty.location.longitude
                         };
-                        console.log(`[RentalAgentApp] 房东 ${landlord.name} 位置: ${landlordPosition.lat}, ${landlordPosition.lng}`);
+                        console.log(`[RentalAgentApp] Landlord ${landlord.name} location: ${landlordPosition.lat}, ${landlordPosition.lng}`);
                     }
                 }
 
                 await this.mapController.addAgent(landlord.landlord_id, 'landlord', {
-                    name: landlord.name || '房东',
-                    properties: `${propertyCount}套房产`,
-                    propertyTypes: propertyTypes.join(', ') || '待分配房产',
+                    name: landlord.name || 'Landlord',
+                    properties: `${propertyCount} properties`,
+                    propertyTypes: propertyTypes.join(', ') || 'Properties to be assigned',
                     branchName: landlord.branch_name || '',
                     phone: landlord.phone || '',
                     petFriendly: landlord.preferences?.pet_friendly || false,
                     smokingAllowed: landlord.preferences?.smoking_allowed || false,
                     depositWeeks: landlord.preferences?.deposit_weeks || 0
-                }, landlordPosition); // 传递房东基于房产的位置
+                }, landlordPosition); // Pass landlord's location based on properties
             }
         }
 
-        // 添加房产标记（使用map_data）
+        // Add property markers (using map_data)
         if (data.map_data && Array.isArray(data.map_data)) {
             data.map_data.forEach(property => {
                 this.mapController.addPropertyFromData(property);
             });
         }
 
-        this.addLog('info', `已添加 ${data.tenants_count} 个租客、${data.landlords_count} 个房东和 ${data.properties_count} 个房产到地图`);
+        this.addLog('info', `Added ${data.tenants_count} tenants, ${data.landlords_count} landlords and ${data.properties_count} properties to map`);
     }
 
     /**
-     * 销毁应用
+     * Destroy Application
      */
     destroy() {
         if (this.mapController) {
@@ -580,7 +580,7 @@ class RentalAgentApp {
         }
         
         if (this.networkManager) {
-            // 网络管理器清理
+            // Network manager cleanup
         }
         
         this.eventListeners.clear();
@@ -588,26 +588,26 @@ class RentalAgentApp {
     }
 }
 
-// 创建全局应用实例
+// Create global application instance
 const app = new RentalAgentApp();
 
-// 应用启动
+// Application startup
 document.addEventListener('DOMContentLoaded', async () => {
     try {
-        // 配置后端URL
+        // Configure backend URL
         const config = {
             apiKey: 'AIzaSyDSflr_l6w6IZIhqcFO2J_0WJacRga2UiU', // Google Maps API Key
             backendUrl: 'http://localhost:8000'
         };
         
         await app.initialize(config);
-        console.log('[App] 应用启动完成');
+        console.log('[App] Application startup completed');
     } catch (error) {
-        console.error('[App] 应用启动失败:', error);
-        // 显示用户友好的错误信息
+        console.error('[App] Application startup failed:', error);
+        // Display user-friendly error message
         const statusEl = document.getElementById('current-status');
         if (statusEl) {
-            statusEl.textContent = '应用启动失败';
+            statusEl.textContent = 'Application startup failed';
         }
     }
 });

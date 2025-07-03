@@ -1,6 +1,6 @@
 /**
- * GoogleMapsLoader - Google Maps API 加载器
- * 动态加载 Google Maps JavaScript API
+ * GoogleMapsLoader - Google Maps API Loader
+ * Dynamically loads the Google Maps JavaScript API
  */
 class GoogleMapsLoader {
     constructor(apiKey = '') {
@@ -11,7 +11,7 @@ class GoogleMapsLoader {
     }
 
     /**
-     * 加载 Google Maps API
+     * Load Google Maps API
      */
     async load() {
         if (this.isLoaded) {
@@ -23,50 +23,50 @@ class GoogleMapsLoader {
         }
 
         this.loadPromise = new Promise((resolve, reject) => {
-            // 检查是否已加载
+            // Check if already loaded
             if (window.google && window.google.maps) {
                 this.isLoaded = true;
                 resolve();
                 return;
             }
 
-            // 创建全局回调
+            // Create global callback
             const callbackName = 'googleMapsInitCallback';
             window[callbackName] = () => {
                 this.isLoaded = true;
                 delete window[callbackName];
-                console.log('[GoogleMapsLoader] Google Maps API 加载完成');
+                console.log('[GoogleMapsLoader] Google Maps API loading completed');
                 resolve();
             };
 
-            // 创建脚本标签
+            // Create script tag
             const script = document.createElement('script');
             script.async = true;
             script.defer = true;
             
-            // 构建API URL - 移除API Key要求，使用开发模式
+            // Build API URL - Remove API Key requirement, use development mode
             const params = new URLSearchParams({
                 callback: callbackName,
                 libraries: this.libraries.join(','),
                 v: 'weekly'
             });
 
-            // 仅在有API Key时才添加，否则使用免费配额
+            // Only add API Key if provided, otherwise use free quota
             if (this.apiKey && this.apiKey.trim() !== '') {
                 params.set('key', this.apiKey);
             }
 
             script.src = `https://maps.googleapis.com/maps/api/js?${params.toString()}`;
             
-            // 错误处理
+            // Error handling
             script.onerror = () => {
                 delete window[callbackName];
-                console.warn('[GoogleMapsLoader] Google Maps API 加载失败，可能需要配置API Key');
-                // 不完全拒绝，而是尝试继续
+                console.warn('[GoogleMapsLoader] Google Maps API loading failed, API Key may be required');
+                // Don't completely reject, try to continue
                 resolve();
             };
 
-            // 添加到页面
+            // Add to page
             document.head.appendChild(script);
         });
 
@@ -74,22 +74,22 @@ class GoogleMapsLoader {
     }
 
     /**
-     * 设置 API Key
+     * Set API Key
      */
     setApiKey(apiKey) {
         if (this.isLoaded) {
-            console.warn('[GoogleMapsLoader] API 已加载，无法修改 API Key');
+            console.warn('[GoogleMapsLoader] API already loaded, cannot modify API Key');
             return;
         }
         this.apiKey = apiKey;
     }
 
     /**
-     * 添加库
+     * Add Library
      */
     addLibrary(library) {
         if (this.isLoaded) {
-            console.warn('[GoogleMapsLoader] API 已加载，无法添加新库');
+            console.warn('[GoogleMapsLoader] API already loaded, cannot add new library');
             return;
         }
         if (!this.libraries.includes(library)) {
@@ -98,14 +98,14 @@ class GoogleMapsLoader {
     }
 
     /**
-     * 检查是否已加载
+     * Check if API is loaded
      */
     isApiLoaded() {
         return this.isLoaded && window.google && window.google.maps;
     }
 }
 
-// 创建单例实例
+// Create singleton instance
 const googleMapsLoader = new GoogleMapsLoader();
 
 export default googleMapsLoader;
