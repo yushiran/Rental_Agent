@@ -146,7 +146,7 @@ class MapManager {
     }
 
     /**
-     * 注册标记位置
+     * Register marker position
      */
     registerMarkerPosition(position) {
         const positionKey = `${position.lat.toFixed(6)},${position.lng.toFixed(6)}`;
@@ -179,13 +179,53 @@ class MapManager {
         // Calculate non-overlapping position
         const finalPosition = this.calculateNonOverlappingPosition(position);
         
-        const marker = new google.maps.Marker({
+        // Get icon (which may now be a promise due to avatar processing)
+        const iconOrPromise = this.getAgentIcon(type, info.status, avatarDataUri, info.name);
+        
+        // Create base marker configuration
+        const markerConfig = {
             position: finalPosition,
             map: this.map,
             title: info.name || agentId,
-            icon: this.getAgentIcon(type, info.status, avatarDataUri),
             animation: google.maps.Animation.DROP
-        });
+        };
+        
+        // Handle both synchronous icons and promise-based icons
+        let marker;
+        
+        // Create the label text for the marker
+        const displayName = info.name || agentId;
+        const labelText = `[${type}]${displayName}`;
+        
+        // Configure label style
+        const labelConfig = {
+            text: labelText,
+            color: '#FFFFFF',
+            fontWeight: 'bold',
+            fontSize: '12px',
+            className: 'agent-marker-label'
+        };
+        
+        if (iconOrPromise instanceof Promise) {
+            // Create marker with temporary icon first, but with label
+            marker = new google.maps.Marker({
+                ...markerConfig,
+                icon: this.getAgentIcon(type, info.status),  // Use default icon temporarily
+                label: labelConfig
+            });
+            
+            // Update icon when promise resolves, keeping the label
+            iconOrPromise.then(icon => {
+                marker.setIcon(icon);
+            });
+        } else {
+            // Create marker with synchronous icon and label
+            marker = new google.maps.Marker({
+                ...markerConfig,
+                icon: iconOrPromise,
+                label: labelConfig
+            });
+        }
 
         // Register marker position
         this.registerMarkerPosition(finalPosition);
@@ -205,7 +245,7 @@ class MapManager {
         this.agentMarkers.set(agentId, marker);
         this.infoWindows.set(agentId, infoWindow);
 
-        console.log(`[MapManager] 添加智能体标记: ${agentId} (${type}) at`, finalPosition);
+        console.log(`[MapManager] Added agent marker: ${agentId} (${type}) at`, finalPosition);
         return marker;
     }
 
@@ -222,7 +262,7 @@ class MapManager {
     }
 
     /**
-     * 更新智能体状态
+     * Update agent status
      */
     updateAgentStatus(agentId, status, info = {}, avatarDataUri = null) {
         const marker = this.agentMarkers.get(agentId);
@@ -230,7 +270,31 @@ class MapManager {
         
         if (marker) {
             const agentType = info.type || 'tenant';
-            marker.setIcon(this.getAgentIcon(agentType, status, avatarDataUri));
+            const iconOrPromise = this.getAgentIcon(agentType, status, avatarDataUri, info.name);
+            
+            // Create or update the label for the marker
+            const displayName = info.name || agentId;
+            const labelText = `[${agentType}]${displayName}`;
+            
+            // Update or set the label
+            if (!marker.getLabel() || marker.getLabel().text !== labelText) {
+                marker.setLabel({
+                    text: labelText,
+                    color: '#FFFFFF',
+                    fontWeight: 'bold',
+                    fontSize: '12px',
+                    className: 'agent-marker-label'
+                });
+            }
+            
+            // Handle both synchronous icons and promise-based icons
+            if (iconOrPromise instanceof Promise) {
+                iconOrPromise.then(icon => {
+                    marker.setIcon(icon);
+                });
+            } else {
+                marker.setIcon(iconOrPromise);
+            }
         }
         
         if (infoWindow) {
@@ -241,7 +305,7 @@ class MapManager {
     }
 
     /**
-     * 显示对话气泡
+     * Show dialogue bubble above agent
      */
     showDialogueBubble(agentId, message, duration = 5000) {
         const marker = this.agentMarkers.get(agentId);
@@ -255,7 +319,7 @@ class MapManager {
 
         bubble.open(this.map, marker);
         
-        // 自动关闭
+        // Auto-close after duration
         setTimeout(() => {
             bubble.close();
         }, duration);
@@ -264,23 +328,23 @@ class MapManager {
     }
 
     /**
-     * 添加房产标记
+     * Add property marker
      */
     addPropertyMarker(propertyId, position, info = {}) {
         if (!this.isInitialized) return null;
 
-        // 计算避免重叠的位置
+        // Calculate non-overlapping position
         const finalPosition = this.calculateNonOverlappingPosition(position);
 
         const marker = new google.maps.Marker({
             position: finalPosition,
             map: this.map,
-            title: info.title || `房产 ${propertyId}`,
+            title: info.title || `Property ${propertyId}`,
             icon: this.getPropertyIcon(info.status),
             animation: google.maps.Animation.DROP
         });
 
-        // 注册标记位置
+        // Register marker position
         this.registerMarkerPosition(finalPosition);
 
         const infoWindow = new google.maps.InfoWindow({
@@ -296,25 +360,60 @@ class MapManager {
         this.propertyMarkers.set(propertyId, marker);
         this.infoWindows.set(`property_${propertyId}`, infoWindow);
 
-        console.log(`[MapManager] 添加房产标记: ${propertyId} at`, finalPosition);
+        console.log(`[MapManager] Added property marker: ${propertyId} at`, finalPosition);
         return marker;
     }
 
     /**
-     * 获取智能体图标
+     * Get agent icon
      */
-    getAgentIcon(type, status = 'idle', avatarDataUri = null) {
-        // 如果有头像，使用头像
+    getAgentIcon(type, status = 'idle', avatarDataUri = null, name = '') {
+        // If we have an avatar and agent info, create a clean avatar icon
         if (avatarDataUri) {
-            return {
-                url: avatarDataUri,
-                scaledSize: new google.maps.Size(48, 48),
-                origin: new google.maps.Point(0, 0),
-                anchor: new google.maps.Point(24, 48) // 底部中心对齐
-            };
+            // Create a canvas for the avatar
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            const avatarSize = 48;
+            
+            // Set canvas size for just the avatar (no label included in the image)
+            canvas.width = avatarSize;
+            canvas.height = avatarSize;
+            
+            // Create a new image element for the avatar
+            const img = new Image();
+            
+            // Return a promise that resolves when the image is loaded and processed
+            return new Promise((resolve) => {
+                img.onload = () => {
+                    // Clear canvas
+                    ctx.fillStyle = 'transparent';
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    
+                    // Draw avatar
+                    ctx.drawImage(img, 0, 0, avatarSize, avatarSize);
+                    
+                    // Create the custom marker icon
+                    // We'll add the label separately using Google Maps label feature
+                    const displayName = name || type;
+                    const labelText = `[${type}]${displayName}`;
+                    
+                    // Create icon object with just the avatar image
+                    resolve({
+                        url: canvas.toDataURL(),
+                        scaledSize: new google.maps.Size(avatarSize, avatarSize),
+                        origin: new google.maps.Point(0, 0),
+                        anchor: new google.maps.Point(avatarSize/2, avatarSize), // Bottom center align
+                        // Store the label text to use when creating the marker
+                        labelText: labelText
+                    });
+                };
+                
+                // Set image source to the avatar data URI
+                img.src = avatarDataUri;
+            });
         }
 
-        // 后备方案：使用原来的彩色图钉
+        // Fallback: use original colored pins
         const baseUrl = 'https://maps.google.com/mapfiles/ms/icons/';
         const colors = {
             tenant: { idle: 'blue', active: 'green', thinking: 'yellow' },
@@ -332,7 +431,7 @@ class MapManager {
     }
 
     /**
-     * 获取房产图标
+     * Get property icon
      */
     getPropertyIcon(status = 'available') {
         const icons = {
@@ -350,87 +449,87 @@ class MapManager {
                 </svg>
             `)}`,
             scaledSize: new google.maps.Size(48, 48),
-            anchor: new google.maps.Point(24, 48) // 底部中心对齐，与头像一致
+            anchor: new google.maps.Point(24, 48) // Bottom center align, consistent with avatars
         };
     }
 
     /**
-     * 创建智能体信息内容
+     * Create agent info window content
      */
     createAgentInfoContent(agentId, type, info) {
-        const typeNames = { tenant: '租客', landlord: '房东' };
+        const typeNames = { tenant: 'Tenant', landlord: 'Landlord' };
         const statusNames = { 
-            idle: '空闲', 
-            active: '活跃', 
-            thinking: '思考中',
-            negotiating: '协商中'
+            idle: 'Idle', 
+            active: 'Active', 
+            thinking: 'Thinking',
+            negotiating: 'Negotiating'
         };
 
         if (type === 'tenant') {
             return `
                 <div class="agent-info">
                     <h3>${info.name || agentId}</h3>
-                    <p><strong>类型:</strong> ${typeNames[type] || type}</p>
-                    <p><strong>状态:</strong> ${statusNames[info.status] || info.status || '未知'}</p>
-                    ${info.currentMessage ? `<p><strong>当前:</strong> ${info.currentMessage}</p>` : ''}
-                    ${info.budget ? `<p><strong>预算:</strong> £${info.budget}/月</p>` : ''}
-                    ${info.income ? `<p><strong>年收入:</strong> £${Math.round(info.income)}</p>` : ''}
-                    ${info.preferences ? `<p><strong>偏好:</strong> ${info.preferences}</p>` : ''}
-                    ${info.email ? `<p><strong>邮箱:</strong> ${info.email}</p>` : ''}
-                    ${info.phone ? `<p><strong>电话:</strong> ${info.phone}</p>` : ''}
-                    ${info.hasGuarantor !== undefined ? `<p><strong>担保人:</strong> ${info.hasGuarantor ? '有' : '无'}</p>` : ''}
-                    ${info.hasPets !== undefined ? `<p><strong>宠物:</strong> ${info.hasPets ? '有' : '无'}</p>` : ''}
-                    ${info.isSmoker !== undefined ? `<p><strong>吸烟:</strong> ${info.isSmoker ? '是' : '否'}</p>` : ''}
+                    <p><strong>Type:</strong> ${typeNames[type] || type}</p>
+                    <p><strong>Status:</strong> ${statusNames[info.status] || info.status || 'Unknown'}</p>
+                    ${info.currentMessage ? `<p><strong>Current:</strong> ${info.currentMessage}</p>` : ''}
+                    ${info.budget ? `<p><strong>Budget:</strong> £${info.budget}/month</p>` : ''}
+                    ${info.income ? `<p><strong>Annual Income:</strong> £${Math.round(info.income)}</p>` : ''}
+                    ${info.preferences ? `<p><strong>Preferences:</strong> ${info.preferences}</p>` : ''}
+                    ${info.email ? `<p><strong>Email:</strong> ${info.email}</p>` : ''}
+                    ${info.phone ? `<p><strong>Phone:</strong> ${info.phone}</p>` : ''}
+                    ${info.hasGuarantor !== undefined ? `<p><strong>Guarantor:</strong> ${info.hasGuarantor ? 'Yes' : 'No'}</p>` : ''}
+                    ${info.hasPets !== undefined ? `<p><strong>Pets:</strong> ${info.hasPets ? 'Yes' : 'No'}</p>` : ''}
+                    ${info.isSmoker !== undefined ? `<p><strong>Smoker:</strong> ${info.isSmoker ? 'Yes' : 'No'}</p>` : ''}
                 </div>
             `;
         } else if (type === 'landlord') {
             return `
                 <div class="agent-info">
                     <h3>${info.name || agentId}</h3>
-                    <p><strong>类型:</strong> ${typeNames[type] || type}</p>
-                    <p><strong>状态:</strong> ${statusNames[info.status] || info.status || '未知'}</p>
-                    ${info.currentMessage ? `<p><strong>当前:</strong> ${info.currentMessage}</p>` : ''}
-                    ${info.properties ? `<p><strong>房产:</strong> ${info.properties}</p>` : ''}
-                    ${info.propertyTypes ? `<p><strong>房产类型:</strong> ${info.propertyTypes}</p>` : ''}
-                    ${info.branchName ? `<p><strong>分支:</strong> ${info.branchName}</p>` : ''}
-                    ${info.phone ? `<p><strong>电话:</strong> ${info.phone}</p>` : ''}
-                    ${info.petFriendly !== undefined ? `<p><strong>允许宠物:</strong> ${info.petFriendly ? '是' : '否'}</p>` : ''}
-                    ${info.smokingAllowed !== undefined ? `<p><strong>允许吸烟:</strong> ${info.smokingAllowed ? '是' : '否'}</p>` : ''}
-                    ${info.depositWeeks ? `<p><strong>押金:</strong> ${info.depositWeeks}周</p>` : ''}
+                    <p><strong>Type:</strong> ${typeNames[type] || type}</p>
+                    <p><strong>Status:</strong> ${statusNames[info.status] || info.status || 'Unknown'}</p>
+                    ${info.currentMessage ? `<p><strong>Current:</strong> ${info.currentMessage}</p>` : ''}
+                    ${info.properties ? `<p><strong>Properties:</strong> ${info.properties}</p>` : ''}
+                    ${info.propertyTypes ? `<p><strong>Property Types:</strong> ${info.propertyTypes}</p>` : ''}
+                    ${info.branchName ? `<p><strong>Branch:</strong> ${info.branchName}</p>` : ''}
+                    ${info.phone ? `<p><strong>Phone:</strong> ${info.phone}</p>` : ''}
+                    ${info.petFriendly !== undefined ? `<p><strong>Pet Friendly:</strong> ${info.petFriendly ? 'Yes' : 'No'}</p>` : ''}
+                    ${info.smokingAllowed !== undefined ? `<p><strong>Smoking Allowed:</strong> ${info.smokingAllowed ? 'Yes' : 'No'}</p>` : ''}
+                    ${info.depositWeeks ? `<p><strong>Deposit:</strong> ${info.depositWeeks} weeks</p>` : ''}
                 </div>
             `;
         }
 
-        // 默认格式
+        // Default format
         return `
             <div class="agent-info">
                 <h3>${info.name || agentId}</h3>
-                <p><strong>类型:</strong> ${typeNames[type] || type}</p>
-                <p><strong>状态:</strong> ${statusNames[info.status] || info.status || '未知'}</p>
-                ${info.currentMessage ? `<p><strong>当前:</strong> ${info.currentMessage}</p>` : ''}
+                <p><strong>Type:</strong> ${typeNames[type] || type}</p>
+                <p><strong>Status:</strong> ${statusNames[info.status] || info.status || 'Unknown'}</p>
+                ${info.currentMessage ? `<p><strong>Current:</strong> ${info.currentMessage}</p>` : ''}
             </div>
         `;
     }
 
     /**
-     * 创建房产信息内容
+     * Create property info window content
      */
     createPropertyInfoContent(propertyId, info) {
         return `
             <div class="property-info">
-                <h3>${info.title || info.address || `房产 ${propertyId}`}</h3>
-                <p><strong>地址:</strong> ${info.address || '未知地址'}</p>
-                <p><strong>租金:</strong> £${info.price || info.rent || '面议'}/月</p>
-                <p><strong>卧室:</strong> ${info.bedrooms || '未知'}间</p>
-                <p><strong>类型:</strong> ${info.property_type || info.type || '未知'}</p>
-                <p><strong>状态:</strong> ${info.status || '可租'}</p>
-                ${info.landlord_id ? `<p><strong>房东ID:</strong> ${info.landlord_id}</p>` : ''}
+                <h3>${info.title || info.address || `Property ${propertyId}`}</h3>
+                <p><strong>Address:</strong> ${info.address || 'Unknown address'}</p>
+                <p><strong>Rent:</strong> £${info.price || info.rent || 'Negotiable'}/month</p>
+                <p><strong>Bedrooms:</strong> ${info.bedrooms || 'Unknown'}</p>
+                <p><strong>Type:</strong> ${info.property_type || info.type || 'Unknown'}</p>
+                <p><strong>Status:</strong> ${info.status || 'Available'}</p>
+                ${info.landlord_id ? `<p><strong>Landlord ID:</strong> ${info.landlord_id}</p>` : ''}
             </div>
         `;
     }
 
     /**
-     * 关闭所有信息窗口
+     * Close all info windows
      */
     closeAllInfoWindows() {
         this.infoWindows.forEach(infoWindow => {
@@ -439,14 +538,14 @@ class MapManager {
     }
 
     /**
-     * 移除智能体标记
+     * Remove agent marker
      */
     removeAgentMarker(agentId) {
         const marker = this.agentMarkers.get(agentId);
         const infoWindow = this.infoWindows.get(agentId);
         
         if (marker) {
-            // 取消注册位置
+            // Unregister position
             this.unregisterMarkerPosition(marker.getPosition().toJSON());
             marker.setMap(null);
             this.agentMarkers.delete(agentId);

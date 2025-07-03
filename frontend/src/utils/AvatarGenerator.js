@@ -2,29 +2,29 @@ import { createAvatar } from '@dicebear/core';
 import { pixelArt } from '@dicebear/collection';
 
 /**
- * AvatarGenerator - 头像生成器
- * 使用 DiceBear pixelArt 风格为租客和房东生成个性化头像
+ * AvatarGenerator - Avatar Generator
+ * Uses DiceBear pixelArt style to create personalized avatars for tenants and landlords
  */
 class AvatarGenerator {
     constructor() {
-        // 头像缓存
+        // Avatar cache
         this.avatarCache = new Map();
     }
 
     /**
-     * 为租客生成头像 - 年轻活泼风格
+     * Generate avatar for tenant - young and lively style
      */
     generateTenantAvatar(agentId, name = '') {
-        // 使用缓存避免重复生成
+        // Use cache to avoid regenerating
         const cacheKey = `tenant_${agentId}`;
         if (this.avatarCache.has(cacheKey)) {
             return this.avatarCache.get(cacheKey);
         }
 
         const avatar = createAvatar(pixelArt, {
-            seed: name || agentId, // 使用名字作为种子
-            size: 32, // 地图标记合适的大小
-            // 租客使用明亮活泼的背景色
+            seed: name || agentId, // Use name as seed
+            size: 32, // Appropriate size for map markers
+            // Tenants use bright, lively background colors
             backgroundColor: ['b6e3f4', 'c0aede', 'd1d4f9', 'ffd5dc', 'ffdfbf'],
             backgroundType: ['solid'],
             
@@ -69,10 +69,10 @@ class AvatarGenerator {
     }
 
     /**
-     * 为房东生成头像 - 商务专业风格，都戴帽子和眼镜
+     * Generate avatar for landlord - professional business style with hats and glasses
      */
     generateLandlordAvatar(agentId, name = '') {
-        // 使用缓存避免重复生成
+        // Use cache to avoid regenerating
         const cacheKey = `landlord_${agentId}`;
         if (this.avatarCache.has(cacheKey)) {
             return this.avatarCache.get(cacheKey);
@@ -85,40 +85,40 @@ class AvatarGenerator {
             backgroundColor: ['264653', '2a9d8f', 'e9c46a', 'f4a261', 'e76f51'],
             backgroundType: ['solid'],
             
-            // 服装 - 正式商务风格
+            // Clothing - formal business style
             clothing: ['variant04', 'variant06', 'variant07', 'variant09', 'variant13', 'variant16'],
             clothingColor: ['03396c', '428bca', '00b159', 'ae0001', 'd11141'],
             
-            // 发型 - 成熟稳重
+            // Hair - mature and professional
             hair: ['short04', 'short06', 'short08', 'short12', 'short15', 'short18'],
             hairColor: ['28150a', '603015', '612616', '83623b'],
             
-            // 表情 - 严肃或中性
+            // Expression - serious or neutral
             mouth: ['happy04', 'happy07', 'happy10', 'sad03', 'sad05'],
             mouthColor: ['c98276', 'd29985'],
             
-            // 眼睛
+            // Eyes
             eyes: ['variant03', 'variant05', 'variant07', 'variant09', 'variant11'],
             eyesColor: ['5b7c8b', '76778b', '876658'],
             
-            // 肤色 - 偏向成熟
+            // Skin color - more mature tones
             skinColor: ['8d5524', 'a26d3d', 'b68655', 'cb9e6e'],
             
-            // 胡子 - 较高概率
+            // Beard - high probability
             beardProbability: 60,
             beard: ['variant01', 'variant02', 'variant04', 'variant06'],
             
-            // 配饰 - 低概率
+            // Accessories - low probability
             accessoriesProbability: 30,
             accessories: ['variant02', 'variant04'],
             accessoriesColor: ['a9a9a9', 'daa520'],
             
-            // 眼镜 - 高概率，房东都戴眼镜显专业
+            // Glasses - high probability for professional look
             glassesProbability: 85,
             glasses: ['dark01', 'dark02', 'dark03', 'dark05', 'light04', 'light06'],
             glassesColor: ['191919', '323232', '4b4b4b', '43677d'],
             
-            // 帽子 - 高概率，房东都戴帽子显权威
+            // Hat - high probability for authoritative look
             hatProbability: 80,
             hat: ['variant01', 'variant03', 'variant04', 'variant06', 'variant07'],
             hatColor: ['2e1e05', '614f8a', '2663a3', '989789', 'a62116']
@@ -130,7 +130,7 @@ class AvatarGenerator {
     }
 
     /**
-     * 根据智能体类型生成头像
+     * Generate avatar based on agent type
      */
     async generateAvatar(agentId, type, name = '') {
         try {
@@ -140,18 +140,18 @@ class AvatarGenerator {
                 case 'landlord':
                     return await this.generateLandlordAvatar(agentId, name);
                 default:
-                    console.warn(`[AvatarGenerator] 未知的智能体类型: ${type}`);
+                    console.warn(`[AvatarGenerator] Unknown agent type: ${type}`);
                     return await this.generateTenantAvatar(agentId, name);
             }
         } catch (error) {
-            console.error(`[AvatarGenerator] 生成头像失败:`, error);
-            // 返回 null，让系统使用后备图标
+            console.error(`[AvatarGenerator] Failed to generate avatar:`, error);
+            // Return null to let system use fallback icon
             return null;
         }
     }
 
     /**
-     * 批量生成头像
+     * Generate avatars in batch for multiple agents
      */
     async generateAvatarsForAgents(agents) {
         const avatars = new Map();
@@ -163,20 +163,20 @@ class AvatarGenerator {
             }
         }
         
-        console.log(`[AvatarGenerator] 批量生成了 ${avatars.size} 个头像`);
+        console.log(`[AvatarGenerator] Generated ${avatars.size} avatars in batch`);
         return avatars;
     }
 
     /**
-     * 清除头像缓存
+     * Clear avatar cache
      */
     clearCache() {
         this.avatarCache.clear();
-        console.log('[AvatarGenerator] 缓存已清除');
+        console.log('[AvatarGenerator] Cache cleared');
     }
 
     /**
-     * 获取缓存的头像
+     * Get cached avatar
      */
     getCachedAvatar(agentId, type) {
         const cacheKey = `${type}_${agentId}`;
