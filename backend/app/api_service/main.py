@@ -6,6 +6,9 @@ from contextlib import asynccontextmanager
 import asyncio
 from datetime import datetime
 import json
+import uuid
+import time
+import random
 from typing import List
 
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect, Query
@@ -32,7 +35,6 @@ async def lifespan(app: FastAPI):
 
     # 初始化数据库
     await initialize_database()
-    # await start_auto_negotiation_live(max_tenants=3)
 
     yield
     logger.info("关闭群体Agent沟通API")
@@ -61,6 +63,7 @@ manager = ConnectionManager()
 agent_factory = AgentDataInitializer()
 # 初始化服务（传入WebSocket管理器）
 group_service = GroupNegotiationService(websocket_manager=manager)
+
 
 @app.get("/")
 async def root():
@@ -197,112 +200,113 @@ async def initialize_system(request: InitializeRequest):
         logger.error(f"系统初始化失败: {str(e)}")
         raise HTTPException(status_code=500, detail=f"初始化失败: {str(e)}")
 
-@app.post("/start-session")
-async def start_session(max_tenants: int = Query(1, description="最大租客数量")):
-    """启动会话 - 前端兼容接口"""
-    return await start_auto_negotiation_live(max_tenants)
-
 class StartNegotiationRequest(BaseModel):
     tenant_ids: List[str] = []
     
 @app.post("/start-negotiation")
 async def start_negotiation(request: StartNegotiationRequest):
     """
-    开始协商流程 - 基于已生成的租客启动协商
+    开始协商流程 - 基于已生成的租客启动协商，使用实际的租客和房东名称
     
     Args:
         tenant_ids: 要参与协商的租客ID列表，如果为空则使用所有租客
     
     Returns:
-        - 创建的协商会话信息
+        - 创建的协商会话信息，包含实际的agent名称
         - WebSocket连接信息
     """
     try:
         logger.info(f"开始协商流程，租客IDs: {request.tenant_ids}")
+        # 记录详细的传入参数
+        logger.debug(f"开始协商请求参数: {json.dumps(request.dict(), ensure_ascii=False)}")
         
-        # 如果没有指定租客ID，获取所有租客的前几个
-        if not request.tenant_ids:
-            all_tenants = await agent_factory.get_all_tenants()
-            if not all_tenants:
-                raise HTTPException(status_code=400, detail="没有可用的租客数据，请先调用初始化API")
-            # 默认取前3个租客
-            request.tenant_ids = [tenant["tenant_id"] for tenant in all_tenants[:3]]
+        # 获取所有已初始化的租客和房东数据
+        all_tenants = await agent_factory.get_all_tenants()
+        all_landlords = await agent_factory.get_all_landlords()
         
-        # 验证租客ID是否存在
-        existing_tenants = []
+        if not all_tenants or not all_landlords:
+            raise HTTPException(status_code=400, detail="没有可用的租客或房东数据，请先调用初始化API")
+        
+        # 获取有效的租客
+        participating_tenants = []
         for tenant_id in request.tenant_ids:
             tenant_data = await group_service._get_tenant_by_id(tenant_id)
             if tenant_data:
-                existing_tenants.append(tenant_data)
+                participating_tenants.append(tenant_data)
             else:
                 logger.warning(f"租客 {tenant_id} 不存在，跳过")
         
-        if not existing_tenants:
+        if not participating_tenants:
             raise HTTPException(status_code=400, detail="没有找到有效的租客")
         
-        # 开始群体协商
-        negotiation_result = await group_service.start_group_negotiation_with_tenants(existing_tenants)
+        # 创建协商会话 - 为每个租客创建一个会话
+        sessions = []
+        total_sessions = len(participating_tenants)  # 为每个参与的租客创建会话
         
-        if "error" in negotiation_result:
-            raise HTTPException(status_code=400, detail=negotiation_result["error"])
-        
-        # 为每个会话发送初始化消息到WebSocket
-        for session in negotiation_result.get('sessions', []):
-            session_id = session['session_id']
-            await manager.send_message_to_session(session_id, {
-                "type": "negotiation_started",
-                "session_id": session_id,
-                "message": "协商已开始，租客正在寻找房东...",
-                "session_info": session,
-                "timestamp": datetime.now().isoformat()
-            })
-        
+        for i in range(total_sessions):
+            tenant = participating_tenants[i]
+            landlord = all_landlords[i % len(all_landlords)]  # 如果房东数量不够，循环使用
+            
+            # 使用GroupNegotiationService找到最佳房产匹配
+            best_match = await group_service.find_best_property_for_tenant(tenant.tenant_id)
+            
+            if not best_match:
+                logger.warning(f"没有找到适合租客 {tenant.name} 的房产，跳过创建会话")
+                continue
+            else:
+                # 使用GroupNegotiationService创建正式协商会话
+                negotiation_session = await group_service.create_negotiation_session(tenant, best_match)
+                if negotiation_session:
+                    session_data = negotiation_session
+                else:
+                    logger.error(f"为租客 {tenant.name} 创建协商会话失败")
+                    session_id = f"session_{uuid.uuid4().hex[:8]}_{int(time.time())}"
+                    session_data = {
+                        "session_id": session_id,
+                        "tenant_name": tenant.name,
+                        "landlord_name": landlord.name if hasattr(landlord, 'name') else landlord.get("name", "Unknown"),
+                        "property_address": "Property Available",
+                        "monthly_rent": 2500,  # 默认值
+                        "match_score": 60,  # 默认分数
+                        "match_reasons": ["创建协商会话失败"],
+                        "status": "error",
+                        "created_at": datetime.now().isoformat()
+                    }
+            
+            sessions.append(session_data)
+            
+            # 发送初始化消息到WebSocket
+            try:
+                tenant_name = tenant.get("name") if isinstance(tenant, dict) else tenant.name
+                landlord_name = landlord.get("name") if isinstance(landlord, dict) else landlord.name
+                await manager.send_message_to_session(session_data["session_id"], {
+                    "type": "negotiation_started",
+                    "session_id": session_data["session_id"],
+                    "message": f"协商开始: {tenant_name} 正在与 {landlord_name} 协商",
+                    "session_info": session_data,
+                    "timestamp": datetime.now().isoformat()
+                })
+                
+                
+            except Exception as ws_error:
+                logger.warning(f"WebSocket消息发送失败 {session_data['session_id']}: {ws_error}")
+
         result = {
             "message": "协商流程启动成功",
-            "total_sessions": len(negotiation_result.get('sessions', [])),
-            "sessions": negotiation_result.get('sessions', []),
+            "total_sessions": len(sessions),
+            "sessions": sessions,
             "websocket_info": {
-                "endpoint": "/ws/{session_id}",
+                "endpoint": f"/ws/{session_data['session_id']}",
                 "description": "连接到WebSocket以接收实时协商消息"
             }
         }
         
-        logger.info(f"协商流程启动成功: {len(result['sessions'])} 个会话")
+        logger.info(f"协商流程启动成功: {len(sessions)} 个会话，使用实际agent名称")
         return result
         
     except Exception as e:
         logger.error(f"启动协商流程失败: {str(e)}")
         raise HTTPException(status_code=500, detail=f"启动协商失败: {str(e)}")
-
-@app.post("/start-auto-negotiation-live") 
-async def start_auto_negotiation_live(max_tenants: int = Query(1, description="最大租客数量")):
-    """
-    启动租客主导的实时自动协商（保持向后兼容）
-    """
-    try:
-        # 获取前N个租客
-        all_tenants = await agent_factory.get_all_tenants()
-        if not all_tenants:
-            raise HTTPException(status_code=400, detail="没有可用的租客数据，请先调用初始化API")
-        
-        tenant_ids = [tenant["tenant_id"] for tenant in all_tenants[:max_tenants]]
-        
-        # 调用新的协商API
-        request = StartNegotiationRequest(tenant_ids=tenant_ids)
-        result = await start_negotiation(request)
-        
-        # 返回向后兼容的格式
-        return {
-            "message": "成功启动租客主导的实时自动协商",
-            "active_sessions": result["total_sessions"],
-            "session_ids": [s["session_id"] for s in result["sessions"]]
-        }
-        
-    except Exception as e:
-        logger.error(f"启动实时自动协商失败: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-
 
 @app.get("/sessions")
 async def get_all_sessions():
@@ -469,31 +473,6 @@ async def reset_conversation():
     except Exception as e:
         logger.error(f"重置内存失败: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
-
-
-@app.post("/stop-auto-negotiation")
-async def stop_auto_negotiation():
-    """
-    停止自动协商
-    
-    取消当前运行的自动协商任务
-    """
-    try:
-        # 通过WebSocket广播停止消息
-        await manager.broadcast_to_all_sessions({
-            "type": "auto_negotiation_stopped",
-            "message": "自动协商已停止",
-            "timestamp": datetime.now().isoformat()
-        })
-        
-        # 取消任务在WebSocket连接管理器中处理
-        manager.cancel_all_tasks()
-        
-        return {"message": "自动协商已停止"}
-    except Exception as e:
-        logger.error(f"停止自动协商失败: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
-    
 
 
 if __name__ == "__main__":

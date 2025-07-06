@@ -174,7 +174,6 @@ class AgentMapController {
     showAgentDialogue(agentId, message, duration = 5000) {
         if (this.agents.has(agentId)) {
             this.mapManager.showDialogueBubble(agentId, message, duration);
-            console.log(`[AgentMapController] Show dialogue: ${agentId} -> ${message}`);
         }
     }
 
@@ -306,6 +305,18 @@ class AgentMapController {
      */
     getAgent(agentId) {
         return this.agents.get(agentId);
+    }
+
+    /**
+     * Get agent by name
+     */
+    getAgentByName(name) {
+        for (const [agentId, agent] of this.agents) {
+            if (agent.name === name) {
+                return { id: agentId, ...agent };
+            }
+        }
+        return null;
     }
 
     /**

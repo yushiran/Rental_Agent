@@ -311,10 +311,18 @@ class MapManager {
         const marker = this.agentMarkers.get(agentId);
         if (!marker) return;
 
+        // Create enhanced chat bubble content
+        const bubbleContent = `
+            <div class="dialogue-bubble">
+                <div class="bubble-content">${message}</div>
+                <div class="bubble-tail"></div>
+            </div>
+        `;
+
         const bubble = new google.maps.InfoWindow({
-            content: `<div class="dialogue-bubble">${message}</div>`,
+            content: bubbleContent,
             disableAutoPan: true,
-            pixelOffset: new google.maps.Size(0, -40)
+            pixelOffset: new google.maps.Size(0, -50)
         });
 
         bubble.open(this.map, marker);

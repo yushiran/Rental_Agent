@@ -163,7 +163,7 @@ def should_continue(state: MetaState) -> str:
         return "end"
 
     # 检查最大对话轮数
-    if len(state["messages"]) > 20:
+    if len(state["messages"]) > 50:
         state["is_terminated"] = True
         state["termination_reason"] = "max_turns_reached"
         return "end"
@@ -252,6 +252,7 @@ def create_meta_controller_graph():
 # Create and compile the meta controller graph
 meta_controller_graph = create_meta_controller_graph().compile()
 
+
 async def stream_conversation_with_state_update(initial_state: ExtendedMetaState, callback_fn=None, graph=meta_controller_graph):
 # Create a copy of the state to avoid modifying the original during iteration
     state_copy = {**initial_state}
@@ -270,6 +271,14 @@ async def stream_conversation_with_state_update(initial_state: ExtendedMetaState
         if "messages" in node_output and node_output["messages"]:
             latest_message = node_output["messages"][-1]
             latest_message["active_agent"] = node_output["active_agent"]
+            latest_message['tenant_data'] = node_output.get("tenant_data", {})
+            latest_message['landlord_data'] = node_output.get("landlord_data", {})
+            
+            # Log the conversation flow
+            agent_type = node_output["active_agent"]
+            message_content = latest_message.get("content", "")
+            logger.info(f"💬 Meta Controller: {agent_type} generated message: {message_content[:100]}...")
+            
             # Execute callback if provided
             if callback_fn:
                 await callback_fn(latest_message)

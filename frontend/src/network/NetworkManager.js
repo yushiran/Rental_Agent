@@ -165,17 +165,29 @@ class NetworkManager {
     }
 
     /**
-     * 处理WebSocket消息
+     * Handle WebSocket messages
      */
     handleWebSocketMessage(sessionId, data) {
-        console.log(`[NetworkManager] 收到WebSocket消息 ${sessionId}:`, data);
+        console.log(`[NetworkManager] Received WebSocket message ${sessionId}:`, data);
 
-        // 处理心跳响应
+        // Handle heartbeat responses
         if (data.type === 'pong' || data.type === 'server_ping') {
-            return; // 心跳消息不需要进一步处理
+            return; // Heartbeat messages don't need further processing
         }
 
-        // 根据消息类型分发事件
+        // Always forward the raw message to the main app for processing - THIS IS CRITICAL
+        this.emit('websocket:message', { ...data, sessionId });
+        
+        // Debug the message to make sure it's properly structured
+        if (data.type === 'message_sent') {
+            console.log(`[NetworkManager] DIALOGUE MESSAGE: ${data.content || data.message}`, {
+                agent_type: data.agent_type,
+                agent_name: data.agent_name,
+                session_id: sessionId
+            });
+        }
+        
+        // Also emit specific event types for compatibility
         switch (data.type) {
             case 'agent_started':
                 this.emit('agent:started', { ...data, sessionId });
@@ -195,6 +207,9 @@ class NetworkManager {
                 break;
             case 'history':
                 this.emit('negotiation:history', { ...data, sessionId });
+                break;
+            case 'conversation_message':
+                this.emit('conversation:message', { ...data, sessionId });
                 break;
             case 'connection_status':
                 this.emit('connection:status', { ...data, sessionId });
@@ -288,6 +303,31 @@ class NetworkManager {
         }
     }
 
+    /**
+     * 发送消息到WebSocket
+     */
+    sendToWebSocket(sessionId, data) {
+        if (!this.connections.has(sessionId)) {
+            console.error(`[NetworkManager] 尝试发送到不存在的WebSocket连接: ${sessionId}`);
+            return false;
+        }
+        
+        const ws = this.connections.get(sessionId);
+        if (ws.readyState === WebSocket.OPEN) {
+            try {
+                ws.send(JSON.stringify(data));
+                console.log(`[NetworkManager] 已发送消息到WebSocket ${sessionId}:`, data);
+                return true;
+            } catch (error) {
+                console.error(`[NetworkManager] 发送WebSocket消息失败:`, error);
+                return false;
+            }
+        } else {
+            console.warn(`[NetworkManager] WebSocket ${sessionId} 未准备好，无法发送消息`);
+            return false;
+        }
+    }
+    
     /**
      * 关闭所有WebSocket连接
      */

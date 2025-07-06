@@ -10,12 +10,14 @@ class RentalAgentApp {
         this.mapController = null;
         this.networkManager = null;
         this.currentSession = null;
+        this.negotiationSessions = [];
         this.isInitialized = false;
         this.eventListeners = new Map();
+        this._initializedData = null; // Store initialized data from backend
         
         // 配置
         this.config = {
-            apiKey: '', // Google Maps API Key (可选)
+            apiKey: '', // Google Maps API Key - should be set externally
             backendUrl: 'http://localhost:8000',
             mapContainer: 'map'
         };
@@ -71,9 +73,34 @@ class RentalAgentApp {
             this.updateConnectionStatus(false);
         });
         
-        // WebSocket events
+        // WebSocket events - primary handler for all WebSocket messages
         this.networkManager.on('websocket:message', (data) => {
+            this.addLog('debug', `收到WebSocket原始消息: ${data.type || 'unknown'}`);
             this.handleWebSocketMessage(data);
+        });
+        
+        // Direct message event handler - for messages from backend
+        this.networkManager.on('message:sent', (data) => {
+            this.handleMessageSent(data);
+        });
+        
+        // WebSocket connection events
+        this.networkManager.on('websocket:connected', (data) => {
+            this.addLog('success', `WebSocket连接已建立: ${data.sessionId || 'unknown'}`);
+            this.handleWebSocketConnected(data);
+        });
+        
+        this.networkManager.on('websocket:disconnected', (data) => {
+            this.addLog('error', `WebSocket连接已断开: ${data.sessionId || 'unknown'}`);
+        });
+        
+        this.networkManager.on('websocket:error', (data) => {
+            this.addLog('error', `WebSocket错误: ${data.sessionId || 'unknown'}`);
+        });
+        
+        // Conversation message events
+        this.networkManager.on('conversation:message', (data) => {
+            this.handleConversationMessage(data);
         });
         
         // UI events
@@ -107,6 +134,8 @@ class RentalAgentApp {
         if (clearLogsBtn) {
             clearLogsBtn.addEventListener('click', () => this.clearLogs());
         }
+        
+
     }
 
     /**
@@ -122,31 +151,40 @@ class RentalAgentApp {
             this.updateStatus('Starting negotiation...');
             this.setButtonLoading('start-negotiation', true);
             
-            // Send start negotiation request
-            const response = await this.networkManager.request('/start-session', {
+            // Get tenant IDs from stored data if available
+            const tenantIds = [];
+            if (this._initializedData && this._initializedData.tenants) {
+                tenantIds.push(...this._initializedData.tenants.map(tenant => tenant.tenant_id));
+                this.addLog('info', `Using ${tenantIds.length} tenants for negotiation`);
+            } else {
+                this.addLog('warning', 'No initialized tenant data available, proceeding with empty tenant selection');
+            }
+            
+            // Send start negotiation request with tenant IDs
+            const response = await this.networkManager.request('/start-negotiation', {
                 method: 'POST',
                 body: JSON.stringify({
-                    tenant_preferences: {
-                        budget: 10000,
-                        location: 'Beijing City Center',
-                        area: '80-120㎡'
-                    }
+                    tenant_ids: tenantIds
                 })
             });
             
-            // Get the first session ID from response (compatible with backend format)
-            this.currentSession = response.session_ids && response.session_ids.length > 0 
-                ? response.session_ids[0] 
-                : `session_${Date.now()}`;
-            
-            // Connect WebSocket
-            await this.networkManager.connectWebSocket(this.currentSession);
-            
-            // // Add agents to map
-            // this.addInitialAgents();
-            
-            this.updateStatus('Negotiation started');
-            this.addLog('info', `Negotiation session started: ${this.currentSession}`);
+            if (response.sessions && response.sessions.length > 0) {
+                this.updateStatus(`Negotiation started with ${response.total_sessions} sessions`);
+                this.addLog('info', `Negotiation started: ${response.total_sessions} sessions created`);
+                
+                // Store all negotiation sessions
+                this.negotiationSessions = response.sessions;
+                
+                // Connect WebSocket for each session and start negotiation visualization
+                for (const session of response.sessions) {
+                    await this.startNegotiationSession(session);
+                }
+                
+                this.updateStatus('All negotiation sessions active');
+                
+            } else {
+                throw new Error('No negotiation sessions created');
+            }
             
         } catch (error) {
             console.error('[RentalAgentApp] Failed to start negotiation:', error);
@@ -158,11 +196,127 @@ class RentalAgentApp {
     }
 
     /**
+     * Start individual negotiation session
+     */
+    async startNegotiationSession(session) {
+        try {
+            // Connect WebSocket for this session
+            await this.networkManager.connectWebSocket(session.session_id);
+            
+            // Find available agents
+            const allAgents = this.mapController.getAllAgents();
+            const availableTenants = allAgents.filter(a => a.type === 'tenant' && a.status === 'idle');
+            const availableLandlords = allAgents.filter(a => a.type === 'landlord' && a.status === 'idle');
+            
+            // Smart agent assignment: use first available agents if names don't match
+            let tenantAgent = this.mapController.getAgentByName(session.tenant_name);
+            let landlordAgent = this.mapController.getAgentByName(session.landlord_name);
+            
+            // Fallback to available agents if names don't match
+            if (!tenantAgent && availableTenants.length > 0) {
+                tenantAgent = availableTenants[0];
+            }
+            if (!landlordAgent && availableLandlords.length > 0) {
+                landlordAgent = availableLandlords[0];
+            }
+            
+            if (tenantAgent && landlordAgent) {
+                // Update agent statuses to negotiating
+                this.mapController.updateAgentStatus(tenantAgent.id, 'negotiating');
+                this.mapController.updateAgentStatus(landlordAgent.id, 'negotiating');
+                
+                // Store session mapping for WebSocket messages
+                session._frontendAgents = {
+                    tenant: tenantAgent,
+                    landlord: landlordAgent
+                };
+                
+                // Set agents to ready for receiving WebSocket messages
+                this.mapController.updateAgentStatus(tenantAgent.id, 'ready');
+                this.mapController.updateAgentStatus(landlordAgent.id, 'ready');
+                
+                // Initialize session - no hardcoded dialogue, only WebSocket content
+                this.startChatVisualization(session, tenantAgent, landlordAgent);
+                
+                // Just move tenant to appropriate position
+                setTimeout(async () => {
+                    // Move tenant towards landlord for visual effect
+                    await this.moveTenantToLandlord(tenantAgent, landlordAgent);
+                }, 500);
+                
+                this.addLog('info', `Session ${session.session_id}: ${tenantAgent.name} ↔ ${landlordAgent.name} (Score: ${session.match_score})`);
+            } else {
+                this.addLog('error', `No available agents for session ${session.session_id}`);
+            }
+            
+        } catch (error) {
+            console.error(`[RentalAgentApp] Failed to start session ${session.session_id}:`, error);
+            this.addLog('error', `Failed to start session ${session.session_id}: ${error.message}`);
+        }
+    }
+
+    /**
+     * Move tenant towards landlord visually
+     */
+    async moveTenantToLandlord(tenantAgent, landlordAgent) {
+        const tenantPos = tenantAgent.position;
+        const landlordPos = landlordAgent.position;
+        
+        // Calculate intermediate position (closer to landlord)
+        const moveDistance = 0.3; // 30% of the way
+        const newPosition = {
+            lat: tenantPos.lat + (landlordPos.lat - tenantPos.lat) * moveDistance,
+            lng: tenantPos.lng + (landlordPos.lng - tenantPos.lng) * moveDistance
+        };
+        
+        // Move tenant to new position
+        this.mapController.moveAgent(tenantAgent.id, newPosition);
+        
+        // Update agent position in our records
+        tenantAgent.position = newPosition;
+        
+        // Wait for animation to complete
+        await new Promise(resolve => setTimeout(resolve, 1500));
+    }
+
+    /**
+     * Start chat visualization for a session
+     * No hardcoded messages - only shows WebSocket content
+     */
+    startChatVisualization(session, tenantAgent, landlordAgent) {
+        this.addLog('info', `等待 ${tenantAgent.name} 和 ${landlordAgent.name} 之间的实时对话...`);
+
+        // Store agents in session for later reference
+        if (!session._frontendAgents) {
+            session._frontendAgents = {
+                tenant: tenantAgent,
+                landlord: landlordAgent
+            };
+        }
+        
+        // Send WebSocket heartbeat to trigger backend activity
+        setTimeout(() => {
+            try {
+                this.networkManager.sendToWebSocket(session.session_id, {
+                    type: "client_ready",
+                    timestamp: Date.now()
+                });
+                this.addLog('debug', `已发送客户端就绪信号到会话 ${session.session_id}`);
+            } catch (error) {
+                console.error(`[RentalAgentApp] 发送客户端就绪消息失败:`, error);
+            }
+        }, 1000);
+    }
+
+    /**
      * Reset Session
      */
     async resetSession() {
         try {
             this.updateStatus('Resetting session...');
+            
+            // Close all WebSocket connections
+            this.networkManager.closeAllConnections();
             
             // Reset backend state
             await this.networkManager.request('/reset-memory', {
@@ -172,8 +326,9 @@ class RentalAgentApp {
             // Clear agents from map
             this.mapController.clearAllAgents();
             
-            // Clear current session
+            // Clear current session and negotiation sessions
             this.currentSession = null;
+            this.negotiationSessions = [];
             
             // Update UI
             this.updateStatus('Session reset');
@@ -192,31 +347,50 @@ class RentalAgentApp {
      * Handle WebSocket Messages
      */
     handleWebSocketMessage(data) {
-        const { sessionId, event, payload } = data;
+        const { sessionId, session_id, event, payload, type, message, agent_id, agent_name, agent_type, active_agent, content } = data;
         
-        console.log(`[RentalAgentApp] Received event: ${event}`, payload);
+        this.addLog('debug', `WebSocket消息类型: ${type || event || 'unknown'}`);
         
-        switch (event) {
+        // Always capture and log message content if it exists
+        const messageContent = message || content || (payload && payload.content);
+        if (messageContent && typeof messageContent === 'string' && messageContent.trim() !== '') {
+            this.addLog('debug', `消息内容: ${messageContent.substring(0, 50)}...`);
+        }
+        
+        // Handle different message formats - use event or type
+        const eventType = event || type;
+        const finalSessionId = sessionId || session_id;
+        
+        switch (eventType) {
             case 'agent_started':
-                this.handleAgentStarted(payload);
+                this.handleAgentStarted(payload || data);
                 break;
             case 'message_sent':
-                this.handleMessageSent(payload);
+                // Always handle message content directly
+                this.handleMessageSent(data);
                 break;
             case 'agent_thought':
-                this.handleAgentThought(payload);
-                break;
-            case 'negotiation_update':
-                this.handleNegotiationUpdate(payload);
+                this.handleAgentThought(payload || data);
                 break;
             case 'agreement_reached':
-                this.handleAgreementReached(payload);
+                this.handleAgreementReached(payload || data);
                 break;
             case 'dialogue_ended':
-                this.handleDialogueEnded(payload);
+                this.handleDialogueEnded(payload || data);
+                break;
+            case 'connected':
+                this.handleWebSocketConnected(data);
                 break;
             default:
-                console.log(`[RentalAgentApp] Unknown event: ${event}`);
+                // For any other message that might contain dialogue content
+                if (messageContent) {
+                    this.handleMessageSent({
+                        session_id: finalSessionId,
+                        content: messageContent,
+                        agent_type: agent_type || active_agent || 'unknown',
+                        agent_name: agent_name || 'Agent'
+                    });
+                }
         }
     }
 
@@ -230,51 +404,207 @@ class RentalAgentApp {
     }
 
     /**
-     * Handle Message Sent Event
+     * Handle Message Sent Event - Process all dialogue messages from WebSocket
      */
-    handleMessageSent(payload) {
-        const { agent_id, message, agent_type } = payload;
+    handleMessageSent(data) {
+        try {
+            const { 
+                session_id, 
+                agent_id, 
+                agent_name, 
+                agent_type, 
+                active_agent, 
+                message, 
+                content, 
+                role 
+            } = data;
+            
+            // Get actual message content
+            const messageContent = message || content;
+            if (!messageContent || messageContent.trim() === '') {
+                this.addLog('warning', '收到空消息内容，已跳过');
+                return;
+            }
+            
+        } catch (error) {
+            this.addLog('error', `消息处理错误: ${error.message}`);
+            return;
+        }
         
-        // Show dialogue bubble on map
-        this.mapController.showAgentDialogue(agent_id, message);
+        // Determine the speaking agent type and name
+        const speakingAgentType = agent_type || active_agent || 'unknown';
+        const speakingAgentName = agent_name || (agent_id ? `Agent ${agent_id}` : `${speakingAgentType}Agent`);
         
-        // Add to log
-        this.addLog('message', `${agent_type} ${agent_id}: ${message}`);
+        // Find the corresponding frontend agent for this message
+        let targetAgent = null;
+        let matchedSession = null;
+        
+        if (session_id) {
+            matchedSession = this.negotiationSessions.find(s => s.session_id === session_id);
+            if (matchedSession && matchedSession._frontendAgents) {
+                // Choose the right agent based on agent type
+                if (speakingAgentType === 'tenant') {
+                    targetAgent = matchedSession._frontendAgents.tenant;
+                } else if (speakingAgentType === 'landlord') {
+                    targetAgent = matchedSession._frontendAgents.landlord;
+                }
+            }
+        }
+        
+        // Fallback: Find by agent_id or agent_name
+        if (!targetAgent && agent_id) {
+            targetAgent = this.mapController.getAgent(agent_id);
+        }
+        
+        if (!targetAgent && agent_name) {
+            targetAgent = this.mapController.getAgentByName(agent_name);
+        }
+        
+        // FALLBACK: If no agent found but we have sessions, use the first available agent of matching type
+        if (!targetAgent && this.negotiationSessions.length > 0) {
+            const firstSession = this.negotiationSessions[0];
+            if (firstSession._frontendAgents) {
+                if (speakingAgentType === 'tenant' && firstSession._frontendAgents.tenant) {
+                    targetAgent = firstSession._frontendAgents.tenant;
+                } else if (speakingAgentType === 'landlord' && firstSession._frontendAgents.landlord) {
+                    targetAgent = firstSession._frontendAgents.landlord;
+                }
+            }
+        }
+        
+        // LAST RESORT: Get any agent
+        if (!targetAgent) {
+            const allAgents = this.mapController.getAllAgents();
+            
+            // Try to find an agent of the right type
+            const matchingAgents = allAgents.filter(a => a.type === speakingAgentType);
+            if (matchingAgents.length > 0) {
+                targetAgent = matchingAgents[0];
+            } else if (allAgents.length > 0) {
+                // Just use any agent
+                targetAgent = allAgents[0];
+            }
+        }
+        
+        // Display dialogue bubble if we have a target agent
+        if (targetAgent) {
+            try {
+                // Display dialogue bubble with duration based on message length
+                const displayTime = Math.max(5000, Math.min(messageContent.length * 80, 12000));
+                this.mapController.showAgentDialogue(targetAgent.id, messageContent, displayTime);
+                
+                // Update agent status to show speaking animation
+                this.mapController.updateAgentStatus(targetAgent.id, 'speaking');
+                setTimeout(() => {
+                    this.mapController.updateAgentStatus(targetAgent.id, 'active');
+                }, 1500);
+                
+            } catch (error) {
+                this.addLog('error', `显示对话气泡失败: ${error.message}`);
+            }
+            
+            // Add to log with role and session information
+            let rolePrefix = '';
+            if (role === 'user') rolePrefix = '💬 ';
+            else if (role === 'assistant') rolePrefix = '🤖 ';
+            
+            const logMessage = session_id 
+                ? `[${session_id}] ${rolePrefix}${targetAgent.name} (${speakingAgentType}): ${messageContent}`
+                : `${rolePrefix}${targetAgent.name}: ${messageContent}`;
+            this.addLog('message', logMessage);
+        } else {
+            // If no agent found, still log the message
+            const logMessage = session_id 
+                ? `[${session_id}] ${speakingAgentName} (${speakingAgentType}): ${messageContent}`
+                : `${speakingAgentName}: ${messageContent}`;
+            this.addLog('warning', `NO AGENT FOUND - ${logMessage}`);
+        }
+    }
+
+    /**
+     * Handle WebSocket Connected Event
+     */
+    handleWebSocketConnected(data) {
+        this.addLog('info', `WebSocket连接成功`);
+        
+        const sessionId = data.session_id || data.sessionId;
+        if (sessionId) {
+            this.addLog('info', `会话 ${sessionId} WebSocket连接已建立`);
+            
+            // Find the session and trigger visual effects
+            const session = this.negotiationSessions.find(s => s.session_id === sessionId);
+            if (session) {
+                // Delay slightly to ensure WebSocket is fully ready
+                setTimeout(() => {
+                    this.triggerNegotiationVisuals(session);
+                }, 500);
+            } else {
+                this.addLog('warning', `没有找到匹配的会话ID: ${sessionId}`);
+            }
+        } else {
+            this.addLog('warning', `WebSocket连接数据中没有会话ID`);
+        }
+    }
+
+    /**
+     * Trigger negotiation visual effects
+     */
+    async triggerNegotiationVisuals(session) {
+        // Use pre-assigned agents if available
+        if (session._frontendAgents) {
+            const { tenant: tenantAgent, landlord: landlordAgent } = session._frontendAgents;
+            
+            // Move tenant towards landlord
+            await this.moveTenantToLandlord(tenantAgent, landlordAgent);
+            
+            // Start chat visualization
+            this.startChatVisualization(session, tenantAgent, landlordAgent);
+            
+            this.addLog('info', `Visual effects started for ${tenantAgent.name} ↔ ${landlordAgent.name}`);
+        }
     }
 
     /**
      * Handle Agent Thought Event
      */
     handleAgentThought(payload) {
-        const { agent_id, thought } = payload;
-        this.mapController.updateAgentStatus(agent_id, 'thinking');
-        this.addLog('thought', `${agent_id} thinking: ${thought}`);
-    }
-
-    /**
-     * Handle Negotiation Update Event
-     */
-    handleNegotiationUpdate(payload) {
-        const { progress, details } = payload;
-        this.updateStatus(`Negotiation in progress (${progress}%)`);
+        const { agent_id, agent_name, thought, session_id } = payload;
         
-        if (details) {
-            this.addLog('info', `Negotiation progress: ${details}`);
+        // Find the agent to update status
+        let targetAgent = null;
+        if (agent_id) {
+            targetAgent = this.mapController.getAgent(agent_id);
         }
+        if (!targetAgent && agent_name) {
+            targetAgent = this.mapController.getAgentByName(agent_name);
+        }
+        
+        if (targetAgent) {
+            this.mapController.updateAgentStatus(targetAgent.id, 'thinking');
+        }
+        
+        // Log the thought with session context if available
+        const logMessage = session_id 
+            ? `[${session_id}] ${agent_name || agent_id} thinking: ${thought}`
+            : `${agent_name || agent_id} thinking: ${thought}`;
+        this.addLog('thought', logMessage);
     }
 
     /**
      * Handle Agreement Reached Event
      */
     handleAgreementReached(payload) {
-        const { tenant_id, landlord_id, agreement_details } = payload;
+        const { tenant_id, landlord_id, agreement_details, session_id } = payload;
         
-        this.mapController.updateAgentStatus(tenant_id, 'active');
-        this.mapController.updateAgentStatus(landlord_id, 'active');
+        if (tenant_id) this.mapController.updateAgentStatus(tenant_id, 'active');
+        if (landlord_id) this.mapController.updateAgentStatus(landlord_id, 'active');
         
         this.updateStatus('Negotiation successful!');
         this.addLog('success', 'Agreement reached!');
-        this.addLog('info', `Agreement details: ${JSON.stringify(agreement_details, null, 2)}`);
+        
+        if (agreement_details) {
+            this.addLog('info', `Agreement details: ${JSON.stringify(agreement_details, null, 2)}`);
+        }
         
         this.showSuccess('Negotiation successful! Both parties reached an agreement');
     }
@@ -283,13 +613,19 @@ class RentalAgentApp {
      * Handle Dialogue Ended Event
      */
     handleDialogueEnded(payload) {
-        const { reason, final_status } = payload;
+        const { reason, final_status, session_id } = payload;
         
         this.updateStatus('Negotiation ended');
-        this.addLog('info', `Negotiation end reason: ${reason}`);
+        
+        const logMessage = session_id 
+            ? `[${session_id}] Negotiation ended - reason: ${reason}`
+            : `Negotiation ended - reason: ${reason}`;
+        this.addLog('info', logMessage);
         
         if (final_status === 'failed') {
             this.showError('Negotiation failed');
+        } else {
+            this.addLog('success', 'Negotiation completed successfully');
         }
     }
 
@@ -322,7 +658,7 @@ class RentalAgentApp {
      * Update UI State
      */
     updateUI() {
-        const hasSession = !!this.currentSession;
+        const hasSession = !!this.currentSession || this.negotiationSessions.length > 0;
         
         // Update button states
         const startBtn = document.getElementById('start-negotiation');
@@ -331,7 +667,12 @@ class RentalAgentApp {
         
         if (startBtn) {
             startBtn.disabled = hasSession;
-            startBtn.textContent = hasSession ? 'Negotiation in progress...' : 'Start Negotiation';
+            if (hasSession) {
+                const sessionCount = this.negotiationSessions.length;
+                startBtn.textContent = sessionCount > 0 ? `Negotiation in progress (${sessionCount} sessions)` : 'Negotiation in progress...';
+            } else {
+                startBtn.textContent = 'Start Negotiation';
+            }
         }
         
         if (resetBtn) {
@@ -444,6 +785,15 @@ class RentalAgentApp {
                 this.updateStatus(`System initialization successful: ${response.data.tenants_count} tenants, ${response.data.landlords_count} landlords, ${response.data.properties_count} properties`);
                 this.addLog('success', `System initialization completed - Tenants: ${response.data.tenants_count}, Landlords: ${response.data.landlords_count}, Properties: ${response.data.properties_count}`);
                 
+                // Store initialized data for later use in negotiations
+                this._initializedData = response.data;
+                
+                // Log some tenant IDs for debugging
+                if (response.data.tenants && response.data.tenants.length > 0) {
+                    const tenantIds = response.data.tenants.map(t => t.tenant_id).slice(0, 3);
+                    this.addLog('info', `Available tenant IDs: ${tenantIds.join(', ')}...`);
+                }
+                
                 // Enable start negotiation button
                 const startBtn = document.getElementById('start-negotiation');
                 if (startBtn) {
@@ -508,7 +858,6 @@ class RentalAgentApp {
                         lat: preferredLocation.latitude,
                         lng: preferredLocation.longitude
                     };
-                    console.log(`[RentalAgentApp] Tenant ${tenant.name} preferred location: ${tenantPosition.lat}, ${tenantPosition.lng}`);
                 }
 
                 await this.mapController.addAgent(tenant.tenant_id, 'tenant', {
@@ -544,7 +893,6 @@ class RentalAgentApp {
                             lat: firstProperty.location.latitude,
                             lng: firstProperty.location.longitude
                         };
-                        console.log(`[RentalAgentApp] Landlord ${landlord.name} location: ${landlordPosition.lat}, ${landlordPosition.lng}`);
                     }
                 }
 
@@ -586,6 +934,8 @@ class RentalAgentApp {
         this.eventListeners.clear();
         this.isInitialized = false;
     }
+
+
 }
 
 // Create global application instance

@@ -261,14 +261,45 @@
         }
 
         .dialogue-bubble {
-            max-width: 200px;
-            padding: 0.5rem;
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-            color: #333;
+            max-width: 220px;
+            position: relative;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+            animation: bubbleIn 0.3s ease-out;
+        }
+
+        .bubble-content {
+            padding: 0.75rem;
+            color: white;
             font-size: 0.9rem;
             line-height: 1.4;
+            font-weight: 500;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+        }
+
+        .bubble-tail {
+            position: absolute;
+            bottom: -8px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 8px solid transparent;
+            border-right: 8px solid transparent;
+            border-top: 8px solid #764ba2;
+        }
+
+        @keyframes bubbleIn {
+            from {
+                transform: scale(0.8);
+                opacity: 0;
+            }
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
         }
 
         .agent-info,
@@ -310,10 +341,10 @@
     </style>
 </head>
 <body>
-    <header>
+    <!-- <header>
         <h1>🏠 Rental Agent Maps</h1>
         <p class="subtitle">Multi-Agent Rental Negotiation Visualization System Based on Google Maps</p>
-    </header>
+    </header> -->
 
     <main>
         <div class="map-container">
@@ -353,12 +384,7 @@
                 <h3>⚙️ Parameter Settings</h3>
                 <div class="input-group">
                     <label for="tenant-count">Number of Tenants:</label>
-                    <select id="tenant-count">
-                        <option value="1">1 Tenant</option>
-                        <option value="2">2 Tenants</option>
-                        <option value="3" selected>3 Tenants</option>
-                        <option value="5">5 Tenants</option>
-                    </select>
+                    <input type="number" id="tenant-count" min="1" value="5" step="1">
                 </div>
                 <div class="checkbox-group">
                     <label>
