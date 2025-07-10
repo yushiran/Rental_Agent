@@ -6,6 +6,18 @@ from typing import Dict, List, Any, Optional
 from pydantic import BaseModel, Field
 import uuid
 import math
+from datetime import datetime
+
+class RentalStatus(BaseModel):
+    """租客租赁状态"""
+    is_rented: bool = False
+    property_id: Optional[str] = None
+    landlord_id: Optional[str] = None
+    rental_price: Optional[float] = None
+    rental_start_date: Optional[str] = None
+    contract_duration_months: Optional[int] = None
+    negotiation_session_id: Optional[str] = None
+    last_updated: str = Field(default_factory=lambda: datetime.now().isoformat())
 
 
 class TenantModel(BaseModel):
@@ -38,6 +50,8 @@ class TenantModel(BaseModel):
     has_pets: bool = False
     is_smoker: bool = False
     num_occupants: int = 1  # Including the tenant
+
+    rental_status: RentalStatus = Field(default_factory=RentalStatus)
     
     @property
     def monthly_income(self) -> float:

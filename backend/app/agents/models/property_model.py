@@ -5,6 +5,17 @@ Property model for rental properties
 from typing import Dict, List, Any, Optional
 from pydantic import BaseModel, Field
 import uuid
+from datetime import datetime
+
+class PropertyRentalStatus(BaseModel):
+    """房产租赁状态"""
+    is_rented: bool = False
+    tenant_id: Optional[str] = None
+    rental_price: Optional[float] = None
+    rental_start_date: Optional[str] = None
+    contract_duration_months: Optional[int] = None
+    negotiation_session_id: Optional[str] = None
+    last_updated: str = Field(default_factory=lambda: datetime.now().isoformat())
 
 
 class PropertyModel(BaseModel):
@@ -49,6 +60,8 @@ class PropertyModel(BaseModel):
     customer: Optional[Dict[str, Any]] = None
     formatted_branch_name: Optional[str] = None
     landlord_id: Optional[str] = None  # For linking to landlord data
+
+    rental_status: PropertyRentalStatus = Field(default_factory=PropertyRentalStatus)
     
     def model_post_init(self, __context) -> None:
         """Post-initialization validation and processing"""

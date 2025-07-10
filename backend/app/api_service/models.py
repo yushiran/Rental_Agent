@@ -1,9 +1,13 @@
 """
 API Models for the Rental Agent System
 """
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
 from datetime import datetime
+# 导入现有的状态模型
+from app.agents.models.tenant_model import RentalStatus
+from app.agents.models.property_model import PropertyRentalStatus
+from app.agents.models.landlord_model import LandlordRentalStatus
 
 
 class StartSessionRequest(BaseModel):
@@ -67,3 +71,23 @@ class SendMessageRequest(BaseModel):
     type: str = "send_message"
     message: str
     sender_type: str  # "tenant" or "landlord"
+
+class StartNegotiationRequest(BaseModel):
+    tenant_ids: List[str] = []
+
+class InitializeRequest(BaseModel):
+    tenant_count: int = 3
+    reset_data: bool = False
+
+# LLM分析的直接输出模型
+class NegotiationStatusUpdate(BaseModel):
+    """LLM分析协商结果并直接输出三个状态对象"""
+    
+    # 协商基本信息
+    negotiation_successful: bool = Field(description="协商是否成功达成协议")
+    confidence_score: float = Field(description="分析置信度 (0-1)", ge=0, le=1)
+    
+    # 三个状态对象 - 直接对应数据库模型
+    tenant_rental_status: RentalStatus = Field(description="租客租赁状态")
+    property_rental_status: PropertyRentalStatus = Field(description="房产租赁状态") 
+    landlord_rental_status: LandlordRentalStatus = Field(description="房东租赁统计")

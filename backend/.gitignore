@@ -175,3 +175,5 @@ cython_debug/
 .pypirc
 
 .langgraph_api/
+
+workspace/latex/generated_contracts/

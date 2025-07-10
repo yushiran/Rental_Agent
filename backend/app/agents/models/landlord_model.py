@@ -10,6 +10,15 @@ import uuid
 from .property_model import PropertyModel
 
 
+class LandlordRentalStatus(BaseModel):
+    """房东租赁统计"""
+    total_properties: int = 0
+    rented_properties: int = 0
+    available_properties: int = 0
+    total_rental_income: float = 0.0
+    average_rental_price: float = 0.0
+    last_updated: str = Field(default_factory=lambda: datetime.now().isoformat())
+
 class LandlordModel(BaseModel):
     """
     Simplified landlord model based on real rental data
@@ -34,7 +43,9 @@ class LandlordModel(BaseModel):
         'smoking_allowed': False,
         'deposit_weeks': 4  # Number of weeks rent as deposit
     })
-    
+
+    rental_stats: LandlordRentalStatus = Field(default_factory=LandlordRentalStatus)
+
     # Timestamps
     date_registered: datetime = Field(default_factory=datetime.now)
     

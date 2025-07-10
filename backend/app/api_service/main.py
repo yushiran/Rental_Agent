@@ -21,10 +21,12 @@ from app.conversation_service.reset_conversation import reset_conversation_state
 from app.utils.opik_utils import configure
 from app.mongo import initialize_database
 from app.config import config
+from app.api_service.models import StartNegotiationRequest, InitializeRequest
 
 from .group_negotiation import GroupNegotiationService
 from .websocket import ConnectionManager
 from app.agents.agents_factory import AgentDataInitializer
+from app.data_analysis.market_analyzer_api import analysis_router
 
 configure()
 
@@ -61,6 +63,9 @@ app.add_middleware(
 manager = ConnectionManager()
 # 初始化Agent工厂
 agent_factory = AgentDataInitializer()
+
+app.include_router(analysis_router)
+
 # 初始化服务（传入WebSocket管理器）
 group_service = GroupNegotiationService(websocket_manager=manager)
 
@@ -100,9 +105,7 @@ async def get_config():
         logger.error(f"获取配置失败: {str(e)}")
         raise HTTPException(status_code=500, detail=f"获取配置失败: {str(e)}")
 
-class InitializeRequest(BaseModel):
-    tenant_count: int = 3
-    reset_data: bool = False
+
 
 @app.post("/initialize")
 async def initialize_system(request: InitializeRequest):
@@ -122,10 +125,9 @@ async def initialize_system(request: InitializeRequest):
     try:
         logger.info(f"开始初始化系统: 租客数量={request.tenant_count}, 重置数据={request.reset_data}")
         
-        # 如果需要重置数据，先清理现有数据
-        if request.reset_data:
-            await agent_factory.clear_all_data()
-            logger.info("已清理现有数据")
+
+        await agent_factory.clear_all_data()
+        logger.info("已清理现有数据")
         
         # 检查是否已有数据
         existing_properties = await agent_factory.get_properties_count()
@@ -156,11 +158,11 @@ async def initialize_system(request: InitializeRequest):
                     frequency = price_info.get("frequency", "monthly")
                     
                     if frequency == 'weekly':
-                        monthly_rent = amount * 52 / 12
+                        monthly_rent = int(amount * 52 / 12)
                     elif frequency == 'yearly':
-                        monthly_rent = amount / 12
+                        monthly_rent = int(amount / 12)
                     else:
-                        monthly_rent = amount
+                        monthly_rent = int(amount)
                 else:
                     # 如果没有price字段，使用默认值
                     monthly_rent = 2000
@@ -200,8 +202,6 @@ async def initialize_system(request: InitializeRequest):
         logger.error(f"系统初始化失败: {str(e)}")
         raise HTTPException(status_code=500, detail=f"初始化失败: {str(e)}")
 
-class StartNegotiationRequest(BaseModel):
-    tenant_ids: List[str] = []
     
 @app.post("/start-negotiation")
 async def start_negotiation(request: StartNegotiationRequest):
