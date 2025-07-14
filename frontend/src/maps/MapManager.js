@@ -311,12 +311,9 @@ class MapManager {
         const marker = this.agentMarkers.get(agentId);
         if (!marker) return;
 
-        // Create enhanced chat bubble content
+        // Create SCI-standard single-layer dialogue bubble
         const bubbleContent = `
-            <div class="dialogue-bubble">
-                <div class="bubble-content">${message}</div>
-                <div class="bubble-tail"></div>
-            </div>
+            <div class="dialogue-bubble">${message}</div>
         `;
 
         const bubble = new google.maps.InfoWindow({

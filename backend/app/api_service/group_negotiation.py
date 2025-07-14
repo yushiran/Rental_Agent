@@ -11,7 +11,7 @@ from loguru import logger
 import time
 
 from langchain_openai import ChatOpenAI
-from langchain.prompts import ChatPromptTemplate
+from langchain_core.messages import HumanMessage
 
 # 确保日志配置正确，强制显示INFO级别消息
 logger.remove()  # 移除默认处理器
@@ -26,6 +26,9 @@ from app.conversation_service.meta_controller import (
     ExtendedMetaState,
     stream_conversation_with_state_update,
     meta_controller_graph,
+)
+from app.conversation_service.prompt.prompts import (
+    MARKET_ANALYSIS_PROMPT,
 )
 from app.config import config
 
@@ -592,14 +595,15 @@ class GroupNegotiationService:
                     f"[{i+1}] {'Tenant' if 'tenant' in msg.get('role', '').lower() else 'Landlord'}: {msg.get('content', '')}"
                     for i, msg in enumerate(messages)
                 ]
-            )
-
-            # 4. Build analysis context
-            context = f"""
-Tenant: {tenant_data.get('name', 'Unknown')} (ID: {tenant_data.get('tenant_id')}, Budget: £{tenant_data.get('max_budget', 0)})
-Landlord: {landlord_data.get('name', 'Unknown')} (ID: {landlord_data.get('landlord_id')})
-Property: {property_data.get('display_address', 'Unknown')} (ID: {property_data.get('property_id')}, Original Price: £{property_data.get('monthly_rent', 0)})
-"""
+            )            # 4. Build analysis context using template
+            context = {
+                "tenant": tenant_data,
+                "landlord": landlord_data,
+                "property": property_data,
+                "conversation": conversation_text,
+            }
+            
+            # Configure LLM
             llm_config = config.llm.get("default", {})
             llm = ChatOpenAI(
                 api_key=llm_config.api_key,
@@ -608,73 +612,19 @@ Property: {property_data.get('display_address', 'Unknown')} (ID: {property_data.
                 temperature=llm_config.temperature,
                 max_tokens=llm_config.max_tokens,
             )
-
-            # 🎯 Modified prompt to output structured JSON data directly
-            prompt = ChatPromptTemplate.from_template(
-                """
-You are a rental negotiation analysis expert. Analyze the conversation and generate three rental status objects in JSON format.
-
-Background Information:
-{context}
-
-Conversation History:
-{conversation}
-
-You need to output a JSON object containing the following fields:
-
-{{
-    "negotiation_successful": boolean,
-    "confidence_score": 0.0-1.0,
-    "tenant_rental_status": {{
-        "is_rented": boolean,
-        "property_id": string or null,
-        "landlord_id": string or null,
-        "rental_price": number or null,
-        "rental_start_date": "YYYY-MM-DD" or null,
-        "contract_duration_months": number or null,
-        "negotiation_session_id": string,
-        "last_updated": string
-    }},
-    "property_rental_status": {{
-        "is_rented": boolean,
-        "tenant_id": string or null,
-        "rental_price": number or null,
-        "rental_start_date": "YYYY-MM-DD" or null,
-        "contract_duration_months": number or null,
-        "negotiation_session_id": string,
-        "last_updated": string
-    }},
-    "landlord_rental_status": {{
-        "total_properties": number,
-        "rented_properties": number,
-        "available_properties": number,
-        "total_rental_income": number,
-        "average_rental_price": number,
-        "last_updated": string
-    }}
-}}
-
-Analysis Requirements:
-1. Carefully determine if the conversation explicitly reached a rental agreement
-2. Only set negotiation_successful to true when both parties clearly agree to rental terms
-3. Extract accurate final rent price, start date, and contract duration
-4. If negotiation failed, set all is_rented fields to false
-5. confidence_score reflects your certainty in the analysis result
-6. landlord_rental_status needs to be recalculated based on landlord's current properties
-
-Please output strictly in JSON format without any additional text or explanations.
-"""
-            )
+            
+            # Generate the rendered prompt content
+            prompt_content = MARKET_ANALYSIS_PROMPT.get_prompt(**context)
+            
+            # Create HumanMessage from the rendered content (避免 ChatPromptTemplate 的模板解析问题)
+            message = HumanMessage(content=prompt_content)
 
             # 6. Execute LLM analysis - using structured output to ensure correct format
             structured_llm = llm.with_structured_output(NegotiationStatusUpdate)
-            chain = prompt | structured_llm
 
             current_time = datetime.now().isoformat()
 
-            result = await chain.ainvoke(
-                {"context": context, "conversation": conversation_text}
-            )
+            result = await structured_llm.ainvoke([message])
 
             # 7. Supplement necessary ID and timestamp fields
             if result.negotiation_successful:

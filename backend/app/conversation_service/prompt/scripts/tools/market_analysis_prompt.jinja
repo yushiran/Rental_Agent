@@ -1,0 +1,53 @@
+You are a rental negotiation analysis expert. Analyze the conversation and generate three rental status objects in JSON format.
+
+Background Information:
+Tenant: {{ tenant.name }} (ID: {{ tenant.tenant_id }}, Budget: £{{ tenant.max_budget }})
+Landlord: {{ landlord.name }} (ID: {{ landlord.landlord_id }})
+Property: {{ property.display_address }} (ID: {{ property.property_id }}, Original Price: £{{ property.monthly_rent }})
+
+Conversation History:
+{{ conversation }}
+
+You need to output a JSON object containing the following fields:
+
+{%raw%}{
+    "negotiation_successful": boolean,
+    "confidence_score": 0.0-1.0,
+    "tenant_rental_status": {
+        "is_rented": boolean,
+        "property_id": string or null,
+        "landlord_id": string or null,
+        "rental_price": number or null,
+        "rental_start_date": "YYYY-MM-DD" or null,
+        "contract_duration_months": number or null,
+        "negotiation_session_id": string,
+        "last_updated": string
+    },
+    "property_rental_status": {
+        "is_rented": boolean,
+        "tenant_id": string or null,
+        "rental_price": number or null,
+        "rental_start_date": "YYYY-MM-DD" or null,
+        "contract_duration_months": number or null,
+        "negotiation_session_id": string,
+        "last_updated": string
+    },
+    "landlord_rental_status": {
+        "total_properties": number,
+        "rented_properties": number,
+        "available_properties": number,
+        "total_rental_income": number,
+        "average_rental_price": number,
+        "last_updated": string
+    }
+}{%endraw%}
+
+Analysis Requirements:
+1. Carefully determine if the conversation explicitly reached a rental agreement
+2. Only set negotiation_successful to true when both parties clearly agree to rental terms
+3. Extract accurate final rent price, start date, and contract duration
+4. If negotiation failed, set all is_rented fields to false
+5. confidence_score reflects your certainty in the analysis result
+6. landlord_rental_status needs to be recalculated based on landlord's current properties
+
+Please output strictly in JSON format without any additional text or explanations.

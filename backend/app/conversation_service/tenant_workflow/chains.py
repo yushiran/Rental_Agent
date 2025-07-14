@@ -63,7 +63,7 @@ def get_tenant_agent_chain(tenant_info=None, conversation_data=None, debug_promp
     # Create the prompt template with the system message including all variables
     prompt = ChatPromptTemplate.from_messages(
         [
-            ("system", TENANT_AGENT_PROMPT.prompt),
+            ("system", TENANT_AGENT_PROMPT.get_prompt(**template_context)),
             MessagesPlaceholder(variable_name="messages"),
         ],
         template_format="jinja2",
@@ -106,7 +106,7 @@ def get_property_matching_chain(tenant_info=None, properties=None, debug_prompt=
     
     prompt = ChatPromptTemplate.from_messages(
         [
-            ("human", PROPERTY_MATCHING_PROMPT.prompt),
+            ("human", PROPERTY_MATCHING_PROMPT.get_prompt(**template_context)),
         ],
         template_format="jinja2",
     )
@@ -176,7 +176,7 @@ def get_rental_conversation_summary_chain(conversation_data=None, debug_prompt=F
     prompt = ChatPromptTemplate.from_messages(
         [
             MessagesPlaceholder(variable_name="messages"),
-            ("human", RENTAL_SUMMARY_PROMPT.prompt),
+            ("human", RENTAL_SUMMARY_PROMPT.get_prompt(**template_context)),
         ],
         template_format="jinja2",
     )
