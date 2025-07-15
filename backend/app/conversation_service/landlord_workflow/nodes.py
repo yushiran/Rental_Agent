@@ -17,14 +17,19 @@ retriever_node = ToolNode(tools)
 
 async def landlord_agent_node(state: LandlordState, config: RunnableConfig):
     """Handle landlord agent conversations - responding to tenant inquiries about matched properties"""
+    # Get landlord model from state
+    landlord_model = state.get("landlord_model")
+    if not landlord_model:
+        raise ValueError("landlord_model is required in LandlordState")
+    
     # Prepare structured data for the chain
     landlord_info = {
-        "landlord_id": state.get("landlord_id", ""),
-        "name": state.get("landlord_name", ""),
-        "branch_name": state.get("branch_name", ""),
-        "phone": state.get("phone", ""),
-        "properties": state.get("properties", []),
-        "preferences": state.get("preferences", {})
+        "landlord_id": landlord_model.landlord_id,
+        "name": landlord_model.name,
+        "branch_name": landlord_model.branch_name,
+        "phone": landlord_model.phone,
+        "properties": [prop.model_dump() for prop in landlord_model.properties],
+        "preferences": landlord_model.preferences
     }
     
     property_info = {

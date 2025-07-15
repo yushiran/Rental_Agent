@@ -44,21 +44,31 @@ class ExtendedMetaState(MetaState, total=False):
 
 def tenant_graph_input_adapter(state: MetaState):
     """Adapt meta state to tenant graph input format."""
+    from app.agents.models import TenantModel
+    
     tenant_data = state["tenant_data"]
+    
+    # Create TenantModel from tenant_data
+    tenant_model = TenantModel(
+        tenant_id=tenant_data.get("tenant_id", ""),
+        name=tenant_data.get("name", "Tenant"),
+        email=tenant_data.get("email"),
+        phone=tenant_data.get("phone"),
+        annual_income=tenant_data.get("annual_income", 0),
+        has_guarantor=tenant_data.get("has_guarantor", False),
+        max_budget=tenant_data.get("max_budget", 0),
+        min_bedrooms=tenant_data.get("min_bedrooms", 1),
+        max_bedrooms=tenant_data.get("max_bedrooms", 3),
+        preferred_locations=tenant_data.get("preferred_locations", []),
+        is_student=tenant_data.get("is_student", False),
+        has_pets=tenant_data.get("has_pets", False),
+        is_smoker=tenant_data.get("is_smoker", False),
+        num_occupants=tenant_data.get("num_occupants", 1)
+    )
+    
     return {
         "messages": state["messages"],
-        "tenant_id": tenant_data.get("tenant_id", ""),
-        "tenant_name": tenant_data.get("name", "Tenant"),
-        "annual_income": tenant_data.get("annual_income", 0),
-        "max_budget": tenant_data.get("max_budget", 0),
-        "has_guarantor": tenant_data.get("has_guarantor", False),
-        "min_bedrooms": tenant_data.get("min_bedrooms", 1),
-        "max_bedrooms": tenant_data.get("max_bedrooms", 3),
-        "preferred_locations": tenant_data.get("preferred_locations", []),
-        "is_student": tenant_data.get("is_student", False),
-        "has_pets": tenant_data.get("has_pets", False),
-        "is_smoker": tenant_data.get("is_smoker", False),
-        "num_occupants": tenant_data.get("num_occupants", 1),
+        "tenant_model": tenant_model,
         "conversation_context": tenant_data.get("conversation_context", ""),
         "summary": tenant_data.get("summary", ""),
         "search_criteria": tenant_data.get("search_criteria", {}),
@@ -69,9 +79,25 @@ def tenant_graph_input_adapter(state: MetaState):
 
 def tenant_graph_output_adapter(output: Dict[str, Any], state: MetaState):
     """Update meta state with tenant graph output."""
-    # Update tenant data with any changes from the graph
-    if "tenant_name" in output:
-        state["tenant_data"]["name"] = output["tenant_name"]
+    # Update tenant data with any changes from the tenant model
+    if "tenant_model" in output:
+        tenant_model = output["tenant_model"]
+        state["tenant_data"]["tenant_id"] = tenant_model.tenant_id
+        state["tenant_data"]["name"] = tenant_model.name
+        state["tenant_data"]["email"] = tenant_model.email
+        state["tenant_data"]["phone"] = tenant_model.phone
+        state["tenant_data"]["annual_income"] = tenant_model.annual_income
+        state["tenant_data"]["has_guarantor"] = tenant_model.has_guarantor
+        state["tenant_data"]["max_budget"] = tenant_model.max_budget
+        state["tenant_data"]["min_bedrooms"] = tenant_model.min_bedrooms
+        state["tenant_data"]["max_bedrooms"] = tenant_model.max_bedrooms
+        state["tenant_data"]["preferred_locations"] = tenant_model.preferred_locations
+        state["tenant_data"]["is_student"] = tenant_model.is_student
+        state["tenant_data"]["has_pets"] = tenant_model.has_pets
+        state["tenant_data"]["is_smoker"] = tenant_model.is_smoker
+        state["tenant_data"]["num_occupants"] = tenant_model.num_occupants
+    
+    # Update conversation context and summary
     if "conversation_context" in output:
         state["tenant_data"]["conversation_context"] = output["conversation_context"]
     if "summary" in output:
@@ -92,29 +118,60 @@ def tenant_graph_output_adapter(output: Dict[str, Any], state: MetaState):
 
 def landlord_graph_input_adapter(state: MetaState):
     """Adapt meta state to landlord graph input format."""
+    from app.agents.models import LandlordModel, PropertyModel
+    
+    landlord_data = state["landlord_data"]
+    
+    # Convert property data to PropertyModel objects
+    properties = []
+    if state.get("property_data"):
+        if isinstance(state["property_data"], dict):
+            properties.append(PropertyModel.from_dict(state["property_data"]))
+        elif isinstance(state["property_data"], list):
+            for prop_data in state["property_data"]:
+                if isinstance(prop_data, dict):
+                    properties.append(PropertyModel.from_dict(prop_data))
+    
+    # Create LandlordModel from landlord_data
+    landlord_model = LandlordModel(
+        landlord_id=landlord_data.get("landlord_id", ""),
+        name=landlord_data.get("name", "Landlord"),
+        phone=landlord_data.get("phone"),
+        branch_name=landlord_data.get("branch_name"),
+        properties=properties,
+        preferences=landlord_data.get("preferences", {})
+    )
+    
     return {
         "messages": state["messages"],
-        "landlord_id": state["landlord_data"].get("landlord_id", ""),
-        "landlord_name": state["landlord_data"].get("name", "Landlord"),
-        "properties": [state["property_data"]] if state["property_data"] else [],
-        "conversation_context": state["landlord_data"].get("conversation_context", ""),
-        "summary": state["landlord_data"].get("summary", ""),
-        "current_property_focus": state["landlord_data"].get("current_property_focus", None),
-        "tenant_requirements": state["landlord_data"].get("tenant_requirements", {}),
-        "branch_name": state["landlord_data"].get("branch_name", ""),
-        "preferences": state["landlord_data"].get("preferences", {})
+        "landlord_model": landlord_model,
+        "conversation_context": landlord_data.get("conversation_context", ""),
+        "summary": landlord_data.get("summary", ""),
+        "current_property_focus": landlord_data.get("current_property_focus", None)
     }
 
 
 def landlord_graph_output_adapter(output: Dict[str, Any], state: MetaState):
     """Update meta state with landlord graph output."""
-    # Update landlord data with any changes from the graph
-    if "landlord_name" in output:
-        state["landlord_data"]["name"] = output["landlord_name"]
+    # Update landlord data with any changes from the landlord model
+    if "landlord_model" in output:
+        landlord_model = output["landlord_model"]
+        state["landlord_data"]["landlord_id"] = landlord_model.landlord_id
+        state["landlord_data"]["name"] = landlord_model.name
+        state["landlord_data"]["phone"] = landlord_model.phone
+        state["landlord_data"]["branch_name"] = landlord_model.branch_name
+        state["landlord_data"]["preferences"] = landlord_model.preferences
+        # Update properties in property_data if needed
+        if landlord_model.properties:
+            state["property_data"] = landlord_model.properties[0].model_dump()
+    
+    # Update conversation context and summary
     if "conversation_context" in output:
         state["landlord_data"]["conversation_context"] = output["conversation_context"]
     if "summary" in output:
         state["landlord_data"]["summary"] = output["summary"]
+    if "current_property_focus" in output:
+        state["landlord_data"]["current_property_focus"] = output["current_property_focus"]
     
     # Update conversation history
     if "messages" in output and output["messages"]:

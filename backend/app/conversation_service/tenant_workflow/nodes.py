@@ -19,22 +19,27 @@ retriever_node = ToolNode(tools)
 
 async def tenant_agent_node(state: TenantState, config: RunnableConfig):
     """Handle tenant agent conversations"""
+    # Get tenant model from state
+    tenant_model = state.get("tenant_model")
+    if not tenant_model:
+        raise ValueError("tenant_model is required in TenantState")
+    
     # Prepare structured data for the chain
     tenant_info = {
-        "tenant_id": state.get("tenant_id", ""),
-        "name": state.get("tenant_name", ""),
-        "email": state.get("email", ""),
-        "phone": state.get("phone", ""),
-        "annual_income": state.get("annual_income", 0),
-        "has_guarantor": state.get("has_guarantor", False),
-        "max_budget": state.get("max_budget", 0),
-        "min_bedrooms": state.get("min_bedrooms", 1),
-        "max_bedrooms": state.get("max_bedrooms", 3),
-        "preferred_locations": state.get("preferred_locations", []),
-        "is_student": state.get("is_student", False),
-        "has_pets": state.get("has_pets", False),
-        "is_smoker": state.get("is_smoker", False),
-        "num_occupants": state.get("num_occupants", 1),
+        "tenant_id": tenant_model.tenant_id,
+        "name": tenant_model.name,
+        "email": tenant_model.email,
+        "phone": tenant_model.phone,
+        "annual_income": tenant_model.annual_income,
+        "has_guarantor": tenant_model.has_guarantor,
+        "max_budget": tenant_model.max_budget,
+        "min_bedrooms": tenant_model.min_bedrooms,
+        "max_bedrooms": tenant_model.max_bedrooms,
+        "preferred_locations": tenant_model.preferred_locations,
+        "is_student": tenant_model.is_student,
+        "has_pets": tenant_model.has_pets,
+        "is_smoker": tenant_model.is_smoker,
+        "num_occupants": tenant_model.num_occupants,
         "search_criteria": state.get("search_criteria", {}),
         "viewed_properties": state.get("viewed_properties", []),
         "interested_properties": state.get("interested_properties", [])
@@ -81,17 +86,22 @@ async def property_matching_node(state: TenantState, config: RunnableConfig):
             "matched_landlord": {}
         }
     
+    # Get tenant model from state
+    tenant_model = state.get("tenant_model")
+    if not tenant_model:
+        raise ValueError("tenant_model is required in TenantState")
+    
     # Prepare structured data for the chain
     tenant_info = {
-        "max_budget": state.get("max_budget", 0),
-        "min_bedrooms": state.get("min_bedrooms", 1),
-        "max_bedrooms": state.get("max_bedrooms", 3),
-        "preferred_locations": state.get("preferred_locations", []),
-        "is_student": state.get("is_student", False),
-        "has_pets": state.get("has_pets", False),
-        "is_smoker": state.get("is_smoker", False),
-        "num_occupants": state.get("num_occupants", 1),
-        "has_guarantor": state.get("has_guarantor", False)
+        "max_budget": tenant_model.max_budget,
+        "min_bedrooms": tenant_model.min_bedrooms,
+        "max_bedrooms": tenant_model.max_bedrooms,
+        "preferred_locations": tenant_model.preferred_locations,
+        "is_student": tenant_model.is_student,
+        "has_pets": tenant_model.has_pets,
+        "is_smoker": tenant_model.is_smoker,
+        "num_occupants": tenant_model.num_occupants,
+        "has_guarantor": tenant_model.has_guarantor
     }
     
     # Get the chain with properly formatted context
@@ -120,11 +130,16 @@ async def viewing_feedback_analysis_node(state: TenantState, config: RunnableCon
     # Get the latest message which should contain viewing feedback
     latest_message = state["messages"][-1] if state["messages"] else None
     
+    # Get tenant model from state
+    tenant_model = state.get("tenant_model")
+    if not tenant_model:
+        raise ValueError("tenant_model is required in TenantState")
+    
     # Prepare viewing info
     viewing_info = {
         "property_address": state.get("current_property_focus", "Not specified"),
         "viewing_date": state.get("viewing_date", "Not specified"),
-        "attendees": [state.get("tenant_name", "")]
+        "attendees": [tenant_model.name]
     }
     
     # Prepare feedback data
@@ -143,12 +158,10 @@ async def viewing_feedback_analysis_node(state: TenantState, config: RunnableCon
     
     # Debug: Print the formatted prompt before invoking
     context_data = {**viewing_info, **feedback_data}
-    await debug_print_prompt(feedback_chain, context_data, state["messages"])
+    # await debug_print_prompt(feedback_chain, context_data, state["messages"])
     
     # Invoke the chain with empty message (context is already provided in the chain)
     response = await feedback_chain.ainvoke({}, config)
-    
-    return {"messages": response}
     
     return {"messages": response}
 
@@ -164,7 +177,7 @@ async def summarize_conversation_node(state: TenantState):
     summary_chain = get_rental_conversation_summary_chain(conversation_data)
 
     # Debug: Print the formatted prompt before invoking
-    await debug_print_prompt(summary_chain, conversation_data, state["messages"])
+    # await debug_print_prompt(summary_chain, conversation_data, state["messages"])
     
     # Invoke with just messages - context is already provided in the chain
     response = await summary_chain.ainvoke(

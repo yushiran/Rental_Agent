@@ -1,29 +1,12 @@
 from typing import List, Dict, Any, Optional
 from langgraph.graph import MessagesState
 
+from app.agents.models import TenantModel
+
 
 class TenantState(MessagesState):
-    # Tenant basic information
-    tenant_id: str
-    tenant_name: str
-    email: Optional[str]
-    phone: Optional[str]
-    
-    # Financial information
-    annual_income: float
-    has_guarantor: bool
-    max_budget: float
-    
-    # Property preferences
-    min_bedrooms: int
-    max_bedrooms: int
-    preferred_locations: List[Dict[str, float]]
-    
-    # Personal circumstances
-    is_student: bool
-    has_pets: bool
-    is_smoker: bool
-    num_occupants: int
+    # Tenant model containing all basic information
+    tenant_model: TenantModel
     
     # Property matching
     properties: List[Dict[str, Any]]  # 可用于匹配的房产列表
@@ -50,20 +33,36 @@ def tenant_state_to_str(state: TenantState) -> str:
     else:
         conversation = "No conversation history"
 
-    budget_info = f"£{state.get('max_budget', 0)}/month"
-    bedrooms_info = f"{state.get('min_bedrooms', 1)}-{state.get('max_bedrooms', 3)} bedrooms"
+    tenant_model = state.get("tenant_model")
+    if tenant_model:
+        budget_info = f"£{tenant_model.max_budget}/month"
+        bedrooms_info = f"{tenant_model.min_bedrooms}-{tenant_model.max_bedrooms} bedrooms"
+        tenant_name = tenant_model.name
+        tenant_id = tenant_model.tenant_id
+        email = tenant_model.email or "N/A"
+        is_student = tenant_model.is_student
+        has_pets = tenant_model.has_pets
+    else:
+        budget_info = "£0/month"
+        bedrooms_info = "1-3 bedrooms"
+        tenant_name = "Unknown"
+        tenant_id = "Unknown"
+        email = "N/A"
+        is_student = False
+        has_pets = False
+    
     viewed_count = len(state.get("viewed_properties", []))
     interested_count = len(state.get("interested_properties", []))
     
     return f"""
 TenantState(
-    tenant_id={state.get("tenant_id", "Unknown")},
-    tenant_name={state.get("tenant_name", "Unknown")},
-    email={state.get("email", "N/A")},
+    tenant_id={tenant_id},
+    tenant_name={tenant_name},
+    email={email},
     budget={budget_info},
     bedrooms={bedrooms_info},
-    is_student={state.get("is_student", False)},
-    has_pets={state.get("has_pets", False)},
+    is_student={is_student},
+    has_pets={has_pets},
     viewed_properties={viewed_count},
     interested_properties={interested_count},
     conversation={conversation}

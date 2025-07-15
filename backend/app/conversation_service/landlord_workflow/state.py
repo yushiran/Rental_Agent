@@ -1,23 +1,17 @@
 from typing import List, Dict, Any, Optional
 from langgraph.graph import MessagesState
 
+from app.agents.models import LandlordModel
+
 
 class LandlordState(MessagesState):
-    # Landlord basic information
-    landlord_id: str
-    landlord_name: str
-    branch_name: Optional[str]
-    phone: Optional[str]
-    
-    # Property and business information
-    properties: List[Dict[str, Any]]  # Properties owned/managed by this landlord
-    preferences: Dict[str, Any]  # Landlord preferences (e.g., payment terms, lease duration)
+    # Landlord model containing all basic information
+    landlord_model: LandlordModel
     
     # Conversation management
     conversation_context: str
     summary: str
     current_property_focus: Optional[str]  # Currently discussed property (already matched by tenant)
-
 
 def landlord_state_to_str(state: LandlordState) -> str:
     """Convert LandlordState to string representation for logging/debugging."""
@@ -28,15 +22,28 @@ def landlord_state_to_str(state: LandlordState) -> str:
     else:
         conversation = "No conversation history"
 
-    properties_info = f"{len(state.get('properties', []))} properties available"
+    landlord_model = state.get("landlord_model")
+    if landlord_model:
+        properties_info = f"{len(landlord_model.properties)} properties available"
+        landlord_name = landlord_model.name
+        landlord_id = landlord_model.landlord_id
+        branch_name = landlord_model.branch_name or "N/A"
+        phone = landlord_model.phone or "N/A"
+    else:
+        properties_info = "0 properties available"
+        landlord_name = "Unknown"
+        landlord_id = "Unknown"
+        branch_name = "N/A"
+        phone = "N/A"
+        
     current_focus = state.get("current_property_focus", "None")
     
     return f"""
 LandlordState(
-    landlord_id={state.get("landlord_id", "Unknown")},
-    landlord_name={state.get("landlord_name", "Unknown")},
-    branch_name={state.get("branch_name", "N/A")},
-    phone={state.get("phone", "N/A")},
+    landlord_id={landlord_id},
+    landlord_name={landlord_name},
+    branch_name={branch_name},
+    phone={phone},
     properties={properties_info},
     current_property_focus={current_focus}, 
     conversation={conversation}
