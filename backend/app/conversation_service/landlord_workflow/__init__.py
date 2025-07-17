@@ -12,7 +12,6 @@ from .nodes import (
     retriever_node,
     landlord_agent_node,
     summarize_conversation_node,
-    connector_node,
 )
 from .graph import create_landlord_workflow_graph
 
@@ -27,6 +26,5 @@ __all__ = [
     "retriever_node",
     "landlord_agent_node",
     "summarize_conversation_node",
-    "connector_node",
     "create_landlord_workflow_graph",
 ]

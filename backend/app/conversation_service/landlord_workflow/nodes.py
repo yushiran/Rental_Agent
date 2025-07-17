@@ -89,8 +89,3 @@ async def summarize_conversation_node(state: LandlordState):
         for m in state["messages"][: -messages_after_summary]
     ]
     return {"summary": response.content, "messages": delete_messages}
-
-
-async def connector_node(state: LandlordState):
-    """Connector node for landlord workflow routing"""
-    return {}

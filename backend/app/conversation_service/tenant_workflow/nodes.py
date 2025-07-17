@@ -197,7 +197,3 @@ async def summarize_conversation_node(state: TenantState):
     ]
     return {"summary": response.content, "messages": delete_messages}
 
-
-async def connector_node(state: TenantState):
-    """Connector node for tenant workflow routing"""
-    return {}

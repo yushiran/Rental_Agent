@@ -22,55 +22,54 @@ def should_summarize_tenant_conversation(
 
     return END
 
-
-def should_continue_tenant_conversation(
-    state: TenantState,
-) -> Literal["tenant_agent_node", "property_matching_node", "viewing_feedback_analysis_node", "__end__"]:
-    """Determine next step in tenant conversation flow"""
-    messages = state["messages"]
-    
-    if not messages:
-        return END
-    
-    last_message = messages[-1]
-    content_lower = last_message.content.lower()
-    
-    # If discussing viewing feedback
-    if ("viewing" in content_lower or "visited" in content_lower or "feedback" in content_lower):
-        return "viewing_feedback_analysis_node"
-    
-    # If looking for property matches
-    if ("search" in content_lower or "find" in content_lower or "property" in content_lower):
-        return "property_matching_node"
-    
-    # Continue with tenant agent by default
-    return "tenant_agent_node"
-
-
-def should_do_property_matching(state: TenantState) -> Literal["property_matching", "conversation"]:
-    """判断是否需要进行房产匹配
-    
-    检查当前会话是否需要进行房产匹配:
-    1. 如果明确要求进行匹配，则执行匹配
-    2. 如果有可用房产但没有匹配的房产，则执行匹配
-    3. 如果没有匹配过房产，则执行匹配
-    4. 如果已经完成匹配，则直接进入会话
-    
-    这确保了租客始终先匹配房产，再与房东对话。
+def should_continue_tenant_conversation(state: TenantState) -> Literal["tools", "analyze_feedback", "summarize", "end"]:
     """
-    # 检查是否有明确的匹配请求
-    matching_requested = state.get("match_properties", False)
+    决定租客对话的下一步行为
+    """
+    messages = state.get("messages", [])
+    if not messages:
+        return "end"
     
-    # 检查是否已经有匹配的房产
-    has_matched_properties = len(state.get("matched_properties", [])) > 0
+    latest_message = messages[-1]
     
-    # 检查是否有可用房产进行匹配
-    available_properties = state.get("properties", [])
-    has_available_properties = len(available_properties) > 0
+    # 🎯 修复：安全地获取消息内容
+    if hasattr(latest_message, 'content'):
+        # 这是一个 AIMessage/HumanMessage 对象
+        content = latest_message.content.lower()
+    elif isinstance(latest_message, dict):
+        # 这是一个字典对象
+        content = latest_message.get("content", "").lower()
+    else:
+        # 未知类型，转换为字符串
+        content = str(latest_message).lower()
     
-    # 如果有明确的匹配请求，或者有可用房产但没有匹配结果，则进行匹配
-    if matching_requested or (has_available_properties and not has_matched_properties):
-        return "property_matching"
+    # 检查是否需要使用工具（检索信息）
+    if any(keyword in content for keyword in ["search", "find", "look up", "检索", "查找"]):
+        return "tools"
     
-    # 否则直接进行对话
-    return "conversation"
+    # 检查是否包含看房反馈
+    if any(keyword in content for keyword in ["viewing", "visit", "看房", "参观", "feedback"]):
+        return "analyze_feedback"
+    
+    # 检查是否需要总结对话
+    if len(messages) > 10 or any(keyword in content for keyword in ["summarize", "总结", "结束"]):
+        return "summarize"
+    
+    # 检查是否结束对话
+    if any(keyword in content for keyword in ["goodbye", "bye", "再见", "结束"]):
+        return "end"
+    
+    return "end"
+
+
+def should_analyze_viewing_feedback(state: TenantState) -> Literal["continue", "connect", "summarize"]:
+    """
+    决定看房反馈分析后的下一步
+    """
+    # 检查分析结果
+    analysis_result = state.get("viewing_analysis", {})
+    
+    if analysis_result.get("should_summarize"):
+        return "summarize"
+    else:
+        return "continue"

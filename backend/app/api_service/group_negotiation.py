@@ -20,6 +20,7 @@ logger.add(sys.stderr, level="INFO")  # 添加stderr处理器，设置级别为I
 from app.mongo import MongoClientWrapper
 from app.agents.models import LandlordModel, TenantModel, PropertyModel
 from app.agents import AgentDataInitializer
+from app.utils.history_logs import save_conversation_history
 from app.api_service.models import NegotiationStatusUpdate
 from app.conversation_service.meta_controller import (
     MetaState,
@@ -162,15 +163,15 @@ class GroupNegotiationService:
                         graph=meta_controller_graph,
                     ):
                         await asyncio.sleep(5)  # Simulate async delay
-
-                        # Messages are already added to initial_state in the stream function
-                        # Additional monitoring/broadcasting logic could go here
                         pass
                     
                     # 🚀 After negotiation completion, one-click analysis and update all states
                     analysis_result = await self.analyze_and_update_rental_states(session_id)
 
                     logger.info(f"Session {session_id} analysis result: {analysis_result}")
+
+                    # 💾 保存对话历史到文件
+                    await save_conversation_history(session_id, initial_state, analysis_result)
 
                     # 发送对话结束事件
                     if self.websocket_manager:
@@ -196,11 +197,23 @@ class GroupNegotiationService:
                     logger.info(f"Session {session_id} was cancelled")
                     initial_state["status"] = "cancelled"
                     initial_state["termination_reason"] = "manually_cancelled"
+                    
+                    # 即使被取消也保存对话历史
+                    try:
+                        await save_conversation_history(session_id, initial_state, {"status": "cancelled"})
+                    except Exception as save_error:
+                        logger.error(f"Failed to save cancelled conversation history: {str(save_error)}")
 
                 except Exception as e:
                     logger.error(f"Error in session {session_id}: {str(e)}")
                     initial_state["status"] = "error"
                     initial_state["termination_reason"] = f"Error: {str(e)}"
+                    
+                    # 出错时也保存对话历史
+                    try:
+                        await save_conversation_history(session_id, initial_state, {"status": "error", "error": str(e)})
+                    except Exception as save_error:
+                        logger.error(f"Failed to save error conversation history: {str(save_error)}")
 
             # 6. Create and store the task
             task = asyncio.create_task(run_negotiation())
@@ -753,3 +766,4 @@ class GroupNegotiationService:
                 "session_id": session_id,
                 "timestamp": datetime.now().isoformat(),
             }
+

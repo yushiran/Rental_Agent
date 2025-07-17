@@ -11,7 +11,6 @@ from app.conversation_service.landlord_workflow import (
     retriever_node,
     landlord_agent_node,
     summarize_conversation_node,
-    connector_node,
 )
 from app.conversation_service.landlord_workflow import LandlordState
 
@@ -25,7 +24,6 @@ def create_landlord_workflow_graph():
     graph_builder.add_node("landlord_agent_node", landlord_agent_node)
     graph_builder.add_node("retriever_node", retriever_node)
     graph_builder.add_node("summarize_conversation_node", summarize_conversation_node)
-    graph_builder.add_node("connector_node", connector_node)
     
     # Define the flow
     graph_builder.add_edge(START, "landlord_agent_node")
