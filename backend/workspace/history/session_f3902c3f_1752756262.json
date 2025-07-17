@@ -1,0 +1,169 @@
+{
+  "session_info": {
+    "session_id": "session_f3902c3f_1752756262",
+    "created_at": "2025-07-17T13:44:22.453531",
+    "completed_at": "2025-07-17T13:45:23.858485",
+    "status": "active",
+    "termination_reason": "",
+    "match_score": 59,
+    "match_reasons": [
+      "租金 $0 在预算范围内",
+      "2房满足需求",
+      "无宠物限制影响",
+      "无吸烟限制影响",
+      "非学生无特殊限制"
+    ]
+  },
+  "participants": {
+    "tenant": {
+      "tenant_id": "6bb6ab88-16f8-441e-a04d-9611118bdcb5",
+      "name": "Guy Taylor",
+      "email": "juliandavidson@example.com",
+      "phone": "+44151 496 0369",
+      "annual_income": 101720.52186490773,
+      "max_budget": 1965.0,
+      "min_bedrooms": 2,
+      "max_bedrooms": 2,
+      "preferred_locations": [
+        {
+          "latitude": 51.55169398010435,
+          "longitude": -0.05132565578481753
+        }
+      ],
+      "is_student": false,
+      "has_pets": false,
+      "is_smoker": false,
+      "num_occupants": 1
+    },
+    "landlord": {
+      "landlord_id": "632dd137-7225-43a2-b702-187e42072e86",
+      "name": "Home Made",
+      "phone": "+441184960587",
+      "branch_name": " by Home Made, London",
+      "preferences": {
+        "pet_friendly": false,
+        "smoking_allowed": false,
+        "deposit_weeks": 6
+      }
+    },
+    "property": {
+      "property_id": "162453242",
+      "display_address": "Makers House, Stratford, E20",
+      "monthly_rent": 0,
+      "bedrooms": 2,
+      "bathrooms": 1,
+      "property_type": "",
+      "district": "",
+      "pets_allowed": false,
+      "smoking_allowed": false,
+      "student_friendly": true,
+      "amenities": []
+    }
+  },
+  "conversation_history": [
+    {
+      "turn": 1,
+      "speaker": "tenant",
+      "speaker_name": "Guy Taylor",
+      "role": "user",
+      "content": "Hi there! I'm interested in the property you have available. Could you provide more details about the monthly rent, any additional fees, and the amenities included? I'm looking for a 2-bedroom place and my budget is around £1965. \n\nAdditionally, I have a stable annual income of over £100,000, which I believe makes me a reliable tenant. I look forward to your response! \n\nThank you!",
+      "timestamp": "2025-07-17T13:45:23.858494"
+    },
+    {
+      "turn": 2,
+      "speaker": "landlord",
+      "speaker_name": "Home Made",
+      "role": "assistant",
+      "content": "Thank you for your interest! The property is a 2-bedroom apartment at Makers House, Stratford, with a monthly rent of £2,800. \n\nRegarding additional fees, there's a security deposit of 6 weeks' rent. Unfortunately, your budget of £1,965 is below the asking price, but considering your stable income and reliability, I can offer to negotiate the rent. \n\nHow about we discuss a potential adjustment? I could consider a reduced rent closer to your budget. Let me know your thoughts!",
+      "timestamp": "2025-07-17T13:45:23.858497"
+    },
+    {
+      "turn": 3,
+      "speaker": "tenant",
+      "speaker_name": "Guy Taylor",
+      "role": "user",
+      "content": "I appreciate your prompt response and willingness to negotiate. If possible, I would like to propose a rental price of around £1,850, which is within my budget and reflects my financial stability. \n\nI believe this could be a fair compromise, and I'd be an excellent tenant, ensuring the property is well-maintained. Please let me know if this offer is acceptable or if there's room for further discussion. Thank you!",
+      "timestamp": "2025-07-17T13:45:23.858498"
+    },
+    {
+      "turn": 4,
+      "speaker": "landlord",
+      "speaker_name": "Home Made",
+      "role": "assistant",
+      "content": "I appreciate your offer and your reliability as a tenant. While £1,850 is a bit below what I can accept, I can offer a compromise at £2,600. This is a 7% reduction from the original asking price. \n\nI believe this could be a fair balance, especially considering your financial stability. Let me know if this works for you, and we can move forward!",
+      "timestamp": "2025-07-17T13:45:23.858500"
+    },
+    {
+      "turn": 5,
+      "speaker": "tenant",
+      "speaker_name": "Guy Taylor",
+      "role": "user",
+      "content": "Thank you! I appreciate your kindness. I will keep your contact in mind. Have a great day!",
+      "timestamp": "2025-07-17T13:45:23.858501"
+    },
+    {
+      "turn": 6,
+      "speaker": "landlord",
+      "speaker_name": "Home Made",
+      "role": "assistant",
+      "content": "I must decline your application. Thank you for your understanding, and I wish you the best in your search for a new home. Have a great day!",
+      "timestamp": "2025-07-17T13:45:23.858503"
+    },
+    {
+      "turn": 7,
+      "speaker": "tenant",
+      "speaker_name": "Guy Taylor",
+      "role": "user",
+      "content": "Thank you for your response. I appreciate your consideration, and I understand your decision. If anything changes in the future, please feel free to reach out. Best of luck with your rental, and have a wonderful day!",
+      "timestamp": "2025-07-17T13:45:23.858504"
+    }
+  ],
+  "analysis_result": {
+    "success": true,
+    "session_id": "session_f3902c3f_1752756262",
+    "negotiation_successful": false,
+    "confidence_score": 0.85,
+    "database_updated": true,
+    "update_results": [
+      "✅ Tenant status updated: 6bb6ab88-16f8-441e-a04d-9611118bdcb5",
+      "✅ Property status updated: 162453242",
+      "✅ Landlord statistics updated: 632dd137-7225-43a2-b702-187e42072e86"
+    ],
+    "tenant_rental_status": {
+      "is_rented": false,
+      "property_id": null,
+      "landlord_id": null,
+      "rental_price": null,
+      "rental_start_date": null,
+      "contract_duration_months": null,
+      "negotiation_session_id": "negotiation_1",
+      "last_updated": "2025-07-17T13:45:19.539995"
+    },
+    "property_rental_status": {
+      "is_rented": false,
+      "tenant_id": null,
+      "rental_price": null,
+      "rental_start_date": null,
+      "contract_duration_months": null,
+      "negotiation_session_id": "negotiation_1",
+      "last_updated": "2025-07-17T13:45:19.539995"
+    },
+    "landlord_rental_status": {
+      "total_properties": 10,
+      "rented_properties": 8,
+      "available_properties": 2,
+      "total_rental_income": 20800.0,
+      "average_rental_price": 2600.0,
+      "last_updated": "2025-07-17T13:45:19.539995"
+    },
+    "timestamp": "2025-07-17T13:45:19.539995"
+  },
+  "statistics": {
+    "total_messages": 7,
+    "tenant_messages": 4,
+    "landlord_messages": 3,
+    "conversation_duration_estimate": "14 minutes",
+    "negotiation_successful": false,
+    "confidence_score": 0.85
+  }
+}

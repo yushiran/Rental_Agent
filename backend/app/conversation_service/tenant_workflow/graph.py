@@ -37,7 +37,7 @@ def create_tenant_workflow_graph():
             'tools': 'retriever_node',
             'analyze_feedback': 'viewing_feedback_analysis_node',
             'summarize': 'summarize_conversation_node',
-            'end': END
+            'end': END  # 🔧 使用 END 常量
         }
     )
 

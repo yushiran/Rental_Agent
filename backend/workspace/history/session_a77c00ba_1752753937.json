@@ -1,0 +1,217 @@
+{
+  "session_info": {
+    "session_id": "session_a77c00ba_1752753937",
+    "created_at": "2025-07-17T13:05:37.643291",
+    "completed_at": "2025-07-17T13:07:10.115618",
+    "status": "active",
+    "termination_reason": "",
+    "match_score": 59,
+    "match_reasons": [
+      "租金 $0 在预算范围内",
+      "2房满足需求",
+      "无宠物限制影响",
+      "无吸烟限制影响",
+      "非学生无特殊限制"
+    ]
+  },
+  "participants": {
+    "tenant": {
+      "tenant_id": "1bc86eae-7618-4173-a3ba-5732cb594db8",
+      "name": "Leslie Sims",
+      "email": "gardneradrian@example.net",
+      "phone": "+44(0)161 4960285",
+      "annual_income": 47962.68391420778,
+      "max_budget": 808.0,
+      "min_bedrooms": 2,
+      "max_bedrooms": 3,
+      "preferred_locations": [
+        {
+          "latitude": 51.53994391587003,
+          "longitude": -0.10104168461061516
+        },
+        {
+          "latitude": 51.53521042807241,
+          "longitude": -0.046791319683383556
+        },
+        {
+          "latitude": 51.45802102625258,
+          "longitude": -0.18505645150834424
+        }
+      ],
+      "is_student": false,
+      "has_pets": false,
+      "is_smoker": false,
+      "num_occupants": 3
+    },
+    "landlord": {
+      "landlord_id": "c8b966c1-069a-4000-809d-20619ee10b51",
+      "name": "Home Made",
+      "phone": "+44113 4960822",
+      "branch_name": " by Home Made, London",
+      "preferences": {
+        "pet_friendly": false,
+        "smoking_allowed": false,
+        "deposit_weeks": 5
+      }
+    },
+    "property": {
+      "property_id": "162453242",
+      "display_address": "Makers House, Stratford, E20",
+      "monthly_rent": 0,
+      "bedrooms": 2,
+      "bathrooms": 1,
+      "property_type": "",
+      "district": "",
+      "pets_allowed": false,
+      "smoking_allowed": false,
+      "student_friendly": true,
+      "amenities": []
+    }
+  },
+  "conversation_history": [
+    {
+      "turn": 1,
+      "speaker": "tenant",
+      "speaker_name": "Leslie Sims",
+      "role": "user",
+      "content": "",
+      "timestamp": "2025-07-17T13:07:10.115628"
+    },
+    {
+      "turn": 2,
+      "speaker": "landlord",
+      "speaker_name": "Home Made",
+      "role": "assistant",
+      "content": "It seems there was no message from you. How can I assist you today regarding the property you’re interested in?",
+      "timestamp": "2025-07-17T13:07:10.115631"
+    },
+    {
+      "turn": 3,
+      "speaker": "tenant",
+      "speaker_name": "Leslie Sims",
+      "role": "user",
+      "content": "It seems there was no message from you. How can I assist you today regarding the property you’re interested in?",
+      "timestamp": "2025-07-17T13:07:10.115632"
+    },
+    {
+      "turn": 4,
+      "speaker": "landlord",
+      "speaker_name": "Home Made",
+      "role": "assistant",
+      "content": "I appreciate your patience! If you have any questions about the property at Makers House in Stratford or if you're ready to discuss terms, feel free to let me know. I'm here to help!",
+      "timestamp": "2025-07-17T13:07:10.115634"
+    },
+    {
+      "turn": 5,
+      "speaker": "tenant",
+      "speaker_name": "Leslie Sims",
+      "role": "user",
+      "content": "I appreciate your patience! If you have any questions about the property at Makers House in Stratford or if you're ready to discuss terms, feel free to let me know. I'm here to help!",
+      "timestamp": "2025-07-17T13:07:10.115635"
+    },
+    {
+      "turn": 6,
+      "speaker": "landlord",
+      "speaker_name": "Home Made",
+      "role": "assistant",
+      "content": "It looks like we're caught in a loop! If there’s anything specific you’d like to discuss about the property or if you have any questions, please share, and I’ll be happy to assist you.",
+      "timestamp": "2025-07-17T13:07:10.115637"
+    },
+    {
+      "turn": 7,
+      "speaker": "tenant",
+      "speaker_name": "Leslie Sims",
+      "role": "user",
+      "content": "It seems there was a misunderstanding. If you have questions about the property or if you're ready to discuss terms, please let me know how I can assist you!",
+      "timestamp": "2025-07-17T13:07:10.115638"
+    },
+    {
+      "turn": 8,
+      "speaker": "landlord",
+      "speaker_name": "Home Made",
+      "role": "assistant",
+      "content": "I understand! I'm here to help. If you have any questions about the property at Makers House or if you'd like to discuss rental terms, feel free to let me know. What would you like to know?",
+      "timestamp": "2025-07-17T13:07:10.115640"
+    },
+    {
+      "turn": 9,
+      "speaker": "tenant",
+      "speaker_name": "Leslie Sims",
+      "role": "user",
+      "content": "It seems like we're having a bit of a miscommunication. If you have specific questions about the property or the rental terms, please let me know, and I'll be happy to assist you!",
+      "timestamp": "2025-07-17T13:07:10.115641"
+    },
+    {
+      "turn": 10,
+      "speaker": "landlord",
+      "speaker_name": "Home Made",
+      "role": "assistant",
+      "content": "I appreciate your understanding! If you're interested in discussing the rental terms for the property at Makers House, or if you have any specific questions, please let me know. I'm here to help you move forward!",
+      "timestamp": "2025-07-17T13:07:10.115642"
+    },
+    {
+      "turn": 11,
+      "speaker": "tenant",
+      "speaker_name": "Leslie Sims",
+      "role": "user",
+      "content": "I must decline this property.",
+      "timestamp": "2025-07-17T13:07:10.115644"
+    },
+    {
+      "turn": 12,
+      "speaker": "landlord",
+      "speaker_name": "Home Made",
+      "role": "assistant",
+      "content": "Thank you for letting me know. I appreciate your consideration, and I wish you the best in your search for a suitable property. If you have any questions in the future or if there's anything else I can assist you with, please feel free to reach out.",
+      "timestamp": "2025-07-17T13:07:10.115645"
+    }
+  ],
+  "analysis_result": {
+    "success": true,
+    "session_id": "session_a77c00ba_1752753937",
+    "negotiation_successful": false,
+    "confidence_score": 0.9,
+    "database_updated": true,
+    "update_results": [
+      "✅ Tenant status updated: 1bc86eae-7618-4173-a3ba-5732cb594db8",
+      "✅ Property status updated: 162453242",
+      "✅ Landlord statistics updated: c8b966c1-069a-4000-809d-20619ee10b51"
+    ],
+    "tenant_rental_status": {
+      "is_rented": false,
+      "property_id": null,
+      "landlord_id": null,
+      "rental_price": null,
+      "rental_start_date": null,
+      "contract_duration_months": null,
+      "negotiation_session_id": "session_001",
+      "last_updated": "2025-07-17T13:07:02.564878"
+    },
+    "property_rental_status": {
+      "is_rented": false,
+      "tenant_id": null,
+      "rental_price": null,
+      "rental_start_date": null,
+      "contract_duration_months": null,
+      "negotiation_session_id": "session_001",
+      "last_updated": "2025-07-17T13:07:02.564878"
+    },
+    "landlord_rental_status": {
+      "total_properties": 5,
+      "rented_properties": 3,
+      "available_properties": 2,
+      "total_rental_income": 2500.0,
+      "average_rental_price": 1250.0,
+      "last_updated": "2025-07-17T13:07:02.564878"
+    },
+    "timestamp": "2025-07-17T13:07:02.564878"
+  },
+  "statistics": {
+    "total_messages": 12,
+    "tenant_messages": 6,
+    "landlord_messages": 6,
+    "conversation_duration_estimate": "24 minutes",
+    "negotiation_successful": false,
+    "confidence_score": 0.9
+  }
+}

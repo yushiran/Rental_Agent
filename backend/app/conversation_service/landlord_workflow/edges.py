@@ -1,7 +1,5 @@
 from typing_extensions import Literal
 
-from langgraph.graph import END
-
 from app.conversation_service.landlord_workflow.state import LandlordState
 from app.config import config
 
@@ -20,7 +18,7 @@ def should_summarize_landlord_conversation(
     if len(messages) > summary_trigger:
         return "summarize_conversation_node"
 
-    return END
+    return "__end__"  # 🔧 直接返回字符串而不是 END 常量
 
 
 def should_continue_landlord_conversation(
@@ -30,7 +28,7 @@ def should_continue_landlord_conversation(
     messages = state["messages"]
     
     if not messages:
-        return END
+        return "__end__"  # 🔧 返回字符串而不是 END 常量
     
     # Continue with landlord agent by default - no property matching needed as tenants handle matching
     return "landlord_agent_node"

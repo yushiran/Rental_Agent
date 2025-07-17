@@ -1,0 +1,160 @@
+{
+  "session_info": {
+    "session_id": "session_0e0ce890_1752754660",
+    "created_at": "2025-07-17T13:17:40.619431",
+    "completed_at": "2025-07-17T13:18:58.999960",
+    "status": "cancelled",
+    "termination_reason": "manually_cancelled",
+    "match_score": 57,
+    "match_reasons": [
+      "租金 $0 在预算范围内",
+      "2房满足需求",
+      "无宠物限制影响",
+      "不允许吸烟",
+      "非学生无特殊限制"
+    ]
+  },
+  "participants": {
+    "tenant": {
+      "tenant_id": "7f4804cb-b962-4d6d-86d3-391b215b1442",
+      "name": "Christine Morris",
+      "email": "mnoble@example.com",
+      "phone": "+44(0)118 496 0413",
+      "annual_income": 93105.6101759542,
+      "max_budget": 1737.0,
+      "min_bedrooms": 2,
+      "max_bedrooms": 4,
+      "preferred_locations": [
+        {
+          "latitude": 51.51194847877891,
+          "longitude": -0.13640243659679
+        },
+        {
+          "latitude": 51.54977415978965,
+          "longitude": -0.10700069511313282
+        }
+      ],
+      "is_student": false,
+      "has_pets": false,
+      "is_smoker": true,
+      "num_occupants": 3
+    },
+    "landlord": {
+      "landlord_id": "a52e1cbf-833b-414d-8a95-4ddc83eced1f",
+      "name": "Home Made",
+      "phone": "+44(0)20 7496 0329",
+      "branch_name": " by Home Made, London",
+      "preferences": {
+        "pet_friendly": true,
+        "smoking_allowed": false,
+        "deposit_weeks": 5
+      }
+    },
+    "property": {
+      "property_id": "162453242",
+      "display_address": "Makers House, Stratford, E20",
+      "monthly_rent": 0,
+      "bedrooms": 2,
+      "bathrooms": 1,
+      "property_type": "",
+      "district": "",
+      "pets_allowed": false,
+      "smoking_allowed": false,
+      "student_friendly": true,
+      "amenities": []
+    }
+  },
+  "conversation_history": [
+    {
+      "turn": 1,
+      "speaker": "tenant",
+      "speaker_name": "Christine Morris",
+      "role": "user",
+      "content": "Hi! I'm interested in the rental property you have available. I need 2-4 bedrooms for myself and two other occupants. My budget is around £1737 per month, and I have a guarantor available. \n\nCould you please provide more details about the property, including the rent, amenities, and any specific rental terms? Additionally, I'm looking to understand if there is any flexibility in the rent, as I would prefer to negotiate within my budget. \n\nThank you!",
+      "timestamp": "2025-07-17T13:18:58.999966"
+    },
+    {
+      "turn": 2,
+      "speaker": "landlord",
+      "speaker_name": "Home Made",
+      "role": "assistant",
+      "content": "I appreciate your interest in my property! I have a 2-bedroom apartment available at Makers House, Stratford, for £2,800 per month. It features a modern design, located in the heart of Queen Elizabeth Olympic Park, and is pet-friendly.\n\nRegarding flexibility, your budget of £1,737 is below my asking price, but I can consider negotiating. I might be able to offer a discount if you seem like a reliable tenant. \n\nAs for amenities, the apartment includes modern fixtures, spacious living areas, and access to local parks and transport links. If you're keen, we can discuss what works for both of us!",
+      "timestamp": "2025-07-17T13:18:58.999968"
+    },
+    {
+      "turn": 3,
+      "speaker": "tenant",
+      "speaker_name": "Christine Morris",
+      "role": "user",
+      "content": "I appreciate your offer, but I must decline the proposed rent of £2,400. The rental market in that area is quite competitive, and I believe my asking price reflects the value of the property and its amenities. \n\nIf you have any further questions or if you’re still interested in discussing options within your budget, feel free to reach out. Thank you for your understanding!",
+      "timestamp": "2025-07-17T13:18:58.999970"
+    },
+    {
+      "turn": 4,
+      "speaker": "landlord",
+      "speaker_name": "Home Made",
+      "role": "assistant",
+      "content": "I understand your position, and I appreciate your feedback. If anything changes or if you reconsider, please don't hesitate to reach out. \n\nI wish you the best of luck in your search for a suitable property!",
+      "timestamp": "2025-07-17T13:18:58.999971"
+    },
+    {
+      "turn": 5,
+      "speaker": "tenant",
+      "speaker_name": "Christine Morris",
+      "role": "user",
+      "content": "Thank you for your understanding! I appreciate the opportunity to discuss the property with you. If any other options come up that might fit my budget, I’d love to hear about them. Best of luck with your rental!",
+      "timestamp": "2025-07-17T13:18:58.999972"
+    },
+    {
+      "turn": 6,
+      "speaker": "landlord",
+      "speaker_name": "Home Made",
+      "role": "assistant",
+      "content": "Thank you for your kind words! I’ll keep your budget in mind and reach out if any suitable options become available in the future. Best of luck with your search, and feel free to contact me anytime!",
+      "timestamp": "2025-07-17T13:18:58.999973"
+    },
+    {
+      "turn": 7,
+      "speaker": "tenant",
+      "speaker_name": "Christine Morris",
+      "role": "user",
+      "content": "Thank you for your understanding! I appreciate the opportunity to discuss the property with you. If any other options come up that might fit my budget, I’d love to hear about them. Best of luck with your rental!",
+      "timestamp": "2025-07-17T13:18:58.999974"
+    },
+    {
+      "turn": 8,
+      "speaker": "landlord",
+      "speaker_name": "Home Made",
+      "role": "assistant",
+      "content": "Thank you for your understanding! I’ll definitely keep you in mind for any future options that might fit your budget. Best of luck with your search, and feel free to reach out anytime!",
+      "timestamp": "2025-07-17T13:18:58.999976"
+    },
+    {
+      "turn": 9,
+      "speaker": "tenant",
+      "speaker_name": "Christine Morris",
+      "role": "user",
+      "content": "Thank you for your understanding! I appreciate the opportunity to discuss the property with you. If any other options come up that might fit my budget, I’d love to hear about them. Best of luck with your rental!",
+      "timestamp": "2025-07-17T13:18:58.999977"
+    },
+    {
+      "turn": 10,
+      "speaker": "landlord",
+      "speaker_name": "Home Made",
+      "role": "assistant",
+      "content": "Thank you for your kind words! I’ll keep your preferences in mind and reach out if any suitable options become available. Wishing you the best in your search! Feel free to get in touch anytime.",
+      "timestamp": "2025-07-17T13:18:58.999978"
+    }
+  ],
+  "analysis_result": {
+    "status": "cancelled"
+  },
+  "statistics": {
+    "total_messages": 10,
+    "tenant_messages": 5,
+    "landlord_messages": 5,
+    "conversation_duration_estimate": "20 minutes",
+    "negotiation_successful": false,
+    "confidence_score": 0
+  }
+}

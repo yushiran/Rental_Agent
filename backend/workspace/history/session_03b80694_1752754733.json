@@ -1,0 +1,92 @@
+{
+  "session_info": {
+    "session_id": "session_03b80694_1752754733",
+    "created_at": "2025-07-17T13:18:53.135303",
+    "completed_at": "2025-07-17T13:18:58.992085",
+    "status": "cancelled",
+    "termination_reason": "manually_cancelled",
+    "match_score": 52,
+    "match_reasons": [
+      "租金 $0 在预算范围内",
+      "1房满足需求",
+      "不允许宠物",
+      "不允许吸烟",
+      "非学生无特殊限制"
+    ]
+  },
+  "participants": {
+    "tenant": {
+      "tenant_id": "0f3ebf6f-48f4-4931-823b-48c94399696e",
+      "name": "Allan Allen-Leach",
+      "email": "grace30@example.com",
+      "phone": "+44(0)151 4960563",
+      "annual_income": 41005.6793741921,
+      "max_budget": 712.0,
+      "min_bedrooms": 1,
+      "max_bedrooms": 1,
+      "preferred_locations": [
+        {
+          "latitude": 51.47344626161396,
+          "longitude": -0.14472166160652025
+        },
+        {
+          "latitude": 51.5185695936644,
+          "longitude": -0.0484642841772485
+        },
+        {
+          "latitude": 51.51349514602599,
+          "longitude": -0.017124222088935964
+        }
+      ],
+      "is_student": false,
+      "has_pets": true,
+      "is_smoker": true,
+      "num_occupants": 1
+    },
+    "landlord": {
+      "landlord_id": "b03df7dc-458c-4a03-b7f4-b7981312b017",
+      "name": "Carter Jonas Lettings",
+      "phone": "+441134960002",
+      "branch_name": " by Carter Jonas Lettings, Mayfair",
+      "preferences": {
+        "pet_friendly": false,
+        "smoking_allowed": false,
+        "deposit_weeks": 4
+      }
+    },
+    "property": {
+      "property_id": "162454550",
+      "display_address": "South Audley Street, Mayfair, London, W1K",
+      "monthly_rent": 0,
+      "bedrooms": 1,
+      "bathrooms": 1,
+      "property_type": "",
+      "district": "",
+      "pets_allowed": false,
+      "smoking_allowed": false,
+      "student_friendly": true,
+      "amenities": []
+    }
+  },
+  "conversation_history": [
+    {
+      "turn": 1,
+      "speaker": "tenant",
+      "speaker_name": "Allan Allen-Leach",
+      "role": "user",
+      "content": "Hello! I'm interested in the rental property and would like to know more details. Specifically, could you provide information about the monthly rent, amenities, and any pet policies? My budget is £712/month, and I have a pet. Also, I'd like to understand the lease duration and any additional fees. Thank you!",
+      "timestamp": "2025-07-17T13:18:58.992091"
+    }
+  ],
+  "analysis_result": {
+    "status": "cancelled"
+  },
+  "statistics": {
+    "total_messages": 1,
+    "tenant_messages": 1,
+    "landlord_messages": 0,
+    "conversation_duration_estimate": "2 minutes",
+    "negotiation_successful": false,
+    "confidence_score": 0
+  }
+}

@@ -10,14 +10,14 @@ class RentalAgentApp {
     constructor() {
         this.mapController = null;
         this.networkManager = null;
-        this.marketAnalysis = null; // 🔥 新增市场分析组件
+        this.marketAnalysis = null; // 🔥 Add market analysis component
         this.currentSession = null;
         this.negotiationSessions = [];
         this.isInitialized = false;
         this.eventListeners = new Map();
         this._initializedData = null; // Store initialized data from backend
 
-        // 配置
+        // Configuration
         this.config = {
             apiKey: '', // Google Maps API Key - should be set externally
             backendUrl: 'http://localhost:8000',
@@ -47,7 +47,7 @@ class RentalAgentApp {
             this.marketAnalysis = new MarketAnalysisOverlay({
                 backendUrl: this.config.backendUrl
             });
-            this.marketAnalysis.initialize(this); // 传入this作为logger
+            this.marketAnalysis.initialize(this); // Pass this as logger
 
             // Setup event listeners
             this.setupEventListeners();
@@ -83,22 +83,22 @@ class RentalAgentApp {
 
         // WebSocket events - primary handler for all WebSocket messages
         this.networkManager.on('websocket:message', (data) => {
-            this.addLog('debug', `收到WebSocket原始消息: ${data.type || 'unknown'}`);
+            this.addLog('debug', `Received WebSocket raw message: ${data.type || 'unknown'}`);
             this.handleWebSocketMessage(data);
         });
 
         // WebSocket connection events
         this.networkManager.on('websocket:connected', (data) => {
-            this.addLog('success', `WebSocket连接已建立: ${data.sessionId || 'unknown'}`);
+            this.addLog('success', `WebSocket connection established: ${data.sessionId || 'unknown'}`);
             this.handleWebSocketConnected(data);
         });
 
         this.networkManager.on('websocket:disconnected', (data) => {
-            this.addLog('error', `WebSocket连接已断开: ${data.sessionId || 'unknown'}`);
+            this.addLog('error', `WebSocket connection closed: ${data.sessionId || 'unknown'}`);
         });
 
         this.networkManager.on('websocket:error', (data) => {
-            this.addLog('error', `WebSocket错误: ${data.sessionId || 'unknown'}`);
+            this.addLog('error', `WebSocket error: ${data.sessionId || 'unknown'}`);
         });
 
         // UI events
@@ -353,18 +353,18 @@ class RentalAgentApp {
             role
         } = data;
 
-        // 统一会话ID提取
+        // Unified session ID extraction
         const finalSessionId = sessionId || session_id;
 
-        // 统一消息内容提取
+        // Unified message content extraction
         const messageContent = message || content || (payload && payload.content);
 
-        // 统一事件类型提取
+        // Unified event type extraction
         const eventType = event || type;
 
-        this.addLog('debug', `WebSocket消息类型: ${eventType || 'unknown'}`);
+        this.addLog('debug', `WebSocket message type: ${eventType || 'unknown'}`);
 
-        // 🎯 关键：如果消息包含对话内容，直接处理为对话
+        // 🎯 Key: If message contains dialogue content, process directly as dialogue
         if (messageContent && typeof messageContent === 'string' && messageContent.trim() !== '') {
             this.displayAgentDialogue({
                 session_id: finalSessionId,
@@ -377,7 +377,7 @@ class RentalAgentApp {
             });
         }
 
-        // 🎯 根据事件类型处理特定逻辑
+        // 🎯 Handle specific logic based on event type
         switch (eventType) {
             case 'agent_started':
                 this.handleAgentStarted(payload || data);
@@ -395,47 +395,47 @@ class RentalAgentApp {
                 this.handleWebSocketConnected(data);
                 break;
             case 'message_sent':
-                // 已通过上面的messageContent检查处理
+                // Already handled by messageContent check above
                 break;
             default:
-                this.addLog('debug', `未处理的事件类型: ${eventType}`);
+                this.addLog('debug', `Unhandled event type: ${eventType}`);
         }
     }
 
     /**
-     * 🎯 核心方法：统一的智能体对话显示处理
+     * 🎯 Core method: Unified agent dialogue display handling
      */
     displayAgentDialogue({ session_id, content, agent_type, agent_name, agent_id, role, originalData }) {
         try {
             const targetAgent = this.findTargetAgent(session_id, agent_type, agent_id, agent_name);
 
             if (!targetAgent) {
-                this.addLog('warning', `找不到对应的智能体 - ${agent_name || agent_type || 'unknown'}: ${content.substring(0, 50)}...`);
+                this.addLog('warning', `Cannot find corresponding agent - ${agent_name || agent_type || 'unknown'}: ${content.substring(0, 50)}...`);
                 return;
             }
 
-            // 显示对话气泡
+            // Show dialogue bubble
             const displayTime = this.calculateDisplayTime(content);
             this.mapController.showAgentDialogue(targetAgent.id, content, displayTime);
 
-            // 更新智能体状态动画
+            // Update agent speaking animation
             this.updateAgentSpeakingAnimation(targetAgent);
 
-            // 记录对话日志
+            // Log dialogue message
             this.logDialogueMessage(session_id, targetAgent, agent_type, content, role);
 
         } catch (error) {
-            this.addLog('error', `显示对话失败: ${error.message}`);
+            this.addLog('error', `Failed to display dialogue: ${error.message}`);
         }
     }
 
     /**
-     * 🔍 智能体查找方法 - 多层回退机制
+     * 🔍 Agent lookup method - Multi-layer fallback mechanism
      */
     findTargetAgent(session_id, agent_type, agent_id, agent_name) {
         let targetAgent = null;
 
-        // 通过会话ID查找
+        // Find by session ID
         if (session_id) {
             const matchedSession = this.negotiationSessions.find(s => s.session_id === session_id);
             if (matchedSession && matchedSession._frontendAgents) {
@@ -447,17 +447,17 @@ class RentalAgentApp {
             }
         }
 
-        // 通过智能体ID查找
+        // Find by agent ID
         if (!targetAgent && agent_id) {
             targetAgent = this.mapController.getAgent(agent_id);
         }
 
-        // 通过智能体名称查找
+        // Find by agent name
         if (!targetAgent && agent_name) {
             targetAgent = this.mapController.getAgentByName(agent_name);
         }
 
-        // 按类型查找第一个可用智能体
+        // Find first available agent by type
         if (!targetAgent && agent_type) {
             const allAgents = this.mapController.getAllAgents();
             const matchingAgents = allAgents.filter(a => a.type === agent_type);
@@ -478,12 +478,12 @@ class RentalAgentApp {
     }
 
     /**
-     * 🎬 计算对话气泡显示时间
+     * 🎬 Calculate dialogue bubble display time
      */
     calculateDisplayTime(content) {
-        const baseTime = 5000; // 5秒基础时间
-        const maxTime = 12000; // 12秒最大时间
-        const timePerChar = 80; // 每个字符80毫秒
+        const baseTime = 5000; // 5 second base time
+        const maxTime = 12000; // 12 second maximum time
+        const timePerChar = 80; // 80 milliseconds per character
 
         return Math.max(baseTime, Math.min(content.length * timePerChar, maxTime));
     }
@@ -499,7 +499,7 @@ class RentalAgentApp {
     }
 
     /**
-     * 📝 记录对话日志
+     * 📝 Log dialogue message
      */
     logDialogueMessage(session_id, targetAgent, agent_type, content, role) {
         let rolePrefix = '';

@@ -1,8 +1,6 @@
-from typing import Union
 from langchain_core.messages import RemoveMessage
 from langchain_core.runnables import RunnableConfig
 from langgraph.prebuilt import ToolNode
-import json
 from loguru import logger
 
 from app.conversation_service.landlord_workflow import (
@@ -64,6 +62,19 @@ async def landlord_agent_node(state: LandlordState, config: RunnableConfig):
 
 async def summarize_conversation_node(state: LandlordState):
     """Summarize landlord conversation and remove old messages"""
+    # 🎯 修复：只使用纯文本消息进行摘要，避免tool_calls问题
+    original_messages = state.get("messages", [])
+    text_only_messages = []
+    
+    # 提取纯文本消息，跳过包含tool_calls的消息
+    for msg in original_messages:
+        if hasattr(msg, 'role') and hasattr(msg, 'content'):
+            if msg.role in ['user', 'system'] or (msg.role == 'assistant' and not hasattr(msg, 'tool_calls')):
+                if msg.content and isinstance(msg.content, str):
+                    text_only_messages.append(msg)
+    
+    logger.info(f"🧹 Using {len(text_only_messages)} text-only messages for summary (from {len(original_messages)} total)")
+    
     # Prepare conversation data
     conversation_data = {
         "conversation_context": state.get("conversation_context", ""),
@@ -72,10 +83,10 @@ async def summarize_conversation_node(state: LandlordState):
     
     summary_chain = get_rental_conversation_summary_chain(conversation_data)
     
-    # Invoke with just messages - context is already provided in the chain
+    # 🎯 使用纯文本消息进行摘要
     response = await summary_chain.ainvoke(
         {
-            "messages": state["messages"]
+            "messages": text_only_messages
         }
     )
 

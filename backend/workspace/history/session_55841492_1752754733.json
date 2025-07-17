@@ -1,0 +1,88 @@
+{
+  "session_info": {
+    "session_id": "session_55841492_1752754733",
+    "created_at": "2025-07-17T13:18:53.198805",
+    "completed_at": "2025-07-17T13:18:58.996966",
+    "status": "cancelled",
+    "termination_reason": "manually_cancelled",
+    "match_score": 62,
+    "match_reasons": [
+      "租金 $0 在预算范围内",
+      "1房满足需求",
+      "无宠物限制影响",
+      "无吸烟限制影响",
+      "学生友好"
+    ]
+  },
+  "participants": {
+    "tenant": {
+      "tenant_id": "9f9eb1d2-a952-468c-9a2d-e7e19748b25e",
+      "name": "Nigel Savage",
+      "email": "vincentmoore@example.org",
+      "phone": "+44141 4960142",
+      "annual_income": 37082.640957526964,
+      "max_budget": 898.0,
+      "min_bedrooms": 1,
+      "max_bedrooms": 1,
+      "preferred_locations": [
+        {
+          "latitude": 51.53880614437194,
+          "longitude": -0.01294568319666578
+        },
+        {
+          "latitude": 51.51121586136248,
+          "longitude": -0.028990906013223017
+        }
+      ],
+      "is_student": true,
+      "has_pets": false,
+      "is_smoker": false,
+      "num_occupants": 2
+    },
+    "landlord": {
+      "landlord_id": "b03df7dc-458c-4a03-b7f4-b7981312b017",
+      "name": "Carter Jonas Lettings",
+      "phone": "+441134960002",
+      "branch_name": " by Carter Jonas Lettings, Mayfair",
+      "preferences": {
+        "pet_friendly": false,
+        "smoking_allowed": false,
+        "deposit_weeks": 4
+      }
+    },
+    "property": {
+      "property_id": "162454550",
+      "display_address": "South Audley Street, Mayfair, London, W1K",
+      "monthly_rent": 0,
+      "bedrooms": 1,
+      "bathrooms": 1,
+      "property_type": "",
+      "district": "",
+      "pets_allowed": false,
+      "smoking_allowed": false,
+      "student_friendly": true,
+      "amenities": []
+    }
+  },
+  "conversation_history": [
+    {
+      "turn": 1,
+      "speaker": "tenant",
+      "speaker_name": "Nigel Savage",
+      "role": "user",
+      "content": "Hello! I'm very interested in the property I've reached out about. I have a few questions:\n\n1. What is the monthly rent for the property? \n2. Are utilities included in the rent?\n3. Is the property pet-friendly? (I don't have pets, but it's good to know)\n4. What is the lease term?\n\nI’m a responsible tenant with a stable income of over £37,000 per year and I have a guarantor. My budget is £898/month, so I would love to discuss the rent if it’s above that. Thank you!",
+      "timestamp": "2025-07-17T13:18:58.996972"
+    }
+  ],
+  "analysis_result": {
+    "status": "cancelled"
+  },
+  "statistics": {
+    "total_messages": 1,
+    "tenant_messages": 1,
+    "landlord_messages": 0,
+    "conversation_duration_estimate": "2 minutes",
+    "negotiation_successful": false,
+    "confidence_score": 0
+  }
+}

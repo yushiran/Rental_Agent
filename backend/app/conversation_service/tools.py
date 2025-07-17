@@ -144,4 +144,224 @@ def generate_rental_contract(
         error_details = traceback.format_exc()
         return f"❌ Failed to generate rental agreement PDF: {str(e)}\n\nError details: {error_details}"
 
-tools = [retriever_tool, generate_rental_contract]
+@tool
+def analyze_rental_market_info(
+    location: str = "",
+    property_type: str = "",
+    bedrooms: int = 0,
+    budget_min: float = 0,
+    budget_max: float = 0,
+    analysis_type: str = "comprehensive"
+) -> str:
+    """
+    Analyze current rental market information for a specific location and property criteria.
+    
+    This tool provides comprehensive rental market analysis including average prices,
+    market trends, availability statistics, and competitive insights. Use this tool
+    when you need to understand market conditions for negotiation strategy or 
+    property evaluation.
+    
+    Args:
+        location: Target location/district for market analysis (e.g., "Camden", "Zone 1")
+        property_type: Type of property to analyze (e.g., "apartment", "house", "studio") 
+        bedrooms: Number of bedrooms to focus analysis on (0 = any)
+        budget_min: Minimum budget range for analysis (0 = no minimum)
+        budget_max: Maximum budget range for analysis (0 = no maximum)
+        analysis_type: Type of analysis ("comprehensive", "pricing", "availability", "trends")
+        
+    Returns:
+        str: Detailed market analysis report with pricing, trends, and recommendations
+    """
+    try:
+        from app.mongo import MongoClientWrapper
+        from app.agents.models import PropertyModel
+        from statistics import mean, median
+        from collections import defaultdict, Counter
+        
+        # Initialize database connection
+        properties_db = MongoClientWrapper(model=PropertyModel, collection_name="properties")
+        
+        # Build query filter
+        query_filter = {}
+        
+        if location:
+            # Case-insensitive location matching
+            query_filter["district"] = {"$regex": location, "$options": "i"}
+            
+        if property_type:
+            query_filter["property_type"] = {"$regex": property_type, "$options": "i"}
+            
+        if bedrooms > 0:
+            query_filter["bedrooms"] = bedrooms
+            
+        if budget_min > 0 or budget_max > 0:
+            price_filter = {}
+            if budget_min > 0:
+                price_filter["$gte"] = budget_min
+            if budget_max > 0:
+                price_filter["$lte"] = budget_max
+            query_filter["monthly_rent"] = price_filter
+        
+        # Fetch matching properties
+        properties = properties_db.fetch_documents(0, query_filter)  # 0 = no limit
+        
+        if not properties:
+            return f"❌ No properties found matching criteria:\n- Location: {location or 'Any'}\n- Type: {property_type or 'Any'}\n- Bedrooms: {bedrooms or 'Any'}\n- Budget: £{budget_min}-£{budget_max or 'unlimited'}"
+        
+        # Extract data for analysis
+        prices = []
+        districts = []
+        property_types = []
+        bedroom_counts = []
+        availability_status = []
+        amenities_list = []
+        
+        for prop in properties:
+            prop_dict = prop.to_dict() if hasattr(prop, 'to_dict') else prop
+            
+            prices.append(prop_dict.get("monthly_rent", 0))
+            districts.append(prop_dict.get("district", "Unknown"))
+            property_types.append(prop_dict.get("property_type", "Unknown"))
+            bedroom_counts.append(prop_dict.get("bedrooms", 0))
+            
+            # Check availability based on rental status
+            rental_status = prop_dict.get("rental_status", {})
+            is_rented = rental_status.get("is_rented", False) if isinstance(rental_status, dict) else False
+            availability_status.append("Available" if not is_rented else "Rented")
+            
+            # Collect amenities
+            amenities = prop_dict.get("amenities", [])
+            amenities_list.extend(amenities)
+        
+        # Calculate statistics
+        avg_price = mean(prices) if prices else 0
+        median_price = median(prices) if prices else 0
+        min_price = min(prices) if prices else 0
+        max_price = max(prices) if prices else 0
+        
+        # Market analysis by type
+        district_stats = Counter(districts)
+        type_stats = Counter(property_types)
+        bedroom_stats = Counter(bedroom_counts)
+        availability_stats = Counter(availability_status)
+        amenity_stats = Counter(amenities_list)
+        
+        # Calculate availability rate
+        total_properties = len(properties)
+        available_properties = availability_stats.get("Available", 0)
+        availability_rate = (available_properties / total_properties * 100) if total_properties > 0 else 0
+        
+        # Generate price insights by bedrooms
+        price_by_bedrooms = defaultdict(list)
+        for prop in properties:
+            prop_dict = prop.to_dict() if hasattr(prop, 'to_dict') else prop
+            bedrooms = prop_dict.get("bedrooms", 0)
+            price = prop_dict.get("monthly_rent", 0)
+            price_by_bedrooms[bedrooms].append(price)
+        
+        bedroom_price_analysis = {}
+        for beds, price_list in price_by_bedrooms.items():
+            if price_list:
+                bedroom_price_analysis[beds] = {
+                    "average": mean(price_list),
+                    "median": median(price_list),
+                    "min": min(price_list),
+                    "max": max(price_list),
+                    "count": len(price_list)
+                }
+        
+        # Build comprehensive report
+        report = f"""
+🏘️ **RENTAL MARKET ANALYSIS REPORT**
+📍 **Search Criteria:**
+   • Location: {location or 'All areas'}
+   • Property Type: {property_type or 'All types'}
+   • Bedrooms: {bedrooms or 'Any number'}
+   • Budget Range: £{budget_min or 0} - £{budget_max or 'unlimited'}
+
+📊 **MARKET OVERVIEW** ({total_properties} properties analyzed)
+   • Average Rent: £{avg_price:.0f}/month
+   • Median Rent: £{median_price:.0f}/month
+   • Price Range: £{min_price:.0f} - £{max_price:.0f}
+   • Availability Rate: {availability_rate:.1f}% ({available_properties}/{total_properties} available)
+
+🏠 **PROPERTY TYPE BREAKDOWN:**"""
+        
+        for prop_type, count in type_stats.most_common(5):
+            percentage = (count / total_properties * 100)
+            report += f"\n   • {prop_type}: {count} properties ({percentage:.1f}%)"
+        
+        report += "\n\n🛏️ **BEDROOM DISTRIBUTION:**"
+        for bedrooms, count in sorted(bedroom_stats.items()):
+            percentage = (count / total_properties * 100)
+            report += f"\n   • {bedrooms} bedroom(s): {count} properties ({percentage:.1f}%)"
+        
+        if bedroom_price_analysis:
+            report += "\n\n💰 **PRICING BY BEDROOMS:**"
+            for bedrooms in sorted(bedroom_price_analysis.keys()):
+                stats = bedroom_price_analysis[bedrooms]
+                report += f"\n   • {bedrooms} bedroom(s): £{stats['average']:.0f} avg (£{stats['min']:.0f}-£{stats['max']:.0f})"
+        
+        report += "\n\n📍 **TOP LOCATIONS:**"
+        for district, count in district_stats.most_common(5):
+            percentage = (count / total_properties * 100)
+            report += f"\n   • {district}: {count} properties ({percentage:.1f}%)"
+        
+        if amenity_stats:
+            report += "\n\n🎯 **POPULAR AMENITIES:**"
+            for amenity, count in amenity_stats.most_common(8):
+                percentage = (count / total_properties * 100)
+                report += f"\n   • {amenity}: {count} properties ({percentage:.1f}%)"
+        
+        # Add market insights and recommendations
+        report += "\n\n💡 **MARKET INSIGHTS:**"
+        
+        if availability_rate > 70:
+            report += f"\n   • 🟢 High availability ({availability_rate:.1f}%) - Buyer's market"
+        elif availability_rate > 40:
+            report += f"\n   • 🟡 Moderate availability ({availability_rate:.1f}%) - Balanced market"
+        else:
+            report += f"\n   • 🔴 Low availability ({availability_rate:.1f}%) - Seller's market"
+        
+        if avg_price > 0:
+            if budget_max > 0:
+                if avg_price < budget_max * 0.8:
+                    report += "\n   • 💚 Budget is above market average - Good negotiation position"
+                elif avg_price < budget_max:
+                    report += "\n   • 🟡 Budget aligns with market - Standard negotiation expected"
+                else:
+                    report += "\n   • 🔴 Budget below market average - Limited options"
+        
+        # Add negotiation recommendations
+        report += "\n\n🎯 **NEGOTIATION STRATEGY:**"
+        if availability_rate > 60:
+            report += "\n   • Leverage high availability for rent reductions"
+            report += "\n   • Request additional amenities or flexible terms"
+        else:
+            report += "\n   • Act quickly on suitable properties"
+            report += "\n   • Be prepared to meet asking price"
+        
+        if analysis_type == "pricing":
+            # Focus on price analysis only
+            price_summary = "\n\n📈 **DETAILED PRICING ANALYSIS:**\n"
+            price_summary += f"   • Market Average: £{avg_price:.0f}/month\n"
+            price_summary += f"   • Market Median: £{median_price:.0f}/month\n"
+            price_summary += f"   • Price Variance: {((max_price - min_price) / avg_price * 100):.1f}%\n"
+            return price_summary
+        
+        elif analysis_type == "availability":
+            # Focus on availability only
+            return f"🏠 **AVAILABILITY ANALYSIS:**\n   • {available_properties} out of {total_properties} properties available ({availability_rate:.1f}%)\n   • Market Status: {'Buyer\'s Market' if availability_rate > 60 else 'Seller\'s Market' if availability_rate < 40 else 'Balanced Market'}"
+        
+        elif analysis_type == "trends":
+            # Focus on trends (simplified for now)
+            return f"📈 **MARKET TRENDS:**\n   • Average rent in {location or 'analyzed area'}: £{avg_price:.0f}\n   • Most common property type: {type_stats.most_common(1)[0][0] if type_stats else 'N/A'}\n   • Availability trend: {availability_rate:.1f}% available"
+        
+        return report
+        
+    except Exception as e:
+        import traceback
+        error_details = traceback.format_exc()
+        return f"❌ Failed to analyze rental market: {str(e)}\n\nError details: {error_details}"
+        
+tools = [retriever_tool, generate_rental_contract, analyze_rental_market_info]

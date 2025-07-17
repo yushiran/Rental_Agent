@@ -28,36 +28,36 @@ class AvatarGenerator {
             backgroundColor: ['b6e3f4', 'c0aede', 'd1d4f9', 'ffd5dc', 'ffdfbf'],
             backgroundType: ['solid'],
             
-            // 服装 - 休闲风格
+            // Clothing - casual style
             clothing: ['variant01', 'variant02', 'variant03', 'variant05', 'variant08', 'variant12'],
             clothingColor: ['5bc0de', '44c585', '88d8b0', '428bca', 'ffc425', 'ffd969'],
             
-            // 发型 - 多样化
+            // Hair - diverse styles
             hair: ['short01', 'short02', 'short03', 'short05', 'long01', 'long02', 'long05'],
             hairColor: ['603a14', '611c17', '83623b', '603015', 'a78961', 'cab188'],
             
-            // 表情 - 开心为主
+            // Expression - mainly happy
             mouth: ['happy01', 'happy02', 'happy03', 'happy05', 'happy08', 'happy11'],
             mouthColor: ['c98276', 'd29985', 'e35d6a'],
             
-            // 眼睛
+            // Eyes
             eyes: ['variant01', 'variant02', 'variant04', 'variant06', 'variant08'],
             eyesColor: ['5b7c8b', '647b90', '588387'],
             
-            // 肤色
+            // Skin color
             skinColor: ['cb9e6e', 'e0b687', 'eac393', 'f5cfa0', 'ffdbac'],
             
-            // 配饰 - 较少概率
+            // Accessories - low probability
             accessoriesProbability: 20,
             accessories: ['variant01', 'variant03'],
             accessoriesColor: ['d3d3d3', 'ffd700'],
             
-            // 眼镜 - 很少概率
+            // Glasses - very low probability
             glassesProbability: 10,
             glasses: ['light01', 'light02', 'light03'],
             glassesColor: ['4b4b4b', '5f705c'],
             
-            // 帽子 - 很少概率  
+            // Hat - very low probability  
             hatProbability: 15,
             hat: ['variant02', 'variant05', 'variant08'],
             hatColor: ['3d8a6b', '2663a3', 'cc6192']
@@ -79,9 +79,9 @@ class AvatarGenerator {
         }
 
         const avatar = createAvatar(pixelArt, {
-            seed: name || agentId, // 使用名字作为种子
-            size: 32, // 地图标记合适的大小
-            // 房东使用深色商务风格的背景色
+            seed: name || agentId, // Use name as seed
+            size: 32, // Appropriate size for map markers
+            // Landlords use dark business-style background colors
             backgroundColor: ['264653', '2a9d8f', 'e9c46a', 'f4a261', 'e76f51'],
             backgroundType: ['solid'],
             

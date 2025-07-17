@@ -1,0 +1,153 @@
+{
+  "session_info": {
+    "session_id": "session_7d994f4d_1752756262",
+    "created_at": "2025-07-17T13:44:22.444630",
+    "completed_at": "2025-07-17T13:44:58.925302",
+    "status": "active",
+    "termination_reason": "",
+    "match_score": 55,
+    "match_reasons": [
+      "租金 $0 在预算范围内",
+      "2房满足需求",
+      "不允许宠物",
+      "不允许吸烟",
+      "学生友好"
+    ]
+  },
+  "participants": {
+    "tenant": {
+      "tenant_id": "6f166ba0-a422-4848-89c1-8a21e0c85f61",
+      "name": "Sarah Curtis",
+      "email": "norman31@example.org",
+      "phone": "+44191 496 0159",
+      "annual_income": 30049.096940950207,
+      "max_budget": 662.0,
+      "min_bedrooms": 2,
+      "max_bedrooms": 2,
+      "preferred_locations": [
+        {
+          "latitude": 51.50869275120633,
+          "longitude": -0.10528299994253157
+        },
+        {
+          "latitude": 51.43856392173362,
+          "longitude": -0.009701473252117203
+        },
+        {
+          "latitude": 51.452460124124066,
+          "longitude": -0.17347388489914445
+        }
+      ],
+      "is_student": true,
+      "has_pets": true,
+      "is_smoker": true,
+      "num_occupants": 1
+    },
+    "landlord": {
+      "landlord_id": "632dd137-7225-43a2-b702-187e42072e86",
+      "name": "Home Made",
+      "phone": "+441184960587",
+      "branch_name": " by Home Made, London",
+      "preferences": {
+        "pet_friendly": false,
+        "smoking_allowed": false,
+        "deposit_weeks": 6
+      }
+    },
+    "property": {
+      "property_id": "162453242",
+      "display_address": "Makers House, Stratford, E20",
+      "monthly_rent": 0,
+      "bedrooms": 2,
+      "bathrooms": 1,
+      "property_type": "",
+      "district": "",
+      "pets_allowed": false,
+      "smoking_allowed": false,
+      "student_friendly": true,
+      "amenities": []
+    }
+  },
+  "conversation_history": [
+    {
+      "turn": 1,
+      "speaker": "tenant",
+      "speaker_name": "Sarah Curtis",
+      "role": "user",
+      "content": "Hello! I'm interested in the property listed for rent. I need a 2-bedroom place, and my budget is £662/month. Could you please provide more details about the property, such as the location, amenities, and total monthly costs? Additionally, is there any flexibility on the rent? Thank you!",
+      "timestamp": "2025-07-17T13:44:58.925310"
+    },
+    {
+      "turn": 2,
+      "speaker": "landlord",
+      "speaker_name": "Home Made",
+      "role": "assistant",
+      "content": "Thank you for your interest in the property! The 2-bedroom apartment is located at Makers House, Stratford, E20, right in the vibrant Queen Elizabeth Olympic Park in Hackney Wick.\n\nThe monthly rent is £2,800, which includes amenities such as modern fixtures and fittings, spacious living areas, and access to communal facilities. Unfortunately, your budget of £662/month is significantly below the asking price. \n\nHowever, I’m open to discussing flexibility in rent if you have a different budget range in mind. Please let me know your thoughts!",
+      "timestamp": "2025-07-17T13:44:58.925312"
+    },
+    {
+      "turn": 3,
+      "speaker": "tenant",
+      "speaker_name": "Sarah Curtis",
+      "role": "user",
+      "content": "Thank you for your response. I understand the situation. I must decline this property and will continue looking for other options within my budget. I appreciate your time and assistance!",
+      "timestamp": "2025-07-17T13:44:58.925314"
+    },
+    {
+      "turn": 4,
+      "speaker": "landlord",
+      "speaker_name": "Home Made",
+      "role": "assistant",
+      "content": "I appreciate your understanding and wish you the best of luck in your search for a suitable property. If you have any questions in the future or need assistance, feel free to reach out. Thank you, and take care!",
+      "timestamp": "2025-07-17T13:44:58.925315"
+    }
+  ],
+  "analysis_result": {
+    "success": true,
+    "session_id": "session_7d994f4d_1752756262",
+    "negotiation_successful": false,
+    "confidence_score": 0.9,
+    "database_updated": true,
+    "update_results": [
+      "✅ Tenant status updated: 6f166ba0-a422-4848-89c1-8a21e0c85f61",
+      "✅ Property status updated: 162453242",
+      "✅ Landlord statistics updated: 632dd137-7225-43a2-b702-187e42072e86"
+    ],
+    "tenant_rental_status": {
+      "is_rented": false,
+      "property_id": null,
+      "landlord_id": null,
+      "rental_price": null,
+      "rental_start_date": null,
+      "contract_duration_months": null,
+      "negotiation_session_id": "negotiation_session_001",
+      "last_updated": "2025-07-17T13:44:53.835284"
+    },
+    "property_rental_status": {
+      "is_rented": false,
+      "tenant_id": null,
+      "rental_price": null,
+      "rental_start_date": null,
+      "contract_duration_months": null,
+      "negotiation_session_id": "negotiation_session_001",
+      "last_updated": "2025-07-17T13:44:53.835284"
+    },
+    "landlord_rental_status": {
+      "total_properties": 5,
+      "rented_properties": 2,
+      "available_properties": 3,
+      "total_rental_income": 5600.0,
+      "average_rental_price": 2800.0,
+      "last_updated": "2025-07-17T13:44:53.835284"
+    },
+    "timestamp": "2025-07-17T13:44:53.835284"
+  },
+  "statistics": {
+    "total_messages": 4,
+    "tenant_messages": 2,
+    "landlord_messages": 2,
+    "conversation_duration_estimate": "8 minutes",
+    "negotiation_successful": false,
+    "confidence_score": 0.9
+  }
+}

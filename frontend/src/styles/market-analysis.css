@@ -1,4 +1,4 @@
-/* 市场分析窗口样式 - 科幻风格 */
+/* Market Analysis Window Styles - Sci-fi Style */
 .market-analysis-overlay {
     position: absolute;
     top: 20px;
@@ -147,7 +147,7 @@
     border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-/* 滚动条样式 */
+/* Scrollbar styles */
 .market-analysis-content::-webkit-scrollbar {
     width: 4px;
 }
@@ -166,7 +166,7 @@
     background: rgba(59, 130, 246, 0.5);
 }
 
-/* 动画效果 */
+/* Animation effects */
 @keyframes slideInFromTop {
     from {
         opacity: 0;

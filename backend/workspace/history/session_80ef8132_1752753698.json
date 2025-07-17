@@ -1,0 +1,93 @@
+{
+  "session_info": {
+    "session_id": "session_80ef8132_1752753698",
+    "created_at": "2025-07-17T13:01:38.927616",
+    "completed_at": "2025-07-17T13:01:50.656030",
+    "status": "error",
+    "termination_reason": "Error: '__end__'",
+    "match_score": 52,
+    "match_reasons": [
+      "租金 $0 在预算范围内",
+      "2房满足需求",
+      "不允许宠物",
+      "不允许吸烟",
+      "非学生无特殊限制"
+    ]
+  },
+  "participants": {
+    "tenant": {
+      "tenant_id": "61013ad8-3662-4607-82ef-604e0807f86d",
+      "name": "Dr Gillian West",
+      "email": "tayloralexander@example.com",
+      "phone": "028 9018 0023",
+      "annual_income": 33938.50712996486,
+      "max_budget": 886.0,
+      "min_bedrooms": 2,
+      "max_bedrooms": 4,
+      "preferred_locations": [
+        {
+          "latitude": 51.499588828367756,
+          "longitude": -0.021722604768494302
+        },
+        {
+          "latitude": 51.44471565802778,
+          "longitude": -0.007808169528993691
+        },
+        {
+          "latitude": 51.54326289319269,
+          "longitude": -0.13612937096847777
+        }
+      ],
+      "is_student": false,
+      "has_pets": true,
+      "is_smoker": true,
+      "num_occupants": 3
+    },
+    "landlord": {
+      "landlord_id": "bce7bde3-0dc3-463d-a5d4-5f7c002bd273",
+      "name": "Home Made",
+      "phone": "+443069990796",
+      "branch_name": " by Home Made, London",
+      "preferences": {
+        "pet_friendly": true,
+        "smoking_allowed": true,
+        "deposit_weeks": 4
+      }
+    },
+    "property": {
+      "property_id": "162453242",
+      "display_address": "Makers House, Stratford, E20",
+      "monthly_rent": 0,
+      "bedrooms": 2,
+      "bathrooms": 1,
+      "property_type": "",
+      "district": "",
+      "pets_allowed": false,
+      "smoking_allowed": false,
+      "student_friendly": true,
+      "amenities": []
+    }
+  },
+  "conversation_history": [
+    {
+      "turn": 1,
+      "speaker": "tenant",
+      "speaker_name": "Dr Gillian West",
+      "role": "user",
+      "content": "I'm interested in the property you have available. Could you please provide more details about the rental price, amenities, and any pet policies? I have a budget of £886/month and would appreciate knowing if there's room for negotiation on the rent. \n\nAdditionally, can you confirm the number of bedrooms and the overall condition of the property? Thank you!",
+      "timestamp": "2025-07-17T13:01:50.656040"
+    }
+  ],
+  "analysis_result": {
+    "status": "error",
+    "error": "'__end__'"
+  },
+  "statistics": {
+    "total_messages": 1,
+    "tenant_messages": 1,
+    "landlord_messages": 0,
+    "conversation_duration_estimate": "2 minutes",
+    "negotiation_successful": false,
+    "confidence_score": 0
+  }
+}

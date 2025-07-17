@@ -1,11 +1,11 @@
 /**
- * 市场分析覆盖窗口组件 - 科幻风格
+ * Market Analysis Overlay Component - Sci-fi Style
  * 
- * 功能：
- * - 从后端API获取市场分析数据
- * - 以科幻风格展示关键市场指标
- * - 支持显示/隐藏动画效果
- * - 响应式设计适配不同屏幕
+ * Features:
+ * - Fetch market analysis data from backend API
+ * - Display key market indicators in sci-fi style
+ * - Support show/hide animation effects
+ * - Responsive design for different screens
  */
 class MarketAnalysisOverlay {
     constructor(config = {}) {
@@ -13,7 +13,7 @@ class MarketAnalysisOverlay {
             backendUrl: 'http://localhost:8000',
             overlayId: 'market-analysis-overlay',
             contentId: 'market-analysis-content',
-            autoHideDelay: 30000, // 30秒后自动隐藏
+            autoHideDelay: 30000, // Auto hide after 30 seconds
             ...config
         };
         
@@ -23,7 +23,7 @@ class MarketAnalysisOverlay {
     }
 
     /**
-     * 初始化组件
+     * Initialize component
      */
     initialize(logger = null) {
         this.logger = logger;
@@ -33,10 +33,10 @@ class MarketAnalysisOverlay {
     }
 
     /**
-     * 创建覆盖窗口HTML结构
+     * Create overlay window HTML structure
      */
     createOverlayHTML() {
-        // 检查是否已存在
+        // Check if already exists
         if (document.getElementById(this.config.overlayId)) {
             return;
         }
@@ -58,7 +58,7 @@ class MarketAnalysisOverlay {
     }
 
     /**
-     * 绑定事件处理器
+     * Bind event handlers
      */
     bindEvents() {
         const closeBtn = document.getElementById('market-analysis-close');
@@ -66,7 +66,7 @@ class MarketAnalysisOverlay {
             closeBtn.addEventListener('click', () => this.hide());
         }
 
-        // ESC键关闭
+        // Close with ESC key
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape' && this.isVisible) {
                 this.hide();

@@ -1,0 +1,85 @@
+{
+  "session_info": {
+    "session_id": "session_a2f6a21d_1752753698",
+    "created_at": "2025-07-17T13:01:38.948016",
+    "completed_at": "2025-07-17T13:01:49.148043",
+    "status": "error",
+    "termination_reason": "Error: '__end__'",
+    "match_score": 59,
+    "match_reasons": [
+      "租金 $0 在预算范围内",
+      "2房满足需求",
+      "无宠物限制影响",
+      "无吸烟限制影响",
+      "非学生无特殊限制"
+    ]
+  },
+  "participants": {
+    "tenant": {
+      "tenant_id": "274c2b2e-7231-4566-8f31-687857f85282",
+      "name": "Danny Hunt",
+      "email": "rbrookes@example.net",
+      "phone": "+4428 9018 0603",
+      "annual_income": 36387.7415360733,
+      "max_budget": 823.0,
+      "min_bedrooms": 2,
+      "max_bedrooms": 3,
+      "preferred_locations": [
+        {
+          "latitude": 51.53716318508061,
+          "longitude": -0.1023243814366273
+        }
+      ],
+      "is_student": false,
+      "has_pets": false,
+      "is_smoker": false,
+      "num_occupants": 1
+    },
+    "landlord": {
+      "landlord_id": "bce7bde3-0dc3-463d-a5d4-5f7c002bd273",
+      "name": "Home Made",
+      "phone": "+443069990796",
+      "branch_name": " by Home Made, London",
+      "preferences": {
+        "pet_friendly": true,
+        "smoking_allowed": true,
+        "deposit_weeks": 4
+      }
+    },
+    "property": {
+      "property_id": "162453242",
+      "display_address": "Makers House, Stratford, E20",
+      "monthly_rent": 0,
+      "bedrooms": 2,
+      "bathrooms": 1,
+      "property_type": "",
+      "district": "",
+      "pets_allowed": false,
+      "smoking_allowed": false,
+      "student_friendly": true,
+      "amenities": []
+    }
+  },
+  "conversation_history": [
+    {
+      "turn": 1,
+      "speaker": "tenant",
+      "speaker_name": "Danny Hunt",
+      "role": "user",
+      "content": "Hello! I'm interested in the rental property you have available. I'm looking for a 2-3 bedroom place within my budget of £823/month. Can you please provide more details about the property, such as its features, location specifics, and total rent? Additionally, are there any opportunities for negotiation on the rent? I believe my stable income and responsible nature make me a great tenant. Thank you!",
+      "timestamp": "2025-07-17T13:01:49.148065"
+    }
+  ],
+  "analysis_result": {
+    "status": "error",
+    "error": "'__end__'"
+  },
+  "statistics": {
+    "total_messages": 1,
+    "tenant_messages": 1,
+    "landlord_messages": 0,
+    "conversation_duration_estimate": "2 minutes",
+    "negotiation_successful": false,
+    "confidence_score": 0
+  }
+}

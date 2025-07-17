@@ -36,9 +36,18 @@ def create_landlord_workflow_graph():
         }
     )
     graph_builder.add_edge("retriever_node", "landlord_agent_node")
-    graph_builder.add_conditional_edges("landlord_agent_node", should_summarize_landlord_conversation)
-    graph_builder.add_edge("summarize_conversation_node", END)
     
+    # 🎯 修复：conditional_edges 需要正确映射 END 常量
+    graph_builder.add_conditional_edges(
+        "landlord_agent_node", 
+        should_summarize_landlord_conversation,
+        {
+            "summarize_conversation_node": "summarize_conversation_node",
+            "__end__": END  # 🔧 匹配函数返回的字符串值
+        }
+    )
+    graph_builder.add_edge("summarize_conversation_node", END)
+
     return graph_builder
 
 

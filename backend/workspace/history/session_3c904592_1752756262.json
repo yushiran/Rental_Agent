@@ -1,0 +1,165 @@
+{
+  "session_info": {
+    "session_id": "session_3c904592_1752756262",
+    "created_at": "2025-07-17T13:44:22.413296",
+    "completed_at": "2025-07-17T13:45:11.709077",
+    "status": "active",
+    "termination_reason": "",
+    "match_score": 57,
+    "match_reasons": [
+      "租金 $0 在预算范围内",
+      "2房满足需求",
+      "不允许宠物",
+      "无吸烟限制影响",
+      "学生友好"
+    ]
+  },
+  "participants": {
+    "tenant": {
+      "tenant_id": "83a0c4bd-89ee-4494-88d4-7898a6cd6957",
+      "name": "Sian Mitchell-Martin",
+      "email": "kharvey@example.org",
+      "phone": "0118 496 0294",
+      "annual_income": 149132.49092235652,
+      "max_budget": 2978.0,
+      "min_bedrooms": 2,
+      "max_bedrooms": 3,
+      "preferred_locations": [
+        {
+          "latitude": 51.49126468683735,
+          "longitude": -0.18270188198643256
+        },
+        {
+          "latitude": 51.44191147556978,
+          "longitude": -0.02089591907279236
+        }
+      ],
+      "is_student": true,
+      "has_pets": true,
+      "is_smoker": false,
+      "num_occupants": 2
+    },
+    "landlord": {
+      "landlord_id": "632dd137-7225-43a2-b702-187e42072e86",
+      "name": "Home Made",
+      "phone": "+441184960587",
+      "branch_name": " by Home Made, London",
+      "preferences": {
+        "pet_friendly": false,
+        "smoking_allowed": false,
+        "deposit_weeks": 6
+      }
+    },
+    "property": {
+      "property_id": "162453242",
+      "display_address": "Makers House, Stratford, E20",
+      "monthly_rent": 0,
+      "bedrooms": 2,
+      "bathrooms": 1,
+      "property_type": "",
+      "district": "",
+      "pets_allowed": false,
+      "smoking_allowed": false,
+      "student_friendly": true,
+      "amenities": []
+    }
+  },
+  "conversation_history": [
+    {
+      "turn": 1,
+      "speaker": "tenant",
+      "speaker_name": "Sian Mitchell-Martin",
+      "role": "user",
+      "content": "Hi there! I'm very interested in the property we discussed. I need a 2-3 bedroom place, and my budget is £2978/month. Could you confirm the monthly rent for the property? Also, could you provide more details about the amenities and any pet policies? \n\nThanks, I look forward to your response!",
+      "timestamp": "2025-07-17T13:45:11.709086"
+    },
+    {
+      "turn": 2,
+      "speaker": "landlord",
+      "speaker_name": "Home Made",
+      "role": "assistant",
+      "content": "The monthly rent for the 2-bedroom apartment at Makers House, Stratford, is £2,800. Given your budget of £2,978, I'd be happy to negotiate a bit if you're interested!\n\nRegarding amenities, the property includes modern features and is located in the vibrant Queen Elizabeth Olympic Park area. Unfortunately, I cannot allow pets in this property, and smoking is also not permitted. \n\nIf you're interested, we can discuss moving forward!",
+      "timestamp": "2025-07-17T13:45:11.709088"
+    },
+    {
+      "turn": 3,
+      "speaker": "tenant",
+      "speaker_name": "Sian Mitchell-Martin",
+      "role": "user",
+      "content": "Thank you for the details! The rent of £2,800 fits within my budget, and the amenities sound great. However, I would like to negotiate the rent to £2,600, considering my stable income and the market conditions. \n\nAlso, the pet policy is a concern for me since I have a pet. Is there any flexibility on that? I appreciate your understanding, and I look forward to your response!",
+      "timestamp": "2025-07-17T13:45:11.709090"
+    },
+    {
+      "turn": 4,
+      "speaker": "landlord",
+      "speaker_name": "Home Made",
+      "role": "assistant",
+      "content": "I appreciate your interest and understand your request to negotiate the rent to £2,600. While I typically look for a rent of £2,800, I can offer you a slightly reduced rate of £2,700, considering your stable income.\n\nRegarding the pet policy, I'm afraid I cannot allow pets in this property. This policy helps maintain the space for all tenants. \n\nLet me know if the adjusted rent works for you, and we can move forward!",
+      "timestamp": "2025-07-17T13:45:11.709091"
+    },
+    {
+      "turn": 5,
+      "speaker": "tenant",
+      "speaker_name": "Sian Mitchell-Martin",
+      "role": "user",
+      "content": "Thank you for considering the adjusted rent of £2,700. However, the pet policy is a significant concern for me since I have a pet. Given this, I would need to look for other options that can accommodate my needs.\n\nI must decline this property, but I appreciate your time and understanding.",
+      "timestamp": "2025-07-17T13:45:11.709093"
+    },
+    {
+      "turn": 6,
+      "speaker": "landlord",
+      "speaker_name": "Home Made",
+      "role": "assistant",
+      "content": "I understand your situation, and I appreciate your honesty. It's important to find a place that works for you and your pet. I wish you the best of luck in your search for a suitable property. If you ever reconsider or need assistance in the future, feel free to reach out. Thank you for your time!",
+      "timestamp": "2025-07-17T13:45:11.709094"
+    }
+  ],
+  "analysis_result": {
+    "success": true,
+    "session_id": "session_3c904592_1752756262",
+    "negotiation_successful": false,
+    "confidence_score": 0.9,
+    "database_updated": true,
+    "update_results": [
+      "✅ Tenant status updated: 83a0c4bd-89ee-4494-88d4-7898a6cd6957",
+      "✅ Property status updated: 162453242",
+      "✅ Landlord statistics updated: 632dd137-7225-43a2-b702-187e42072e86"
+    ],
+    "tenant_rental_status": {
+      "is_rented": false,
+      "property_id": null,
+      "landlord_id": null,
+      "rental_price": null,
+      "rental_start_date": null,
+      "contract_duration_months": null,
+      "negotiation_session_id": "negotiation_01",
+      "last_updated": "2025-07-17T13:45:05.405552"
+    },
+    "property_rental_status": {
+      "is_rented": false,
+      "tenant_id": null,
+      "rental_price": null,
+      "rental_start_date": null,
+      "contract_duration_months": null,
+      "negotiation_session_id": "negotiation_01",
+      "last_updated": "2025-07-17T13:45:05.405552"
+    },
+    "landlord_rental_status": {
+      "total_properties": 5,
+      "rented_properties": 4,
+      "available_properties": 1,
+      "total_rental_income": 108000.0,
+      "average_rental_price": 27000.0,
+      "last_updated": "2025-07-17T13:45:05.405552"
+    },
+    "timestamp": "2025-07-17T13:45:05.405552"
+  },
+  "statistics": {
+    "total_messages": 6,
+    "tenant_messages": 3,
+    "landlord_messages": 3,
+    "conversation_duration_estimate": "12 minutes",
+    "negotiation_successful": false,
+    "confidence_score": 0.9
+  }
+}

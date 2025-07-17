@@ -361,10 +361,13 @@ def create_meta_controller_graph():
     controller.add_node("call_landlord", call_landlord)
     
     # Set up the flow - tenant and landlord take turns
-    controller.add_conditional_edges("call_tenant", should_continue, {
-        "continue": "call_landlord",
-        "end": END
-    })
+    controller.add_conditional_edges("call_tenant",
+        should_continue, 
+        {
+            "continue": "call_landlord",
+            "end": END
+        }
+    )
     
     controller.add_conditional_edges("call_landlord", should_continue, {
         "continue": "call_tenant",

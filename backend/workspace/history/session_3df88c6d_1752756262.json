@@ -1,0 +1,165 @@
+{
+  "session_info": {
+    "session_id": "session_3df88c6d_1752756262",
+    "created_at": "2025-07-17T13:44:22.461773",
+    "completed_at": "2025-07-17T13:45:14.035077",
+    "status": "active",
+    "termination_reason": "",
+    "match_score": 55,
+    "match_reasons": [
+      "租金 $0 在预算范围内",
+      "2房满足需求",
+      "不允许宠物",
+      "不允许吸烟",
+      "学生友好"
+    ]
+  },
+  "participants": {
+    "tenant": {
+      "tenant_id": "798e478e-2923-40a5-a2f7-25ce11276d99",
+      "name": "Dominic Russell",
+      "email": "wsmith@example.org",
+      "phone": "+44(0)116 496 0033",
+      "annual_income": 73662.50208415663,
+      "max_budget": 1278.0,
+      "min_bedrooms": 2,
+      "max_bedrooms": 2,
+      "preferred_locations": [
+        {
+          "latitude": 51.500425754401064,
+          "longitude": -0.2414727433743863
+        },
+        {
+          "latitude": 51.453664240524915,
+          "longitude": -0.12297239382194358
+        }
+      ],
+      "is_student": true,
+      "has_pets": true,
+      "is_smoker": true,
+      "num_occupants": 1
+    },
+    "landlord": {
+      "landlord_id": "632dd137-7225-43a2-b702-187e42072e86",
+      "name": "Home Made",
+      "phone": "+441184960587",
+      "branch_name": " by Home Made, London",
+      "preferences": {
+        "pet_friendly": false,
+        "smoking_allowed": false,
+        "deposit_weeks": 6
+      }
+    },
+    "property": {
+      "property_id": "162453242",
+      "display_address": "Makers House, Stratford, E20",
+      "monthly_rent": 0,
+      "bedrooms": 2,
+      "bathrooms": 1,
+      "property_type": "",
+      "district": "",
+      "pets_allowed": false,
+      "smoking_allowed": false,
+      "student_friendly": true,
+      "amenities": []
+    }
+  },
+  "conversation_history": [
+    {
+      "turn": 1,
+      "speaker": "tenant",
+      "speaker_name": "Dominic Russell",
+      "role": "user",
+      "content": "Hi there! I'm very interested in the rental property you've listed. I have a few questions:\n\n1. What is the monthly rent for the property?\n2. Are utilities included in the rent?\n3. Can you provide more details about the pet policy?\n4. Is the property furnished or unfurnished?\n\nI'm currently looking for a 2-bedroom place within my budget of £1278/month. I also want to highlight that I have a stable income from my studies, and I'm a responsible tenant. Thank you!",
+      "timestamp": "2025-07-17T13:45:14.035092"
+    },
+    {
+      "turn": 2,
+      "speaker": "landlord",
+      "speaker_name": "Home Made",
+      "role": "assistant",
+      "content": "Hi! I'm glad to hear you're interested in my property. Here are the details:\n\n1. The monthly rent for the 2-bedroom apartment at Makers House is £2,800.\n2. Utilities are not included in the rent; tenants are responsible for those costs.\n3. Unfortunately, the property is not pet-friendly.\n4. The apartment is unfurnished, allowing you to personalize it as you wish.\n\nSince your budget is £1,278/month, which is significantly below the asking price, I can offer you a slight discount if you're a reliable tenant. Would you be open to discussing your situation further?",
+      "timestamp": "2025-07-17T13:45:14.035095"
+    },
+    {
+      "turn": 3,
+      "speaker": "tenant",
+      "speaker_name": "Dominic Russell",
+      "role": "user",
+      "content": "Thank you! I appreciate your willingness to keep me in mind. If I come across any additional questions or properties, I'll be sure to reach out. Have a great day!",
+      "timestamp": "2025-07-17T13:45:14.035097"
+    },
+    {
+      "turn": 4,
+      "speaker": "landlord",
+      "speaker_name": "Home Made",
+      "role": "assistant",
+      "content": "You're welcome! I'm here to help, so feel free to reach out anytime if you have more questions or if you find other properties you're interested in. Have a great day too!",
+      "timestamp": "2025-07-17T13:45:14.035098"
+    },
+    {
+      "turn": 5,
+      "speaker": "tenant",
+      "speaker_name": "Dominic Russell",
+      "role": "user",
+      "content": "I must decline this property.",
+      "timestamp": "2025-07-17T13:45:14.035099"
+    },
+    {
+      "turn": 6,
+      "speaker": "landlord",
+      "speaker_name": "Home Made",
+      "role": "assistant",
+      "content": "I understand your decision. Thank you for considering the property, and I wish you the best in your search for a suitable place. If you ever need assistance in the future, feel free to reach out. Take care!",
+      "timestamp": "2025-07-17T13:45:14.035101"
+    }
+  ],
+  "analysis_result": {
+    "success": true,
+    "session_id": "session_3df88c6d_1752756262",
+    "negotiation_successful": false,
+    "confidence_score": 0.9,
+    "database_updated": true,
+    "update_results": [
+      "✅ Tenant status updated: 798e478e-2923-40a5-a2f7-25ce11276d99",
+      "✅ Property status updated: 162453242",
+      "✅ Landlord statistics updated: 632dd137-7225-43a2-b702-187e42072e86"
+    ],
+    "tenant_rental_status": {
+      "is_rented": false,
+      "property_id": null,
+      "landlord_id": null,
+      "rental_price": null,
+      "rental_start_date": null,
+      "contract_duration_months": null,
+      "negotiation_session_id": "session_1",
+      "last_updated": "2025-07-17T13:45:07.990693"
+    },
+    "property_rental_status": {
+      "is_rented": false,
+      "tenant_id": null,
+      "rental_price": null,
+      "rental_start_date": null,
+      "contract_duration_months": null,
+      "negotiation_session_id": "session_1",
+      "last_updated": "2025-07-17T13:45:07.990693"
+    },
+    "landlord_rental_status": {
+      "total_properties": 5,
+      "rented_properties": 3,
+      "available_properties": 2,
+      "total_rental_income": 5600.0,
+      "average_rental_price": 2800.0,
+      "last_updated": "2025-07-17T13:45:07.990693"
+    },
+    "timestamp": "2025-07-17T13:45:07.990693"
+  },
+  "statistics": {
+    "total_messages": 6,
+    "tenant_messages": 3,
+    "landlord_messages": 3,
+    "conversation_duration_estimate": "12 minutes",
+    "negotiation_successful": false,
+    "confidence_score": 0.9
+  }
+}

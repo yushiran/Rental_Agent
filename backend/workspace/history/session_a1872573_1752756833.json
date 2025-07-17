@@ -1,0 +1,165 @@
+{
+  "session_info": {
+    "session_id": "session_a1872573_1752756833",
+    "created_at": "2025-07-17T13:53:53.761847",
+    "completed_at": "2025-07-17T13:54:41.584280",
+    "status": "active",
+    "termination_reason": "",
+    "match_score": 62,
+    "match_reasons": [
+      "租金 $0 在预算范围内",
+      "2房满足需求",
+      "无宠物限制影响",
+      "无吸烟限制影响",
+      "学生友好"
+    ]
+  },
+  "participants": {
+    "tenant": {
+      "tenant_id": "8adcfff4-90fd-4bcb-af80-3514011ee307",
+      "name": "Dr Stanley Reed",
+      "email": "smithcarolyn@example.com",
+      "phone": "+448081570932",
+      "annual_income": 65339.899320061166,
+      "max_budget": 1268.0,
+      "min_bedrooms": 2,
+      "max_bedrooms": 4,
+      "preferred_locations": [
+        {
+          "latitude": 51.496599664400804,
+          "longitude": -0.06044505407211156
+        },
+        {
+          "latitude": 51.54274337045184,
+          "longitude": -0.1442826116528245
+        }
+      ],
+      "is_student": true,
+      "has_pets": false,
+      "is_smoker": false,
+      "num_occupants": 2
+    },
+    "landlord": {
+      "landlord_id": "57c0e6b9-2845-42be-94e0-4d33e3e0a55f",
+      "name": "Home Made",
+      "phone": "(0161) 4960536",
+      "branch_name": " by Home Made, London",
+      "preferences": {
+        "pet_friendly": false,
+        "smoking_allowed": false,
+        "deposit_weeks": 6
+      }
+    },
+    "property": {
+      "property_id": "162453242",
+      "display_address": "Makers House, Stratford, E20",
+      "monthly_rent": 0,
+      "bedrooms": 2,
+      "bathrooms": 1,
+      "property_type": "",
+      "district": "",
+      "pets_allowed": false,
+      "smoking_allowed": false,
+      "student_friendly": true,
+      "amenities": []
+    }
+  },
+  "conversation_history": [
+    {
+      "turn": 1,
+      "speaker": "tenant",
+      "speaker_name": "Dr Stanley Reed",
+      "role": "user",
+      "content": "Hello! I’m Dr. Stanley Reed, and I'm interested in the rental property we discussed. \n\nI wanted to clarify a few details: \n1. What is the total monthly rent for the property?\n2. Are utilities included in the rent?\n3. Can you confirm the availability of the property for the lease term I’m looking for?\n\nAdditionally, I’m curious if there’s any flexibility on the rent, as my budget is £1268/month. \n\nI look forward to your response. Thank you!",
+      "timestamp": "2025-07-17T13:54:41.584288"
+    },
+    {
+      "turn": 2,
+      "speaker": "landlord",
+      "speaker_name": "Home Made",
+      "role": "assistant",
+      "content": "Hello Dr. Reed! \n\nThe total monthly rent for the property at Makers House, Stratford, is £2,800. Unfortunately, utilities are not included in the rent, so those would be an additional expense.\n\nRegarding availability, the property is currently vacant and ready for immediate lease.\n\nAs for your budget of £1,268, that's quite a bit below my asking price. However, I appreciate your interest, and I'm open to discussing potential flexibility. I could consider a slight discount, but it may not reach your budget.\n\nLet me know how you’d like to proceed!",
+      "timestamp": "2025-07-17T13:54:41.584291"
+    },
+    {
+      "turn": 3,
+      "speaker": "tenant",
+      "speaker_name": "Dr Stanley Reed",
+      "role": "user",
+      "content": "Thank you! I appreciate your assistance. If any suitable properties become available in the future, please let me know. Have a wonderful day!",
+      "timestamp": "2025-07-17T13:54:41.584292"
+    },
+    {
+      "turn": 4,
+      "speaker": "landlord",
+      "speaker_name": "Home Made",
+      "role": "assistant",
+      "content": "Thank you, Dr. Reed! I appreciate your understanding. If anything changes or new properties become available that fit your criteria, I'll be sure to reach out. Have a wonderful day as well!",
+      "timestamp": "2025-07-17T13:54:41.584293"
+    },
+    {
+      "turn": 5,
+      "speaker": "tenant",
+      "speaker_name": "Dr Stanley Reed",
+      "role": "user",
+      "content": "I've decided to look for other options. Thank you for your assistance!",
+      "timestamp": "2025-07-17T13:54:41.584295"
+    },
+    {
+      "turn": 6,
+      "speaker": "landlord",
+      "speaker_name": "Home Made",
+      "role": "assistant",
+      "content": "I must decline your application. Thank you for considering my property, and I wish you the best of luck in your search!",
+      "timestamp": "2025-07-17T13:54:41.584296"
+    }
+  ],
+  "analysis_result": {
+    "success": true,
+    "session_id": "session_a1872573_1752756833",
+    "negotiation_successful": false,
+    "confidence_score": 0.9,
+    "database_updated": true,
+    "update_results": [
+      "✅ Tenant status updated: 8adcfff4-90fd-4bcb-af80-3514011ee307",
+      "✅ Property status updated: 162453242",
+      "✅ Landlord statistics updated: 57c0e6b9-2845-42be-94e0-4d33e3e0a55f"
+    ],
+    "tenant_rental_status": {
+      "is_rented": false,
+      "property_id": null,
+      "landlord_id": null,
+      "rental_price": null,
+      "rental_start_date": null,
+      "contract_duration_months": null,
+      "negotiation_session_id": "negotiation_1",
+      "last_updated": "2025-07-17T13:54:36.920347"
+    },
+    "property_rental_status": {
+      "is_rented": false,
+      "tenant_id": null,
+      "rental_price": null,
+      "rental_start_date": null,
+      "contract_duration_months": null,
+      "negotiation_session_id": "negotiation_1",
+      "last_updated": "2025-07-17T13:54:36.920347"
+    },
+    "landlord_rental_status": {
+      "total_properties": 1,
+      "rented_properties": 0,
+      "available_properties": 1,
+      "total_rental_income": 0.0,
+      "average_rental_price": 2800.0,
+      "last_updated": "2025-07-17T13:54:36.920347"
+    },
+    "timestamp": "2025-07-17T13:54:36.920347"
+  },
+  "statistics": {
+    "total_messages": 6,
+    "tenant_messages": 3,
+    "landlord_messages": 3,
+    "conversation_duration_estimate": "12 minutes",
+    "negotiation_successful": false,
+    "confidence_score": 0.9
+  }
+}

@@ -1,0 +1,161 @@
+{
+  "session_info": {
+    "session_id": "session_e0ad4df9_1752756833",
+    "created_at": "2025-07-17T13:53:53.791324",
+    "completed_at": "2025-07-17T13:54:42.935832",
+    "status": "active",
+    "termination_reason": "",
+    "match_score": 57,
+    "match_reasons": [
+      "租金 $0 在预算范围内",
+      "2房满足需求",
+      "不允许宠物",
+      "无吸烟限制影响",
+      "学生友好"
+    ]
+  },
+  "participants": {
+    "tenant": {
+      "tenant_id": "27ba349d-4c5c-46d6-a7c5-4fc15b8dd63d",
+      "name": "Dr Julian Lee",
+      "email": "nixonashleigh@example.com",
+      "phone": "01614960052",
+      "annual_income": 109786.80924281786,
+      "max_budget": 2809.0,
+      "min_bedrooms": 2,
+      "max_bedrooms": 4,
+      "preferred_locations": [
+        {
+          "latitude": 51.54183023107792,
+          "longitude": -0.10249912105104653
+        }
+      ],
+      "is_student": true,
+      "has_pets": true,
+      "is_smoker": false,
+      "num_occupants": 2
+    },
+    "landlord": {
+      "landlord_id": "57c0e6b9-2845-42be-94e0-4d33e3e0a55f",
+      "name": "Home Made",
+      "phone": "(0161) 4960536",
+      "branch_name": " by Home Made, London",
+      "preferences": {
+        "pet_friendly": false,
+        "smoking_allowed": false,
+        "deposit_weeks": 6
+      }
+    },
+    "property": {
+      "property_id": "162453242",
+      "display_address": "Makers House, Stratford, E20",
+      "monthly_rent": 0,
+      "bedrooms": 2,
+      "bathrooms": 1,
+      "property_type": "",
+      "district": "",
+      "pets_allowed": false,
+      "smoking_allowed": false,
+      "student_friendly": true,
+      "amenities": []
+    }
+  },
+  "conversation_history": [
+    {
+      "turn": 1,
+      "speaker": "tenant",
+      "speaker_name": "Dr Julian Lee",
+      "role": "user",
+      "content": "Hello! I'm interested in the rental property you have available. I would need 2 to 4 bedrooms and have a budget of around £2809 per month. \n\nCould you please provide more details about the property, such as its location, amenities, and rental price? Additionally, I'm curious if there are any pet policies, as I have a pet that I would like to bring along. \n\nThank you!",
+      "timestamp": "2025-07-17T13:54:42.935842"
+    },
+    {
+      "turn": 2,
+      "speaker": "landlord",
+      "speaker_name": "Home Made",
+      "role": "assistant",
+      "content": "I have a lovely 2-bedroom apartment available at Makers House, Stratford, E20, which is priced at £2,800 pcm. This contemporary development is located in the heart of the vibrant Queen Elizabeth Olympic Park in Hackney Wick. It features modern amenities and is perfect for those who enjoy a lively community.\n\nUnfortunately, I have a strict pet policy and cannot accommodate pets in this property. If you’re still interested, I’d be happy to discuss further or negotiate the rental terms. Let me know your thoughts!",
+      "timestamp": "2025-07-17T13:54:42.935844"
+    },
+    {
+      "turn": 3,
+      "speaker": "tenant",
+      "speaker_name": "Dr Julian Lee",
+      "role": "user",
+      "content": "Thank you! I appreciate your assistance. If anything changes or if you have other properties that may be suitable in the future, please feel free to contact me. Have a wonderful day!",
+      "timestamp": "2025-07-17T13:54:42.935845"
+    },
+    {
+      "turn": 4,
+      "speaker": "landlord",
+      "speaker_name": "Home Made",
+      "role": "assistant",
+      "content": "I appreciate your understanding and will keep you in mind for future properties. If anything changes, I'll be sure to reach out. Have a great day!",
+      "timestamp": "2025-07-17T13:54:42.935847"
+    },
+    {
+      "turn": 5,
+      "speaker": "tenant",
+      "speaker_name": "Dr Julian Lee",
+      "role": "user",
+      "content": "I must decline this property. Thank you for your assistance, and I look forward to potential opportunities in the future!",
+      "timestamp": "2025-07-17T13:54:42.935848"
+    },
+    {
+      "turn": 6,
+      "speaker": "landlord",
+      "speaker_name": "Home Made",
+      "role": "assistant",
+      "content": "Thank you for letting me know! I respect your decision and wish you the best in your search. If any opportunities arise in the future, I’ll be sure to get in touch. Take care!",
+      "timestamp": "2025-07-17T13:54:42.935850"
+    }
+  ],
+  "analysis_result": {
+    "success": true,
+    "session_id": "session_e0ad4df9_1752756833",
+    "negotiation_successful": false,
+    "confidence_score": 0.9,
+    "database_updated": true,
+    "update_results": [
+      "✅ Tenant status updated: 27ba349d-4c5c-46d6-a7c5-4fc15b8dd63d",
+      "✅ Property status updated: 162453242",
+      "✅ Landlord statistics updated: 57c0e6b9-2845-42be-94e0-4d33e3e0a55f"
+    ],
+    "tenant_rental_status": {
+      "is_rented": false,
+      "property_id": null,
+      "landlord_id": null,
+      "rental_price": null,
+      "rental_start_date": null,
+      "contract_duration_months": null,
+      "negotiation_session_id": "session_1",
+      "last_updated": "2025-07-17T13:54:36.997294"
+    },
+    "property_rental_status": {
+      "is_rented": false,
+      "tenant_id": null,
+      "rental_price": null,
+      "rental_start_date": null,
+      "contract_duration_months": null,
+      "negotiation_session_id": "session_1",
+      "last_updated": "2025-07-17T13:54:36.997294"
+    },
+    "landlord_rental_status": {
+      "total_properties": 1,
+      "rented_properties": 0,
+      "available_properties": 1,
+      "total_rental_income": 0.0,
+      "average_rental_price": 2800.0,
+      "last_updated": "2025-07-17T13:54:36.997294"
+    },
+    "timestamp": "2025-07-17T13:54:36.997294"
+  },
+  "statistics": {
+    "total_messages": 6,
+    "tenant_messages": 3,
+    "landlord_messages": 3,
+    "conversation_duration_estimate": "12 minutes",
+    "negotiation_successful": false,
+    "confidence_score": 0.9
+  }
+}

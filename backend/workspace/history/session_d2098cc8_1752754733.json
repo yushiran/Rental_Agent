@@ -1,0 +1,92 @@
+{
+  "session_info": {
+    "session_id": "session_d2098cc8_1752754733",
+    "created_at": "2025-07-17T13:18:53.120611",
+    "completed_at": "2025-07-17T13:18:58.995928",
+    "status": "cancelled",
+    "termination_reason": "manually_cancelled",
+    "match_score": 59,
+    "match_reasons": [
+      "租金 $0 在预算范围内",
+      "2房满足需求",
+      "无宠物限制影响",
+      "无吸烟限制影响",
+      "非学生无特殊限制"
+    ]
+  },
+  "participants": {
+    "tenant": {
+      "tenant_id": "84c4e042-431f-4ada-9fd8-ed990a1b4984",
+      "name": "Stacey Reid",
+      "email": "chloedavis@example.com",
+      "phone": "(0808)1570205",
+      "annual_income": 113593.8652130376,
+      "max_budget": 2000.0,
+      "min_bedrooms": 1,
+      "max_bedrooms": 3,
+      "preferred_locations": [
+        {
+          "latitude": 51.54866140033529,
+          "longitude": -0.011304151572345648
+        },
+        {
+          "latitude": 51.46918568882043,
+          "longitude": -0.13793082601105258
+        },
+        {
+          "latitude": 51.502640040403634,
+          "longitude": -0.17115286282658915
+        }
+      ],
+      "is_student": false,
+      "has_pets": false,
+      "is_smoker": false,
+      "num_occupants": 1
+    },
+    "landlord": {
+      "landlord_id": "c71f00f8-50b7-4f71-b4d8-985c69d871f8",
+      "name": "Home Made",
+      "phone": "(0118) 4960355",
+      "branch_name": " by Home Made, London",
+      "preferences": {
+        "pet_friendly": true,
+        "smoking_allowed": true,
+        "deposit_weeks": 4
+      }
+    },
+    "property": {
+      "property_id": "162453242",
+      "display_address": "Makers House, Stratford, E20",
+      "monthly_rent": 0,
+      "bedrooms": 2,
+      "bathrooms": 1,
+      "property_type": "",
+      "district": "",
+      "pets_allowed": false,
+      "smoking_allowed": false,
+      "student_friendly": true,
+      "amenities": []
+    }
+  },
+  "conversation_history": [
+    {
+      "turn": 1,
+      "speaker": "tenant",
+      "speaker_name": "Stacey Reid",
+      "role": "user",
+      "content": "Hi, I'm interested in the property we discussed. Can you provide more details about the rent and if it's negotiable? My budget is £2000/month, and I'm looking for something suitable for one occupant. \n\nAlso, could you let me know about the amenities and the lease terms? Looking forward to your response! \n\nThank you!",
+      "timestamp": "2025-07-17T13:18:58.995935"
+    }
+  ],
+  "analysis_result": {
+    "status": "cancelled"
+  },
+  "statistics": {
+    "total_messages": 1,
+    "tenant_messages": 1,
+    "landlord_messages": 0,
+    "conversation_duration_estimate": "2 minutes",
+    "negotiation_successful": false,
+    "confidence_score": 0
+  }
+}

@@ -1,0 +1,169 @@
+{
+  "session_info": {
+    "session_id": "session_1b7cfaaf_1752753937",
+    "created_at": "2025-07-17T13:05:37.635252",
+    "completed_at": "2025-07-17T13:06:29.141126",
+    "status": "active",
+    "termination_reason": "",
+    "match_score": 57,
+    "match_reasons": [
+      "租金 $0 在预算范围内",
+      "2房满足需求",
+      "不允许宠物",
+      "无吸烟限制影响",
+      "学生友好"
+    ]
+  },
+  "participants": {
+    "tenant": {
+      "tenant_id": "c6fbb208-64a3-41d7-99c2-24a689c71960",
+      "name": "Dawn Byrne-Wright",
+      "email": "holmesjustin@example.com",
+      "phone": "+4420 74960963",
+      "annual_income": 26786.42302476017,
+      "max_budget": 671.0,
+      "min_bedrooms": 1,
+      "max_bedrooms": 3,
+      "preferred_locations": [
+        {
+          "latitude": 51.44044615688179,
+          "longitude": -0.01806112738624393
+        },
+        {
+          "latitude": 51.51141796704681,
+          "longitude": -0.03176342319676475
+        },
+        {
+          "latitude": 51.54410212743202,
+          "longitude": -0.11011117315690441
+        }
+      ],
+      "is_student": true,
+      "has_pets": true,
+      "is_smoker": false,
+      "num_occupants": 2
+    },
+    "landlord": {
+      "landlord_id": "c8b966c1-069a-4000-809d-20619ee10b51",
+      "name": "Home Made",
+      "phone": "+44113 4960822",
+      "branch_name": " by Home Made, London",
+      "preferences": {
+        "pet_friendly": false,
+        "smoking_allowed": false,
+        "deposit_weeks": 5
+      }
+    },
+    "property": {
+      "property_id": "162453242",
+      "display_address": "Makers House, Stratford, E20",
+      "monthly_rent": 0,
+      "bedrooms": 2,
+      "bathrooms": 1,
+      "property_type": "",
+      "district": "",
+      "pets_allowed": false,
+      "smoking_allowed": false,
+      "student_friendly": true,
+      "amenities": []
+    }
+  },
+  "conversation_history": [
+    {
+      "turn": 1,
+      "speaker": "tenant",
+      "speaker_name": "Dawn Byrne-Wright",
+      "role": "user",
+      "content": "Hello! I'm interested in the property listing we discussed. I want to confirm if the rent is negotiable as it is slightly above my budget of £671. My annual income is stable, and I believe I would make a responsible tenant. \n\nCould you please provide more details about the amenities and the lease terms? I'm particularly interested in knowing if pets are allowed, as I have one. \n\nLooking forward to your response!",
+      "timestamp": "2025-07-17T13:06:29.141140"
+    },
+    {
+      "turn": 2,
+      "speaker": "landlord",
+      "speaker_name": "Home Made",
+      "role": "assistant",
+      "content": "Thank you for your interest! The rent for the apartment at Makers House is currently £2,800 pcm. Since your budget is slightly below that, I'm open to negotiating a bit. Perhaps we can find a middle ground.\n\nRegarding amenities, the apartment offers a modern living space, fitted kitchen, and access to the vibrant Queen Elizabeth Olympic Park area. Unfortunately, I must inform you that the property is not pet-friendly.\n\nAs for lease terms, I typically require a security deposit of five weeks' rent. If you'd like to proceed with the discussion, let me know your thoughts!",
+      "timestamp": "2025-07-17T13:06:29.141143"
+    },
+    {
+      "turn": 3,
+      "speaker": "tenant",
+      "speaker_name": "Dawn Byrne-Wright",
+      "role": "user",
+      "content": "Thank you for the information! I appreciate your openness to negotiate on the rent. Given my budget of £671, I would like to propose a rent of around £650. \n\nAlso, I understand that pets are not allowed, which is unfortunate since I have one. This might influence my decision.\n\nCould you please clarify the lease terms regarding the duration and any additional fees? I look forward to your response!",
+      "timestamp": "2025-07-17T13:06:29.141145"
+    },
+    {
+      "turn": 4,
+      "speaker": "landlord",
+      "speaker_name": "Home Made",
+      "role": "assistant",
+      "content": "I appreciate your proposal of £650, but I would need to stay closer to the original asking price to ensure the property is covered. How about we meet in the middle at £670?\n\nRegarding lease terms, I usually offer a minimum duration of 12 months, and there are no additional fees beyond the security deposit, which is five weeks' rent. \n\nI understand the pet situation might be a concern, but if you’re still interested, let me know!",
+      "timestamp": "2025-07-17T13:06:29.141146"
+    },
+    {
+      "turn": 5,
+      "speaker": "tenant",
+      "speaker_name": "Dawn Byrne-Wright",
+      "role": "user",
+      "content": "I must decline this property. The rent and the pet policy do not align with my needs. Thank you for your understanding, and I appreciate your assistance throughout this process.",
+      "timestamp": "2025-07-17T13:06:29.141148"
+    },
+    {
+      "turn": 6,
+      "speaker": "landlord",
+      "speaker_name": "Home Made",
+      "role": "assistant",
+      "content": "Thank you for your honesty, and I completely understand your decision. I appreciate your interest in the property and wish you the best in your search for a suitable home. If you have any other questions or need assistance in the future, feel free to reach out. Best of luck!",
+      "timestamp": "2025-07-17T13:06:29.141150"
+    }
+  ],
+  "analysis_result": {
+    "success": true,
+    "session_id": "session_1b7cfaaf_1752753937",
+    "negotiation_successful": false,
+    "confidence_score": 0.9,
+    "database_updated": true,
+    "update_results": [
+      "✅ Tenant status updated: c6fbb208-64a3-41d7-99c2-24a689c71960",
+      "✅ Property status updated: 162453242",
+      "✅ Landlord statistics updated: c8b966c1-069a-4000-809d-20619ee10b51"
+    ],
+    "tenant_rental_status": {
+      "is_rented": false,
+      "property_id": null,
+      "landlord_id": null,
+      "rental_price": null,
+      "rental_start_date": null,
+      "contract_duration_months": null,
+      "negotiation_session_id": "session-001",
+      "last_updated": "2025-07-17T13:06:25.304894"
+    },
+    "property_rental_status": {
+      "is_rented": false,
+      "tenant_id": null,
+      "rental_price": null,
+      "rental_start_date": null,
+      "contract_duration_months": null,
+      "negotiation_session_id": "session-001",
+      "last_updated": "2025-07-17T13:06:25.304894"
+    },
+    "landlord_rental_status": {
+      "total_properties": 1,
+      "rented_properties": 0,
+      "available_properties": 1,
+      "total_rental_income": 0.0,
+      "average_rental_price": 2800.0,
+      "last_updated": "2025-07-17T13:06:25.304894"
+    },
+    "timestamp": "2025-07-17T13:06:25.304894"
+  },
+  "statistics": {
+    "total_messages": 6,
+    "tenant_messages": 3,
+    "landlord_messages": 3,
+    "conversation_duration_estimate": "12 minutes",
+    "negotiation_successful": false,
+    "confidence_score": 0.9
+  }
+}

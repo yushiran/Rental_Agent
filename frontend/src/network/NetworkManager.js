@@ -1,6 +1,6 @@
 /**
- * NetworkManager - 网络通信管理器
- * 处理与后端的HTTP请求和WebSocket连接
+ * NetworkManager - Network Communication Manager
+ * Handles HTTP requests and WebSocket connections with backend
  */
 class NetworkManager {
     constructor() {
@@ -15,15 +15,15 @@ class NetworkManager {
     }
 
     /**
-     * 初始化网络管理器
+     * Initialize network manager
      */
     async initialize() {
-        console.log('[NetworkManager] 初始化中...');
+        console.log('[NetworkManager] Initializing...');
         await this.checkConnection();
     }
 
     /**
-     * 检查后端连接
+     * Check backend connection
      */
     async checkConnection() {
         try {
@@ -39,7 +39,7 @@ class NetworkManager {
                 this.connectionStatus = 'connected';
                 this.retryAttempts = 0;
                 this.emit('connection:established', { status: 'connected' });
-                console.log('[NetworkManager] 后端连接成功');
+                console.log('[NetworkManager] Backend connection successful');
                 return true;
             } else {
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -47,11 +47,11 @@ class NetworkManager {
         } catch (error) {
             this.connectionStatus = 'disconnected';
             this.emit('connection:lost', { error: error.message });
-            console.error('[NetworkManager] 后端连接失败:', error);
+            console.error('[NetworkManager] Backend connection failed:', error);
             
-            // 如果是网络错误，显示更友好的提示
+            // Display friendlier message for network errors
             if (error.name === 'TypeError' || error.message.includes('fetch')) {
-                console.warn('[NetworkManager] 提示：请确保后端服务正在运行在 http://localhost:8000');
+                console.warn('[NetworkManager] Tip: Please ensure backend service is running on http://localhost:8000');
             }
             
             return false;
@@ -59,7 +59,7 @@ class NetworkManager {
     }
 
     /**
-     * 发送HTTP请求
+     * Send HTTP request
      */
     async request(endpoint, options = {}) {
         const url = `${this.baseUrl}${endpoint}`;
@@ -78,17 +78,17 @@ class NetworkManager {
 
             return await response.json();
         } catch (error) {
-            console.error(`[NetworkManager] 请求失败 ${endpoint}:`, error);
+            console.error(`[NetworkManager] Request failed ${endpoint}:`, error);
             throw error;
         }
     }
 
     /**
-     * 连接WebSocket
+     * Connect WebSocket
      */
     async connectWebSocket(sessionId) {
         if (this.connections.has(sessionId)) {
-            console.log(`[NetworkManager] WebSocket ${sessionId} 已连接`);
+            console.log(`[NetworkManager] WebSocket ${sessionId} already connected`);
             return this.connections.get(sessionId);
         }
 
@@ -99,7 +99,7 @@ class NetworkManager {
                 const ws = new WebSocket(wsUrl);
                 
                 ws.onopen = () => {
-                    console.log(`[NetworkManager] WebSocket ${sessionId} 连接成功`);
+                    console.log(`[NetworkManager] WebSocket ${sessionId} connected successfully`);
                     this.setupHeartbeat(sessionId, ws);
                     this.emit('websocket:connected', { sessionId });
                     resolve(ws);
@@ -110,18 +110,18 @@ class NetworkManager {
                         const data = JSON.parse(event.data);
                         this.handleWebSocketMessage(sessionId, data);
                     } catch (error) {
-                        console.error(`[NetworkManager] WebSocket消息解析失败:`, error);
+                        console.error(`[NetworkManager] WebSocket message parsing failed:`, error);
                     }
                 };
 
                 ws.onclose = () => {
-                    console.log(`[NetworkManager] WebSocket ${sessionId} 连接关闭`);
+                    console.log(`[NetworkManager] WebSocket ${sessionId} connection closed`);
                     this.cleanupConnection(sessionId);
                     this.emit('websocket:disconnected', { sessionId });
                 };
 
                 ws.onerror = (error) => {
-                    console.error(`[NetworkManager] WebSocket ${sessionId} 错误:`, error);
+                    console.error(`[NetworkManager] WebSocket ${sessionId} error:`, error);
                     this.emit('websocket:error', { sessionId, error });
                     reject(error);
                 };
@@ -129,14 +129,14 @@ class NetworkManager {
                 this.connections.set(sessionId, ws);
 
             } catch (error) {
-                console.error(`[NetworkManager] WebSocket连接失败:`, error);
+                console.error(`[NetworkManager] WebSocket connection failed:`, error);
                 reject(error);
             }
         });
     }
 
     /**
-     * 设置心跳机制
+     * Setup heartbeat mechanism
      */
     setupHeartbeat(sessionId, ws) {
         const interval = setInterval(() => {
@@ -146,18 +146,18 @@ class NetworkManager {
                 clearInterval(interval);
                 this.heartbeatIntervals.delete(sessionId);
             }
-        }, 10000); // 每10秒发送一次心跳
+        }, 10000); // Send heartbeat every 10 seconds
 
         this.heartbeatIntervals.set(sessionId, interval);
     }
 
     /**
-     * 清理连接
+     * Cleanup connection
      */
     cleanupConnection(sessionId) {
         this.connections.delete(sessionId);
         
-        // 清理心跳
+        // Cleanup heartbeat
         if (this.heartbeatIntervals.has(sessionId)) {
             clearInterval(this.heartbeatIntervals.get(sessionId));
             this.heartbeatIntervals.delete(sessionId);
@@ -220,7 +220,7 @@ class NetworkManager {
     }
 
     /**
-     * 发送WebSocket消息
+     * Send WebSocket message
      */
     sendWebSocketMessage(sessionId, message) {
         const ws = this.connections.get(sessionId);
@@ -228,40 +228,40 @@ class NetworkManager {
             ws.send(JSON.stringify(message));
             return true;
         }
-        console.warn(`[NetworkManager] WebSocket ${sessionId} 不可用`);
+        console.warn(`[NetworkManager] WebSocket ${sessionId} not available`);
         return false;
     }
 
     /**
-     * 获取配置信息
+     * Get configuration info
      */
     async getConfig() {
         try {
             return await this.request('/config');
         } catch (error) {
-            console.error('[NetworkManager] 获取配置失败:', error);
+            console.error('[NetworkManager] Failed to get config:', error);
             return null;
         }
     }
 
     /**
-     * 重试连接
+     * Retry connection
      */
     async retryConnection() {
         if (this.retryAttempts >= this.maxRetryAttempts) {
-            console.error('[NetworkManager] 已达到最大重试次数');
+            console.error('[NetworkManager] Maximum retry attempts reached');
             return false;
         }
 
         this.retryAttempts++;
-        console.log(`[NetworkManager] 重试连接 (${this.retryAttempts}/${this.maxRetryAttempts})`);
+        console.log(`[NetworkManager] Retrying connection (${this.retryAttempts}/${this.maxRetryAttempts})`);
         
         await new Promise(resolve => setTimeout(resolve, 2000 * this.retryAttempts));
         return await this.checkConnection();
     }
 
     /**
-     * 获取连接状态
+     * Get connection status
      */
     getConnectionStatus() {
         return {
@@ -304,11 +304,11 @@ class NetworkManager {
     }
 
     /**
-     * 发送消息到WebSocket
+     * Send message to WebSocket
      */
     sendToWebSocket(sessionId, data) {
         if (!this.connections.has(sessionId)) {
-            console.error(`[NetworkManager] 尝试发送到不存在的WebSocket连接: ${sessionId}`);
+            console.error(`[NetworkManager] Attempting to send to non-existent WebSocket connection: ${sessionId}`);
             return false;
         }
         
@@ -316,20 +316,20 @@ class NetworkManager {
         if (ws.readyState === WebSocket.OPEN) {
             try {
                 ws.send(JSON.stringify(data));
-                console.log(`[NetworkManager] 已发送消息到WebSocket ${sessionId}:`, data);
+                console.log(`[NetworkManager] Message sent to WebSocket ${sessionId}:`, data);
                 return true;
             } catch (error) {
-                console.error(`[NetworkManager] 发送WebSocket消息失败:`, error);
+                console.error(`[NetworkManager] Failed to send WebSocket message:`, error);
                 return false;
             }
         } else {
-            console.warn(`[NetworkManager] WebSocket ${sessionId} 未准备好，无法发送消息`);
+            console.warn(`[NetworkManager] WebSocket ${sessionId} not ready, cannot send message`);
             return false;
         }
     }
     
     /**
-     * 关闭所有WebSocket连接
+     * Close all WebSocket connections
      */
     closeAllConnections() {
         for (const [sessionId, ws] of this.connections) {

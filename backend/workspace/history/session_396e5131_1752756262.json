@@ -1,0 +1,157 @@
+{
+  "session_info": {
+    "session_id": "session_396e5131_1752756262",
+    "created_at": "2025-07-17T13:44:22.470813",
+    "completed_at": "2025-07-17T13:45:35.011205",
+    "status": "error",
+    "termination_reason": "Error: Error code: 400 - {'error': {'message': \"An assistant message with 'tool_calls' must be followed by tool messages responding to each 'tool_call_id'. The following tool_call_ids did not have response messages: call_aO7d5Z6kxdTjMIw4aFK3Ws1F\", 'type': 'invalid_request_error', 'param': 'messages.[12].role', 'code': None}}",
+    "match_score": 59,
+    "match_reasons": [
+      "租金 $0 在预算范围内",
+      "2房满足需求",
+      "无宠物限制影响",
+      "无吸烟限制影响",
+      "非学生无特殊限制"
+    ]
+  },
+  "participants": {
+    "tenant": {
+      "tenant_id": "9676b3c5-2d2c-4e2f-9764-334f0fdbb96d",
+      "name": "Garry Hughes",
+      "email": "joshua58@example.org",
+      "phone": "+44(0)116 4960192",
+      "annual_income": 40667.74919285134,
+      "max_budget": 955.0,
+      "min_bedrooms": 1,
+      "max_bedrooms": 3,
+      "preferred_locations": [
+        {
+          "latitude": 51.51113579373507,
+          "longitude": -0.03279512370292046
+        }
+      ],
+      "is_student": false,
+      "has_pets": false,
+      "is_smoker": false,
+      "num_occupants": 1
+    },
+    "landlord": {
+      "landlord_id": "632dd137-7225-43a2-b702-187e42072e86",
+      "name": "Home Made",
+      "phone": "+441184960587",
+      "branch_name": " by Home Made, London",
+      "preferences": {
+        "pet_friendly": false,
+        "smoking_allowed": false,
+        "deposit_weeks": 6
+      }
+    },
+    "property": {
+      "property_id": "162453242",
+      "display_address": "Makers House, Stratford, E20",
+      "monthly_rent": 0,
+      "bedrooms": 2,
+      "bathrooms": 1,
+      "property_type": "",
+      "district": "",
+      "pets_allowed": false,
+      "smoking_allowed": false,
+      "student_friendly": true,
+      "amenities": []
+    }
+  },
+  "conversation_history": [
+    {
+      "turn": 1,
+      "speaker": "tenant",
+      "speaker_name": "Garry Hughes",
+      "role": "user",
+      "content": "Hello! I'm interested in the rental property you have available. I need a 1-3 bedroom place and my budget is £955 per month. Can you provide more details about the property, including the rent, utilities, and any additional fees? Also, I would like to know about the surrounding area and amenities. Thank you!",
+      "timestamp": "2025-07-17T13:45:35.011215"
+    },
+    {
+      "turn": 2,
+      "speaker": "landlord",
+      "speaker_name": "Home Made",
+      "role": "assistant",
+      "content": "I appreciate your interest in my property! However, the apartment I have available is a 2-bedroom unit at Makers House in Stratford, priced at £2,800 per month. Unfortunately, your budget of £955 is below this amount.\n\nThe area around Makers House is vibrant, located in the heart of the Queen Elizabeth Olympic Park, offering excellent amenities, parks, and transport links. There are shops, restaurants, and recreational facilities nearby.\n\nIf you're open to adjusting your budget or considering other options, please let me know!",
+      "timestamp": "2025-07-17T13:45:35.011219"
+    },
+    {
+      "turn": 3,
+      "speaker": "tenant",
+      "speaker_name": "Garry Hughes",
+      "role": "user",
+      "content": "Thank you for the information! Unfortunately, the rent for the 2-bedroom unit at Makers House is above my budget. I'm looking for properties within £955 per month. \n\nCould you let me know if there are any other available options within my budget in the same or nearby areas? I would appreciate any recommendations or insights you may have. Thank you!",
+      "timestamp": "2025-07-17T13:45:35.011221"
+    },
+    {
+      "turn": 4,
+      "speaker": "landlord",
+      "speaker_name": "Home Made",
+      "role": "assistant",
+      "content": "I understand your budget constraints, but I currently only have the 2-bedroom apartment at Makers House available for £2,800 per month. Unfortunately, I don't have any other properties within your specified budget of £955 at this time.\n\nHowever, I recommend checking local listings regularly or considering a broader search area, which might yield more options within your budget. If you have any flexibility in your budget or preferences, please let me know, and I can assist further!",
+      "timestamp": "2025-07-17T13:45:35.011222"
+    },
+    {
+      "turn": 5,
+      "speaker": "tenant",
+      "speaker_name": "Garry Hughes",
+      "role": "user",
+      "content": "",
+      "timestamp": "2025-07-17T13:45:35.011224"
+    },
+    {
+      "turn": 6,
+      "speaker": "landlord",
+      "speaker_name": "Home Made",
+      "role": "assistant",
+      "content": "It seems there was no further message from you. If you have any more questions or if there's anything else I can assist you with regarding rentals or properties, feel free to let me know!",
+      "timestamp": "2025-07-17T13:45:35.011225"
+    },
+    {
+      "turn": 7,
+      "speaker": "tenant",
+      "speaker_name": "Garry Hughes",
+      "role": "user",
+      "content": "If you have any more questions or if there's anything else I can assist you with regarding rentals or properties, feel free to let me know!",
+      "timestamp": "2025-07-17T13:45:35.011227"
+    },
+    {
+      "turn": 8,
+      "speaker": "landlord",
+      "speaker_name": "Home Made",
+      "role": "assistant",
+      "content": "I appreciate your willingness to assist! However, it seems you're reiterating my message. If you have any specific questions or need assistance with something else, please let me know how I can help!",
+      "timestamp": "2025-07-17T13:45:35.011228"
+    },
+    {
+      "turn": 9,
+      "speaker": "tenant",
+      "speaker_name": "Garry Hughes",
+      "role": "user",
+      "content": "I understand that the options available may not meet your needs at the moment. If you have any specific criteria or preferences, I can help you look for properties that might fit your budget better. Just let me know!",
+      "timestamp": "2025-07-17T13:45:35.011229"
+    },
+    {
+      "turn": 10,
+      "speaker": "landlord",
+      "speaker_name": "Home Made",
+      "role": "assistant",
+      "content": "Thank you for your understanding! Currently, my only available property is the 2-bedroom apartment at Makers House, which is above your budget. If you have any specific criteria or preferences, such as location, number of bedrooms, or amenities, I can help guide you and suggest areas or types of properties that might fit your needs better. Just let me know what you're looking for!",
+      "timestamp": "2025-07-17T13:45:35.011231"
+    }
+  ],
+  "analysis_result": {
+    "status": "error",
+    "error": "Error code: 400 - {'error': {'message': \"An assistant message with 'tool_calls' must be followed by tool messages responding to each 'tool_call_id'. The following tool_call_ids did not have response messages: call_aO7d5Z6kxdTjMIw4aFK3Ws1F\", 'type': 'invalid_request_error', 'param': 'messages.[12].role', 'code': None}}"
+  },
+  "statistics": {
+    "total_messages": 10,
+    "tenant_messages": 5,
+    "landlord_messages": 5,
+    "conversation_duration_estimate": "20 minutes",
+    "negotiation_successful": false,
+    "confidence_score": 0
+  }
+}

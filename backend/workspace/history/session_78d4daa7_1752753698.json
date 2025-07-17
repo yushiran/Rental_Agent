@@ -1,0 +1,93 @@
+{
+  "session_info": {
+    "session_id": "session_78d4daa7_1752753698",
+    "created_at": "2025-07-17T13:01:38.933866",
+    "completed_at": "2025-07-17T13:01:48.970870",
+    "status": "error",
+    "termination_reason": "Error: '__end__'",
+    "match_score": 57,
+    "match_reasons": [
+      "租金 $0 在预算范围内",
+      "2房满足需求",
+      "无宠物限制影响",
+      "不允许吸烟",
+      "非学生无特殊限制"
+    ]
+  },
+  "participants": {
+    "tenant": {
+      "tenant_id": "f70b1b43-148a-49c2-8657-390295c89223",
+      "name": "Jack Dobson",
+      "email": "bryan42@example.org",
+      "phone": "+44(0)909 879 0582",
+      "annual_income": 53129.529051801575,
+      "max_budget": 1285.0,
+      "min_bedrooms": 2,
+      "max_bedrooms": 4,
+      "preferred_locations": [
+        {
+          "latitude": 51.51306813950985,
+          "longitude": -0.041076911312459705
+        },
+        {
+          "latitude": 51.460520748275194,
+          "longitude": -0.11935097932742957
+        },
+        {
+          "latitude": 51.54280263359211,
+          "longitude": -0.14536228305124493
+        }
+      ],
+      "is_student": false,
+      "has_pets": false,
+      "is_smoker": true,
+      "num_occupants": 1
+    },
+    "landlord": {
+      "landlord_id": "bce7bde3-0dc3-463d-a5d4-5f7c002bd273",
+      "name": "Home Made",
+      "phone": "+443069990796",
+      "branch_name": " by Home Made, London",
+      "preferences": {
+        "pet_friendly": true,
+        "smoking_allowed": true,
+        "deposit_weeks": 4
+      }
+    },
+    "property": {
+      "property_id": "162453242",
+      "display_address": "Makers House, Stratford, E20",
+      "monthly_rent": 0,
+      "bedrooms": 2,
+      "bathrooms": 1,
+      "property_type": "",
+      "district": "",
+      "pets_allowed": false,
+      "smoking_allowed": false,
+      "student_friendly": true,
+      "amenities": []
+    }
+  },
+  "conversation_history": [
+    {
+      "turn": 1,
+      "speaker": "tenant",
+      "speaker_name": "Jack Dobson",
+      "role": "user",
+      "content": "Hi there! I'm interested in the property you have listed. Could you please provide more details about the rent, amenities, and any specific requirements you might have for tenants? I'm looking for a 2-4 bedroom place and my budget is £1285/month. Also, I’d like to know if there’s any flexibility in the rent amount. Thank you!",
+      "timestamp": "2025-07-17T13:01:48.970879"
+    }
+  ],
+  "analysis_result": {
+    "status": "error",
+    "error": "'__end__'"
+  },
+  "statistics": {
+    "total_messages": 1,
+    "tenant_messages": 1,
+    "landlord_messages": 0,
+    "conversation_duration_estimate": "2 minutes",
+    "negotiation_successful": false,
+    "confidence_score": 0
+  }
+}

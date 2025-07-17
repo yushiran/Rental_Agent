@@ -1,0 +1,149 @@
+{
+  "session_info": {
+    "session_id": "session_adae075d_1752754660",
+    "created_at": "2025-07-17T13:17:40.625582",
+    "completed_at": "2025-07-17T13:18:18.826121",
+    "status": "active",
+    "termination_reason": "",
+    "match_score": 62,
+    "match_reasons": [
+      "租金 $0 在预算范围内",
+      "1房满足需求",
+      "无宠物限制影响",
+      "无吸烟限制影响",
+      "学生友好"
+    ]
+  },
+  "participants": {
+    "tenant": {
+      "tenant_id": "22d9c1d1-f37d-4520-93d4-7a2bb4c309fe",
+      "name": "Emma Chadwick",
+      "email": "hartleybenjamin@example.org",
+      "phone": "0808 1570227",
+      "annual_income": 34164.5858574294,
+      "max_budget": 623.0,
+      "min_bedrooms": 1,
+      "max_bedrooms": 1,
+      "preferred_locations": [
+        {
+          "latitude": 51.49359807589431,
+          "longitude": -0.11965223171778339
+        },
+        {
+          "latitude": 51.55258110848788,
+          "longitude": -0.014219848683601235
+        }
+      ],
+      "is_student": true,
+      "has_pets": false,
+      "is_smoker": false,
+      "num_occupants": 2
+    },
+    "landlord": {
+      "landlord_id": "fb92b284-91a6-498a-853e-28c0a7aa35df",
+      "name": "Knight Frank - Lettings",
+      "phone": "(0131)4960788",
+      "branch_name": " by Knight Frank - Lettings, Mayfair",
+      "preferences": {
+        "pet_friendly": true,
+        "smoking_allowed": false,
+        "deposit_weeks": 5
+      }
+    },
+    "property": {
+      "property_id": "162454550",
+      "display_address": "South Audley Street, Mayfair, London, W1K",
+      "monthly_rent": 0,
+      "bedrooms": 1,
+      "bathrooms": 1,
+      "property_type": "",
+      "district": "",
+      "pets_allowed": false,
+      "smoking_allowed": false,
+      "student_friendly": true,
+      "amenities": []
+    }
+  },
+  "conversation_history": [
+    {
+      "turn": 1,
+      "speaker": "tenant",
+      "speaker_name": "Emma Chadwick",
+      "role": "user",
+      "content": "Hello! I'm interested in the rental property you have available. I am a student with a stable annual income of £34,164.58. I'm looking for a one-bedroom place, and my budget is £623 per month. \n\nCould you please provide more details about the property, including any amenities, the lease duration, and whether there’s flexibility on the rent? I would love to know if it’s a good fit for myself and my roommate. \n\nThank you!",
+      "timestamp": "2025-07-17T13:18:18.826132"
+    },
+    {
+      "turn": 2,
+      "speaker": "landlord",
+      "speaker_name": "Knight Frank - Lettings",
+      "role": "assistant",
+      "content": "Thank you for your interest! The property I have available is a spacious one-bedroom flat located on South Audley Street in Mayfair, London. Here are some key details:\n\n- **Rent:** £4,117 pcm (£950 pw)\n- **Lease Duration:** Typically, I prefer a minimum of 12 months.\n- **Amenities:** The flat features a well-proportioned reception room with elegant parquet flooring, a modern bespoke kitchen, and an antique 1940s French crystal chandelier.\n\nRegarding your budget of £623 per month, it is significantly below my asking price. However, I’m open to negotiation. If you can adjust your budget a bit closer to the asking price, we can explore options. \n\nLet me know your thoughts!",
+      "timestamp": "2025-07-17T13:18:18.826136"
+    },
+    {
+      "turn": 3,
+      "speaker": "tenant",
+      "speaker_name": "Emma Chadwick",
+      "role": "user",
+      "content": "Thank you for the information about the property. Unfortunately, the asking price of £4,117 per month is well outside my budget of £623. \n\nI'm willing to negotiate, but it seems this property may not be a suitable fit for my financial situation. I must decline this property, but I appreciate your time and assistance. If you have other options within my budget, I would be happy to consider those. Thank you!",
+      "timestamp": "2025-07-17T13:18:18.826138"
+    },
+    {
+      "turn": 4,
+      "speaker": "landlord",
+      "speaker_name": "Knight Frank - Lettings",
+      "role": "assistant",
+      "content": "I appreciate your honesty and thank you for considering the property. I must decline your application for this specific flat due to the budget mismatch. If I have any other properties that fit within your budget of £623, I will certainly reach out to you. \n\nThank you for your time, and I wish you the best in your search for a suitable place!",
+      "timestamp": "2025-07-17T13:18:18.826140"
+    }
+  ],
+  "analysis_result": {
+    "success": true,
+    "session_id": "session_adae075d_1752754660",
+    "negotiation_successful": false,
+    "confidence_score": 0.9,
+    "database_updated": true,
+    "update_results": [
+      "✅ Tenant status updated: 22d9c1d1-f37d-4520-93d4-7a2bb4c309fe",
+      "✅ Property status updated: 162454550",
+      "✅ Landlord statistics updated: fb92b284-91a6-498a-853e-28c0a7aa35df"
+    ],
+    "tenant_rental_status": {
+      "is_rented": false,
+      "property_id": null,
+      "landlord_id": null,
+      "rental_price": null,
+      "rental_start_date": null,
+      "contract_duration_months": null,
+      "negotiation_session_id": "negotiation-1",
+      "last_updated": "2025-07-17T13:18:13.054906"
+    },
+    "property_rental_status": {
+      "is_rented": false,
+      "tenant_id": null,
+      "rental_price": null,
+      "rental_start_date": null,
+      "contract_duration_months": null,
+      "negotiation_session_id": "negotiation-1",
+      "last_updated": "2025-07-17T13:18:13.054906"
+    },
+    "landlord_rental_status": {
+      "total_properties": 5,
+      "rented_properties": 2,
+      "available_properties": 3,
+      "total_rental_income": 12300.0,
+      "average_rental_price": 4100.0,
+      "last_updated": "2025-07-17T13:18:13.054906"
+    },
+    "timestamp": "2025-07-17T13:18:13.054906"
+  },
+  "statistics": {
+    "total_messages": 4,
+    "tenant_messages": 2,
+    "landlord_messages": 2,
+    "conversation_duration_estimate": "8 minutes",
+    "negotiation_successful": false,
+    "confidence_score": 0.9
+  }
+}

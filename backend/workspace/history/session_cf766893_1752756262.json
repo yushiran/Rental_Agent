@@ -1,0 +1,169 @@
+{
+  "session_info": {
+    "session_id": "session_cf766893_1752756262",
+    "created_at": "2025-07-17T13:44:22.400210",
+    "completed_at": "2025-07-17T13:45:14.088299",
+    "status": "active",
+    "termination_reason": "",
+    "match_score": 57,
+    "match_reasons": [
+      "租金 $0 在预算范围内",
+      "2房满足需求",
+      "无宠物限制影响",
+      "不允许吸烟",
+      "非学生无特殊限制"
+    ]
+  },
+  "participants": {
+    "tenant": {
+      "tenant_id": "d1c5f230-e361-4da3-8d9c-bb4d298f842f",
+      "name": "Garry Mitchell",
+      "email": "mohamed41@example.net",
+      "phone": "(0117) 496 0762",
+      "annual_income": 87799.87688878825,
+      "max_budget": 1486.0,
+      "min_bedrooms": 1,
+      "max_bedrooms": 2,
+      "preferred_locations": [
+        {
+          "latitude": 51.49001526807992,
+          "longitude": 0.011622720982959153
+        },
+        {
+          "latitude": 51.49847480897174,
+          "longitude": -0.1741280819189735
+        },
+        {
+          "latitude": 51.51166372729158,
+          "longitude": -0.03752466903693676
+        }
+      ],
+      "is_student": false,
+      "has_pets": false,
+      "is_smoker": true,
+      "num_occupants": 3
+    },
+    "landlord": {
+      "landlord_id": "632dd137-7225-43a2-b702-187e42072e86",
+      "name": "Home Made",
+      "phone": "+441184960587",
+      "branch_name": " by Home Made, London",
+      "preferences": {
+        "pet_friendly": false,
+        "smoking_allowed": false,
+        "deposit_weeks": 6
+      }
+    },
+    "property": {
+      "property_id": "162453242",
+      "display_address": "Makers House, Stratford, E20",
+      "monthly_rent": 0,
+      "bedrooms": 2,
+      "bathrooms": 1,
+      "property_type": "",
+      "district": "",
+      "pets_allowed": false,
+      "smoking_allowed": false,
+      "student_friendly": true,
+      "amenities": []
+    }
+  },
+  "conversation_history": [
+    {
+      "turn": 1,
+      "speaker": "tenant",
+      "speaker_name": "Garry Mitchell",
+      "role": "user",
+      "content": "I'm reaching out regarding the property I expressed interest in. I wanted to confirm a few details: \n\n1. What is the monthly rent, and are there any additional fees?\n2. Can you provide information about the lease terms and the move-in date?\n3. Is there an option for negotiating the rent, as it would really help to stay within my budget?\n\nI have a stable income and can assure you that I'll be a responsible tenant. I'm very interested in this property and look forward to hearing back from you!",
+      "timestamp": "2025-07-17T13:45:14.088309"
+    },
+    {
+      "turn": 2,
+      "speaker": "landlord",
+      "speaker_name": "Home Made",
+      "role": "assistant",
+      "content": "Thank you for your interest! Here are the details you requested:\n\n1. The monthly rent for the property at Makers House, Stratford, is £2,800. There are no additional fees beyond the rent and a security deposit of six weeks' rent.\n   \n2. The lease terms are typically for a minimum of 12 months, and the move-in date can be flexible depending on your needs.\n\n3. I'm open to negotiating the rent. If your budget is within 15% of the asking price, we can discuss a potential adjustment.\n\nI appreciate your assurance of being a responsible tenant, and I'm looking forward to working together! Let me know your budget so we can find a suitable agreement.",
+      "timestamp": "2025-07-17T13:45:14.088311"
+    },
+    {
+      "turn": 3,
+      "speaker": "tenant",
+      "speaker_name": "Garry Mitchell",
+      "role": "user",
+      "content": "Thank you! I appreciate it. If you come across any properties that fit my requirements, please let me know. Have a great day!",
+      "timestamp": "2025-07-17T13:45:14.088313"
+    },
+    {
+      "turn": 4,
+      "speaker": "landlord",
+      "speaker_name": "Home Made",
+      "role": "assistant",
+      "content": "Thank you for your response! I'll certainly keep you in mind for any properties that match your requirements. If you have specific criteria, feel free to share them with me. Have a great day as well!",
+      "timestamp": "2025-07-17T13:45:14.088314"
+    },
+    {
+      "turn": 5,
+      "speaker": "tenant",
+      "speaker_name": "Garry Mitchell",
+      "role": "user",
+      "content": "I must decline this property. Thank you for your time and assistance!",
+      "timestamp": "2025-07-17T13:45:14.088316"
+    },
+    {
+      "turn": 6,
+      "speaker": "landlord",
+      "speaker_name": "Home Made",
+      "role": "assistant",
+      "content": "I appreciate your decision and understanding. If you have any further questions or need assistance in the future, feel free to reach out. Best of luck in your search, and thank you for considering my property!",
+      "timestamp": "2025-07-17T13:45:14.088317"
+    }
+  ],
+  "analysis_result": {
+    "success": true,
+    "session_id": "session_cf766893_1752756262",
+    "negotiation_successful": false,
+    "confidence_score": 0.9,
+    "database_updated": true,
+    "update_results": [
+      "✅ Tenant status updated: d1c5f230-e361-4da3-8d9c-bb4d298f842f",
+      "✅ Property status updated: 162453242",
+      "✅ Landlord statistics updated: 632dd137-7225-43a2-b702-187e42072e86"
+    ],
+    "tenant_rental_status": {
+      "is_rented": false,
+      "property_id": null,
+      "landlord_id": null,
+      "rental_price": null,
+      "rental_start_date": null,
+      "contract_duration_months": null,
+      "negotiation_session_id": "negotiation1",
+      "last_updated": "2025-07-17T13:45:07.998518"
+    },
+    "property_rental_status": {
+      "is_rented": false,
+      "tenant_id": null,
+      "rental_price": null,
+      "rental_start_date": null,
+      "contract_duration_months": null,
+      "negotiation_session_id": "negotiation1",
+      "last_updated": "2025-07-17T13:45:07.998518"
+    },
+    "landlord_rental_status": {
+      "total_properties": 10,
+      "rented_properties": 7,
+      "available_properties": 3,
+      "total_rental_income": 196000.0,
+      "average_rental_price": 2800.0,
+      "last_updated": "2025-07-17T13:45:07.998518"
+    },
+    "timestamp": "2025-07-17T13:45:07.998518"
+  },
+  "statistics": {
+    "total_messages": 6,
+    "tenant_messages": 3,
+    "landlord_messages": 3,
+    "conversation_duration_estimate": "12 minutes",
+    "negotiation_successful": false,
+    "confidence_score": 0.9
+  }
+}
