@@ -24,7 +24,7 @@ def create_tenant_workflow_graph():
 
     # Add all nodes
     graph_builder.add_node("tenant_agent_node", tenant_agent_node)
-    graph_builder.add_node("viewing_feedback_analysis_node", viewing_feedback_analysis_node)
+    # graph_builder.add_node("viewing_feedback_analysis_node", viewing_feedback_analysis_node)
     graph_builder.add_node("retriever_node", retriever_node)
     graph_builder.add_node("summarize_conversation_node", summarize_conversation_node)
     
@@ -35,7 +35,7 @@ def create_tenant_workflow_graph():
         should_continue_tenant_conversation,
         {
             'tools': 'retriever_node',
-            'analyze_feedback': 'viewing_feedback_analysis_node',
+            # 'analyze_feedback': 'viewing_feedback_analysis_node',
             'summarize': 'summarize_conversation_node',
             'end': END  # 🔧 使用 END 常量
         }
@@ -44,15 +44,15 @@ def create_tenant_workflow_graph():
     # 工具节点执行完后回到租客代理节点
     graph_builder.add_edge("retriever_node", "tenant_agent_node")
     
-    # 看房反馈分析节点
-    graph_builder.add_conditional_edges(
-        "viewing_feedback_analysis_node",
-        should_analyze_viewing_feedback,
-        {
-            "continue": "tenant_agent_node",
-            "summarize": "summarize_conversation_node"
-        }
-    )
+    # # 看房反馈分析节点
+    # graph_builder.add_conditional_edges(
+    #     "viewing_feedback_analysis_node",
+    #     should_analyze_viewing_feedback,
+    #     {
+    #         "continue": "tenant_agent_node",
+    #         "summarize": "summarize_conversation_node"
+    #     }
+    # )
     
     # 总结节点结束对话
     graph_builder.add_edge("summarize_conversation_node", END)

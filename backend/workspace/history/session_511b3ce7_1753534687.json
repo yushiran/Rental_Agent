@@ -1,0 +1,161 @@
+{
+  "session_info": {
+    "session_id": "session_511b3ce7_1753534687",
+    "created_at": "2025-07-26T13:58:07.044084",
+    "completed_at": "2025-07-26T13:58:49.112573",
+    "status": "active",
+    "termination_reason": "",
+    "match_score": 54,
+    "match_reasons": [
+      "租金 $0 在预算范围内",
+      "2房满足需求",
+      "不允许宠物",
+      "无吸烟限制影响",
+      "非学生无特殊限制"
+    ]
+  },
+  "participants": {
+    "tenant": {
+      "tenant_id": "d511bc6b-b13a-4806-9ddd-169d936f9704",
+      "name": "Bradley Norman",
+      "email": "jwhitehead@example.net",
+      "phone": "(0118) 4960942",
+      "annual_income": 52899.05521435194,
+      "max_budget": 946.0,
+      "min_bedrooms": 2,
+      "max_bedrooms": 2,
+      "preferred_locations": [
+        {
+          "latitude": 51.542174874786085,
+          "longitude": -0.05404392002228579
+        },
+        {
+          "latitude": 51.55487926464005,
+          "longitude": -0.11239633181023209
+        },
+        {
+          "latitude": 51.49432806941996,
+          "longitude": -0.10135122227643262
+        }
+      ],
+      "is_student": false,
+      "has_pets": true,
+      "is_smoker": false,
+      "num_occupants": 3
+    },
+    "landlord": {
+      "landlord_id": "8b477212-379f-437a-92a0-c85dac4cd68a",
+      "name": "Home Made",
+      "phone": "+441314960007",
+      "branch_name": " by Home Made, London",
+      "preferences": {
+        "pet_friendly": true,
+        "smoking_allowed": false,
+        "deposit_weeks": 6
+      }
+    },
+    "property": {
+      "property_id": "162453242",
+      "display_address": "Makers House, Stratford, E20",
+      "monthly_rent": 0,
+      "bedrooms": 2,
+      "bathrooms": 1,
+      "property_type": "",
+      "district": "",
+      "pets_allowed": false,
+      "smoking_allowed": false,
+      "student_friendly": true,
+      "amenities": []
+    }
+  },
+  "conversation_history": [
+    {
+      "turn": 1,
+      "speaker": "tenant",
+      "speaker_name": "Bradley Norman",
+      "role": "user",
+      "content": "Hi, I'm interested in the property I contacted you about. Could you please provide more details about the rent, amenities, and the lease terms? Also, is there any flexibility on the rent, as my budget is £946/month? I'm a responsible tenant with a stable income, and I have pets. Thank you!",
+      "timestamp": "2025-07-26T13:58:49.112592"
+    },
+    {
+      "turn": 2,
+      "speaker": "landlord",
+      "speaker_name": "Home Made",
+      "role": "assistant",
+      "content": "The property you're interested in is a 2-bedroom apartment located at Makers House, Stratford, E20, with a monthly rent of £2,800. The apartment offers modern amenities and is situated in the vibrant Queen Elizabeth Olympic Park area.\n\nRegarding your budget, I appreciate your interest and your responsible tenant profile. However, the asking rent is significantly above your budget. While I'm open to negotiations, I typically consider adjustments within 10-15% of the asking price. \n\nSince my property is pet-friendly, that's a plus! If you're willing to discuss a higher budget, we can explore options. Let me know!",
+      "timestamp": "2025-07-26T13:58:49.112598"
+    },
+    {
+      "turn": 3,
+      "speaker": "tenant",
+      "speaker_name": "Bradley Norman",
+      "role": "user",
+      "content": "Thank you for the details about the property. While I truly appreciate the amenities and the pet-friendly aspect, the rent of £2,800 is significantly beyond my budget. I'm willing to negotiate and would like to know if there's any possibility of adjusting the rent closer to my budget of £946/month. \n\nI believe my stable income and responsible tenancy make me a good fit for your property. If there's room for discussion, I'd love to hear more. Thank you!",
+      "timestamp": "2025-07-26T13:58:49.112601"
+    },
+    {
+      "turn": 4,
+      "speaker": "landlord",
+      "speaker_name": "Home Made",
+      "role": "assistant",
+      "content": "I appreciate your interest and your responsible background as a tenant. However, the rent of £2,800 is quite firm, and unfortunately, I cannot bring it down to your budget of £946/month, as that is significantly lower than the market rate for this property.\n\nI must decline your application, but I wish you the best in your search for a suitable home. Thank you for considering my property!",
+      "timestamp": "2025-07-26T13:58:49.112604"
+    },
+    {
+      "turn": 5,
+      "speaker": "tenant",
+      "speaker_name": "Bradley Norman",
+      "role": "user",
+      "content": "Thank you! I appreciate your support and will keep your contact in mind. Have a great day!",
+      "timestamp": "2025-07-26T13:58:49.112606"
+    }
+  ],
+  "analysis_result": {
+    "success": true,
+    "session_id": "session_511b3ce7_1753534687",
+    "negotiation_successful": false,
+    "confidence_score": 0.9,
+    "database_updated": true,
+    "update_results": [
+      "✅ Tenant status updated: d511bc6b-b13a-4806-9ddd-169d936f9704",
+      "✅ Property status updated: 162453242",
+      "✅ Landlord statistics updated: 8b477212-379f-437a-92a0-c85dac4cd68a"
+    ],
+    "tenant_rental_status": {
+      "is_rented": false,
+      "property_id": null,
+      "landlord_id": null,
+      "rental_price": null,
+      "rental_start_date": null,
+      "contract_duration_months": null,
+      "negotiation_session_id": "negotiation_001",
+      "last_updated": "2025-07-26T13:58:43.647622"
+    },
+    "property_rental_status": {
+      "is_rented": false,
+      "tenant_id": null,
+      "rental_price": null,
+      "rental_start_date": null,
+      "contract_duration_months": null,
+      "negotiation_session_id": "negotiation_001",
+      "last_updated": "2025-07-26T13:58:43.647622"
+    },
+    "landlord_rental_status": {
+      "total_properties": 5,
+      "rented_properties": 3,
+      "available_properties": 2,
+      "total_rental_income": 8400.0,
+      "average_rental_price": 2800.0,
+      "last_updated": "2025-07-26T13:58:43.647622"
+    },
+    "timestamp": "2025-07-26T13:58:43.647622"
+  },
+  "statistics": {
+    "total_messages": 5,
+    "tenant_messages": 3,
+    "landlord_messages": 2,
+    "conversation_duration_estimate": "10 minutes",
+    "negotiation_successful": false,
+    "confidence_score": 0.9
+  }
+}

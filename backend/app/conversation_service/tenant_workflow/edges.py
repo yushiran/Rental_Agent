@@ -47,9 +47,9 @@ def should_continue_tenant_conversation(state: TenantState) -> Literal["tools", 
     if any(keyword in content for keyword in ["search", "find", "look up", "检索", "查找"]):
         return "tools"
     
-    # 检查是否包含看房反馈
-    if any(keyword in content for keyword in ["viewing", "visit", "看房", "参观", "feedback"]):
-        return "analyze_feedback"
+    # # 检查是否包含看房反馈
+    # if any(keyword in content for keyword in ["viewing", "visit", "看房", "参观", "feedback"]):
+    #     return "analyze_feedback"
     
     # 检查是否需要总结对话
     if len(messages) > 10 or any(keyword in content for keyword in ["summarize", "总结", "结束"]):

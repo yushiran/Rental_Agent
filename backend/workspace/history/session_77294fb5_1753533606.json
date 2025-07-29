@@ -1,0 +1,113 @@
+{
+  "session_info": {
+    "session_id": "session_77294fb5_1753533606",
+    "created_at": "2025-07-26T13:40:06.652711",
+    "completed_at": "2025-07-26T13:40:59.988852",
+    "status": "error",
+    "termination_reason": "Error: Recursion limit of 25 reached without hitting a stop condition. You can increase the limit by setting the `recursion_limit` config key.\nFor troubleshooting, visit: https://python.langchain.com/docs/troubleshooting/errors/GRAPH_RECURSION_LIMIT",
+    "match_score": 59,
+    "match_reasons": [
+      "租金 $0 在预算范围内",
+      "2房满足需求",
+      "无宠物限制影响",
+      "无吸烟限制影响",
+      "非学生无特殊限制"
+    ]
+  },
+  "participants": {
+    "tenant": {
+      "tenant_id": "a30b3fa7-e1f7-4967-bf7a-d3c848386e6c",
+      "name": "Edward Johnson",
+      "email": "jbaker@example.com",
+      "phone": "01914960062",
+      "annual_income": 32364.564054269205,
+      "max_budget": 628.0,
+      "min_bedrooms": 1,
+      "max_bedrooms": 3,
+      "preferred_locations": [
+        {
+          "latitude": 51.495539629224346,
+          "longitude": -0.10263980369765069
+        },
+        {
+          "latitude": 51.49261857601782,
+          "longitude": -0.058128680311580354
+        }
+      ],
+      "is_student": false,
+      "has_pets": false,
+      "is_smoker": false,
+      "num_occupants": 1
+    },
+    "landlord": {
+      "landlord_id": "f888af33-febe-49ec-8912-9a39672fd0c3",
+      "name": "Home Made",
+      "phone": "+44(0)116 496 0566",
+      "branch_name": " by Home Made, London",
+      "preferences": {
+        "pet_friendly": true,
+        "smoking_allowed": false,
+        "deposit_weeks": 6
+      }
+    },
+    "property": {
+      "property_id": "162453242",
+      "display_address": "Makers House, Stratford, E20",
+      "monthly_rent": 0,
+      "bedrooms": 2,
+      "bathrooms": 1,
+      "property_type": "",
+      "district": "",
+      "pets_allowed": false,
+      "smoking_allowed": false,
+      "student_friendly": true,
+      "amenities": []
+    }
+  },
+  "conversation_history": [
+    {
+      "turn": 1,
+      "speaker": "tenant",
+      "speaker_name": "Edward Johnson",
+      "role": "user",
+      "content": "I'm interested in the property we discussed, but I would like to know more about the amenities included. Also, could we discuss the rent? My budget is £628/month, and I noticed the asking price is slightly above that. Would you be open to negotiating the rent? \n\nI have a stable income, and I'm a responsible tenant, so I believe I could be a good fit for the property. Looking forward to your response!",
+      "timestamp": "2025-07-26T13:40:59.988865"
+    },
+    {
+      "turn": 2,
+      "speaker": "landlord",
+      "speaker_name": "Home Made",
+      "role": "assistant",
+      "content": "Thank you for your interest in the property at Makers House, Stratford! This 2-bedroom apartment includes amenities such as a modern kitchen, spacious living area, and access to communal spaces within the development. \n\nRegarding the rent, I appreciate your honesty about your budget. The asking price is £2,800 pcm, which is quite a bit above your budget of £628/month. While I'm open to negotiation, I typically consider offers within 15% of the asking price. Perhaps we can discuss a more feasible range? \n\nLooking forward to hearing from you!",
+      "timestamp": "2025-07-26T13:40:59.988868"
+    },
+    {
+      "turn": 3,
+      "speaker": "tenant",
+      "speaker_name": "Edward Johnson",
+      "role": "user",
+      "content": "Thank you for the details about the amenities! I appreciate your openness regarding the rent. Given that my budget is £628/month, I understand the asking price is significantly higher. \n\nWould you be open to discussing a potential adjustment closer to my budget? I believe that my stable income and responsible tenant history would make me a valuable tenant for your property. \n\nI'm eager to explore options that might work for both of us. Thank you!",
+      "timestamp": "2025-07-26T13:40:59.988871"
+    },
+    {
+      "turn": 4,
+      "speaker": "landlord",
+      "speaker_name": "Home Made",
+      "role": "assistant",
+      "content": "I appreciate your understanding and your willingness to explore options. However, the asking price of £2,800 pcm is significantly above your budget of £628/month. While I value responsible tenants like yourself, I must ensure that the rent aligns with the market and property value.\n\nIf you're open to considering a higher budget, I could potentially meet in the middle, but it would still need to be closer to the asking price. Please let me know if there's any flexibility on your end, and we can discuss further!",
+      "timestamp": "2025-07-26T13:40:59.988873"
+    }
+  ],
+  "analysis_result": {
+    "status": "error",
+    "error": "Recursion limit of 25 reached without hitting a stop condition. You can increase the limit by setting the `recursion_limit` config key.\nFor troubleshooting, visit: https://python.langchain.com/docs/troubleshooting/errors/GRAPH_RECURSION_LIMIT"
+  },
+  "statistics": {
+    "total_messages": 4,
+    "tenant_messages": 2,
+    "landlord_messages": 2,
+    "conversation_duration_estimate": "8 minutes",
+    "negotiation_successful": false,
+    "confidence_score": 0
+  }
+}
