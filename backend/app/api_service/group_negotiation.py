@@ -406,13 +406,23 @@ class GroupNegotiationService:
                     logger.error(f"计算匹配分数时出错: {str(e)}")
                     return 0, ["计算出错"]
 
+            # 先筛选预算范围内的房产
+            budget_properties = []
+            for property_model in all_properties:
+                property_dict = property_model.to_dict()
+                monthly_rent = property_dict.get("monthly_rent", 0)
+                if monthly_rent <= tenant.max_budget:
+                    budget_properties.append(property_model)
+
+            if not budget_properties:
+                logger.warning("未找到预算范围内的房产，尝试在所有房产中匹配")
+                budget_properties = all_properties
+
             best_match = None
             best_score = 0
 
-            for property_model in all_properties:
-                # 将PropertyModel转换为字典以便计算
+            for property_model in budget_properties:
                 property_dict = property_model.to_dict()
-                # 计算匹配分数
                 score, reasons = calculate_property_match_score(tenant, property_dict)
 
                 if score > best_score:

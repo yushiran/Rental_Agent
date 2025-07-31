@@ -177,3 +177,4 @@ cython_debug/
 .langgraph_api/
 
 workspace/latex/generated_contracts/
+workspace/history/
