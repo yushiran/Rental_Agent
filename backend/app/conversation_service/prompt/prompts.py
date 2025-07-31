@@ -123,3 +123,7 @@ MARKET_ANALYSIS_PROMPT = Prompt(
     template_path="tools/market_analysis_prompt.jinja",
 )
 
+META_CONTROLLER_SHOULD_CONTINUE_PROMPT = Prompt(
+    name="meta_controller_should_continue_prompt",
+    template_path="tools/should_continue.jinja",
+)

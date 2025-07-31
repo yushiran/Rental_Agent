@@ -5,17 +5,21 @@ This module implements a LangGraph-based controller that coordinates conversatio
 between tenant and landlord agents, with proper streaming support and termination logic.
 """
 from typing import List, Dict, Any, TypedDict, Literal
+from jinja2 import Environment, FileSystemLoader, select_autoescape
+import json
+import os
 import asyncio
 import traceback
 from langgraph.checkpoint.mongodb.aio import AsyncMongoDBSaver
-
-from app.config import config
+from langchain_openai import ChatOpenAI
+from langchain_core.messages import HumanMessage
 from langgraph.graph import END, StateGraph
 from loguru import logger
 
+from app.config import config
 from app.conversation_service.tenant_workflow.graph import create_tenant_workflow_graph
 from app.conversation_service.landlord_workflow.graph import create_landlord_workflow_graph
-
+from app.conversation_service.prompt import META_CONTROLLER_SHOULD_CONTINUE_PROMPT
 
 class MetaState(TypedDict):
     """State maintained by the meta-controller graph."""
@@ -242,115 +246,51 @@ async def call_landlord(state: MetaState) -> MetaState:
     intermediate = await landlord_graph.ainvoke(landlord_graph_input_adapter(state))
     return landlord_graph_output_adapter(intermediate, state)
 
+
+
 def should_continue(state: MetaState) -> str:
-    """确定对话是否应继续或终止。"""
     try:
-        logger.debug(f"🔍 should_continue - state type: {type(state)}")
-        logger.debug(f"🔍 should_continue - state keys: {state.keys() if isinstance(state, dict) else 'Not a dict'}")
-        
-        # 已经标记为终止的情况
+        messages = state.get("messages", [])
         if state.get("is_terminated", False):
             return "end"
-
-        # 检查消息列表
-        messages = state.get("messages", [])
-        logger.debug(f"🔍 should_continue - messages count: {len(messages)}")
-        
-        # 检查最大对话轮数
-        if len(messages) > 50:
-            state["is_terminated"] = True
-            state["termination_reason"] = "max_turns_reached"
-            return "end"
-        
-        # 需要至少3轮对话
         if len(messages) < 3:
             return "continue"
-        
-        # 获取最近两条消息以分析
-        last_messages = messages[-3:]
-        logger.debug(f"🔍 should_continue - analyzing last {len(last_messages)} messages")
-        
-        # 拒绝信号词组 - 非常明确的短语
-        decline_phrases = [
-            "i must decline this property",
-            "i must decline your application", 
-            "i've decided to look for other options",
-            "i've decided to pursue other applicants",
-            "i cannot proceed with this rental",
-            "i cannot proceed with your rental request"
-        ]
-        
-        # 计数看看连续几条消息中包含拒绝短语的数量
-        decline_count = 0
-        for i, msg in enumerate(last_messages):
-            logger.debug(f"🔍 should_continue - message {i} type: {type(msg)}")
-            
-            # 🎯 安全地获取消息内容
-            if isinstance(msg, dict):
-                content = msg.get("content", "")
-            elif hasattr(msg, 'content'):
-                content = msg.content
-            else:
-                logger.warning(f"🚨 Unknown message type in should_continue: {type(msg)}")
-                content = str(msg)
-            
-            # 检查拒绝短语
-            if any(phrase in content.lower() for phrase in decline_phrases):
-                decline_count += 1
-        
-        # 如果最近三条消息中有两条或以上包含拒绝短语，终止对话
-        if decline_count >= 2:
-            state["is_terminated"] = True
-            state["termination_reason"] = "mutual_rejection"
-            return "end"
-            
-        # 检查是否一方做出明确拒绝，另一方回应了确认词
-        for i in range(len(messages) - 1):
-            curr_msg = messages[i]
-            next_msg = messages[i + 1]
-            
-            # 🎯 安全地获取消息内容
-            if isinstance(curr_msg, dict):
-                curr_content = curr_msg.get("content", "")
-            elif hasattr(curr_msg, 'content'):
-                curr_content = curr_msg.content
-            else:
-                curr_content = str(curr_msg)
-            
-            if isinstance(next_msg, dict):
-                next_content = next_msg.get("content", "")
-            elif hasattr(next_msg, 'content'):
-                next_content = next_msg.content
-            else:
-                next_content = str(next_msg)
-            
-            # 检查当前消息是否包含拒绝短语
-            curr_has_decline = any(
-                phrase in curr_content.lower() 
-                for phrase in decline_phrases
-            )
-            
-            # 下一条消息是否表示确认理解
-            next_has_acknowledgment = any(
-                word in next_content.lower() 
-                for word in ["understand", "okay", "alright", "i see", "thank you", "best of luck"]
-            )
-            
-            # 如果一方拒绝且另一方确认，终止对话
-            if curr_has_decline and next_has_acknowledgment:
-                state["is_terminated"] = True
-                state["termination_reason"] = "rejection_acknowledged"
-                return "end"
-        
-        # 默认继续对话
-        return "continue"
-        
-    except Exception as e:
-        logger.error(f"🚨 Error in should_continue: {str(e)}")
-        import traceback
-        logger.error(f"🚨 should_continue traceback: {traceback.format_exc()}")
-        return "end"  # 出错时终止对话
 
+
+        # Use last 3 messages for more context
+        recent_msgs = messages[-3:]
+        conversation_text = "\n".join(
+            [f"{m.get('role', 'unknown')}: {m.get('content', '')}" for m in recent_msgs]
+        )
+
+
+        prompt = META_CONTROLLER_SHOULD_CONTINUE_PROMPT.get_prompt(
+            conversation_text=conversation_text,
+        )
+
+         # Configure LLM
+        llm_config = config.llm.get("default", {})
+        llm = ChatOpenAI(
+            api_key=llm_config.api_key,
+            model=llm_config.model,
+            base_url=llm_config.base_url,
+            temperature=llm_config.temperature,
+            max_tokens=llm_config.max_tokens,
+        )
+        message = HumanMessage(content=prompt)
+        result = llm.invoke([message])
+        parsed = json.loads(result.content)
+        action = parsed.get("action", "continue")
+        reason = parsed.get("reason", "")
+
+        if action == "end":
+            state["is_terminated"] = True
+            state["termination_reason"] = reason or "llm_decision"
+            return "end"
+        return "continue"
+    except Exception as e:
+        logger.error(f"should_continue LLM error: {e}")
+        return "end"
 
 def create_meta_controller_graph():
     """Create the meta controller graph that coordinates tenant and landlord agents."""
@@ -382,7 +322,6 @@ def create_meta_controller_graph():
 
 # Create and compile the meta controller graph
 meta_controller_graph = create_meta_controller_graph().compile()
-
 
 async def stream_conversation_with_state_update(initial_state: ExtendedMetaState, callback_fn=None, graph=meta_controller_graph):
     """Stream conversation with state updates, supporting both matching and negotiation phases"""

@@ -271,9 +271,7 @@ class MarketAnalysisOverlay {
             overlay.classList.remove('hidden');
             overlay.classList.add('show');
             this.isVisible = true;
-
-            // 设置自动隐藏定时器
-            this.setAutoHideTimer();
+            // 不再自动隐藏，用户手动关闭
         }
     }
 
@@ -295,24 +293,13 @@ class MarketAnalysisOverlay {
     /**
      * 设置自动隐藏定时器
      */
-    setAutoHideTimer() {
-        this.clearAutoHideTimer();
-        if (this.config.autoHideDelay > 0) {
-            this.autoHideTimer = setTimeout(() => {
-                this.hide();
-                this.log('info', '📊 Market analysis window auto-hidden');
-            }, this.config.autoHideDelay);
-        }
-    }
+    // setAutoHideTimer removed: auto-hide disabled
 
     /**
      * 清除自动隐藏定时器
      */
     clearAutoHideTimer() {
-        if (this.autoHideTimer) {
-            clearTimeout(this.autoHideTimer);
-            this.autoHideTimer = null;
-        }
+        // No-op: auto-hide disabled
     }
 
     /**
