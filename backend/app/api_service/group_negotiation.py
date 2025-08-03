@@ -32,6 +32,9 @@ from app.conversation_service.prompt.prompts import (
     MARKET_ANALYSIS_PROMPT,
 )
 from app.config import config
+from app.config import NEGOTIATION_ROUND
+
+
 
 class GroupNegotiationService:
     """群体协商服务 - 管理多个租客与房东的匹配和协商"""
@@ -84,6 +87,7 @@ class GroupNegotiationService:
             session_id = f"session_{uuid.uuid4().hex[:8]}_{int(time.time())}"
 
             # 3. Create initial state for meta controller
+            global NEGOTIATION_ROUND  # Ensure we use the global counter
             initial_state: ExtendedMetaState = {
                 "session_id": session_id,
                 "messages": [],
@@ -98,6 +102,7 @@ class GroupNegotiationService:
                 "match_reasons": property_match.get("reasons", []),
                 "status": "active",
                 "created_at": datetime.now().isoformat(),
+                "negotiation_round": NEGOTIATION_ROUND
             }
 
             # 4. Define message callback for logging and WebSocket communication
@@ -258,7 +263,7 @@ class GroupNegotiationService:
                 return None
 
             # 获取所有可用房产
-            all_properties = await self._get_all_properties()
+            all_properties = await self._get_all_unrented_properties()
             if not all_properties:
                 logger.error("没有可用房产")
                 return None
@@ -437,7 +442,7 @@ class GroupNegotiationService:
                         "score": score,
                         "reasons": reasons,
                         "landlord_id": property_dict.get("landlord_id"),
-                        # "landlord_name": property_dict.get("landlord_name", "未知房东"),
+                        "landlord_name": property_dict.get("landlord_name", "未知房东"),
                         "monthly_rent": property_dict.get("price", 0),
                         "display_address": property_dict.get(
                             "display_address", "未知地址"
@@ -587,6 +592,18 @@ class GroupNegotiationService:
             return results  # MongoDB client now returns Pydantic models directly
         except Exception as e:
             logger.error(f"获取房产失败: {str(e)}")
+            return []
+
+    async def _get_all_unrented_properties(self) -> List[PropertyModel]:
+        """获取所有未租赁的房产"""
+        try:
+            results = self.properties_db.fetch_documents(
+                0, {"rental_status.is_rented": False}
+            )
+            logger.info(f"获取未租赁房产数量: {len(results)}")
+            return results  # MongoDB client now returns Pydantic models directly
+        except Exception as e:
+            logger.error(f"获取未租赁房产失败: {str(e)}")
             return []
 
     async def analyze_and_update_rental_states(self, session_id: str) -> Dict[str, Any]:

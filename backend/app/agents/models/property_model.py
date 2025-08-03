@@ -19,6 +19,7 @@ class PropertyRentalStatus(BaseModel):
 
 
 class PropertyModel(BaseModel):
+    price_per_bedroom: Optional[float] = None
     """
     Simplified property model based on real rental data
     
@@ -131,20 +132,40 @@ class PropertyModel(BaseModel):
     
     @classmethod
     def from_rightmove_data(cls, rightmove_data: Dict[str, Any]) -> 'PropertyModel':
-        """Create PropertyModel from Rightmove API data"""
+        """Create PropertyModel from Rightmove API data, with price_per_bedroom calculation"""
+        price = rightmove_data.get('price', {'amount': 2000, 'frequency': 'monthly', 'currencyCode': 'GBP'})
+        bedrooms = rightmove_data.get('bedrooms', 1)
+        n_bedrooms = int(bedrooms) if bedrooms is not None else 1
+        if n_bedrooms == 0:
+            n_bedrooms = 1
+        price['amount'] = float(price['amount']) / n_bedrooms
+        if "displayPrices" in price:
+            del price["displayPrices"]
+        if price["frequency"] == "weekly":
+            price['amount'] = price['amount'] * 52 / 12
+            price['frequency'] = 'monthly'  # Normalize to monthly frequency
+
+        bathrooms = rightmove_data.get('bathrooms')
+        if bathrooms is None:
+            bathrooms = 0
+        else:
+            try:
+                bathrooms = int(bathrooms)
+            except Exception:
+                bathrooms = 0
         return cls(
             property_id=str(rightmove_data.get('property_id', uuid.uuid4())),
-            bedrooms=rightmove_data.get('bedrooms', 1),
-            bathrooms=rightmove_data.get('bathrooms', 1),
+            bedrooms=bedrooms,
+            bathrooms=bathrooms,
             display_address=rightmove_data.get('display_address', 'Unknown Address'),
-            price=rightmove_data.get('price', {'amount': 2000, 'frequency': 'monthly', 'currencyCode': 'GBP'}),
+            price=price,
             location=rightmove_data.get('location', {'latitude': 51.5074, 'longitude': -0.1278}),
             property_sub_type=rightmove_data.get('property_sub_type', 'Apartment'),
             property_type_full_description=rightmove_data.get('property_type_full_description'),
             summary=rightmove_data.get('summary', 'No description available'),
             property_images=rightmove_data.get('property_images'),
             customer=rightmove_data.get('customer'),
-            formatted_branch_name=rightmove_data.get('formatted_branch_name')
+            formatted_branch_name=rightmove_data.get('formatted_branch_name'),
         )
     
     def __str__(self) -> str:

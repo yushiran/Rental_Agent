@@ -46,7 +46,8 @@ async def tenant_agent_node(state: TenantState, config: RunnableConfig):
     
     conversation_data = {
         "conversation_context": state.get("conversation_context", ""),
-        "summary": state.get("summary", "")
+        "summary": state.get("summary", ""),
+        "negotiation_round": state.get("negotiation_round", 1)
     }
     
     # Get the chain with properly formatted context

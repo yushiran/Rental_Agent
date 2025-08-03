@@ -47,14 +47,13 @@ class AgentDataInitializer:
             logger.info(f"Successfully loaded {len(data)} property records")
             
             # Deduplicate properties by property ID
-            unique_properties = {}
+            unique_properties = []
             for prop in data:
                 # Using property ID as the unique identifier
-                # If no proper ID exists, create a composite key from address and price
-                prop_id = prop.get('id') or prop.get('propertyId') or f"{prop.get('displayAddress', '')}-{prop.get('price', '')}"
-                unique_properties[prop_id] = prop
-            
-            deduplicated_data = list(unique_properties.values())
+                prop_id = prop.get('propertyId')
+                unique_properties.append(prop)
+
+            deduplicated_data = unique_properties
             logger.info(f"After deduplication: {len(deduplicated_data)} unique property records")
             return deduplicated_data
             
@@ -100,24 +99,53 @@ class AgentDataInitializer:
         )
     
     def create_landlords_from_properties(self, properties: List[PropertyModel]) -> List[LandlordModel]:
-        """Create landlords based on property data"""
-        landlords = []
-        
-        # Group properties for different landlords
-        properties_per_landlord = random.randint(1, 5)
-        current_properties = []
-        
-        for i, property_data in enumerate(properties):
-            current_properties.append(property_data)
-            
-            # Create a landlord after accumulating certain number of properties or reaching the last one
-            if len(current_properties) >= properties_per_landlord or i == len(properties) - 1:
-                landlord = self._create_landlord(current_properties)
-                landlords.append(landlord)
-                current_properties = []
-                properties_per_landlord = random.randint(1, 5)
-        
-        logger.info(f"Created {len(landlords)} landlords")
+        """Create landlords: new customer -> new landlord, else append property to existing landlord"""
+        landlord_map = {}  # key: customer_key, value: LandlordModel
+        for prop in properties:
+            customer = getattr(prop, 'customer', None)
+            if isinstance(customer, dict):
+                brand = customer.get('branchDisplayName')
+                branch_id = customer.get('branchId')
+                if brand and branch_id:
+                    customer_key = f"{brand}_{branch_id}"
+                elif brand:
+                    customer_key = brand
+                else:
+                    customer_key = 'unknown_landlord'
+            else:
+                customer_key = 'unknown_landlord'
+
+            if customer_key not in landlord_map:
+                name = None
+                phone = None
+                branch_name = None
+                if isinstance(customer, dict):
+                    name = customer.get('branchDisplayName') or customer_key
+                    phone = customer.get('contactTelephone') or customer.get('telephoneNumber') or customer.get('phone')
+                    branch_name = customer.get('branchDisplayName') or customer.get('branchName')
+                if not name:
+                    name = customer_key
+                if not branch_name:
+                    branch_name = 'Unknown Branch'
+                if not phone:
+                    phone = self.fake.phone_number()
+                preferences = {
+                    'pet_friendly': random.choice([True, False]),
+                    'smoking_allowed': random.choice([True, False]),
+                    'deposit_weeks': random.choice([4, 5, 6])
+                }
+                landlord = LandlordModel(
+                    name=name,
+                    phone=phone,
+                    branch_name=branch_name,
+                    properties=[prop],
+                    preferences=preferences
+                )
+                landlord_map[customer_key] = landlord
+            else:
+                landlord_map[customer_key].properties.append(prop)
+        landlords = list(landlord_map.values())
+        logger.info(f"Created {len(landlords)} landlords (unique customer)")
         return landlords
     
     def create_random_tenants(self, count: int = 200) -> List[TenantModel]:
@@ -233,6 +261,7 @@ class AgentDataInitializer:
         if not raw_properties:
             logger.error("Cannot load property data, initialization failed")
             return
+        logger.info(f"Loaded {len(raw_properties)} raw property records")
         
         # 2. Clean property data
         properties = []

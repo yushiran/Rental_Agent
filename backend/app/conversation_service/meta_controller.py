@@ -45,6 +45,7 @@ class ExtendedMetaState(MetaState, total=False):
     status: str  # Session status (active, completed, etc.)
     created_at: str  # Creation timestamp
     task: Any  # Associated async task, Any type to avoid circular imports
+    negotiation_round: int  # Global negotiation round counter
 
 
 def tenant_graph_input_adapter(state: MetaState):
@@ -78,7 +79,8 @@ def tenant_graph_input_adapter(state: MetaState):
         "summary": tenant_data.get("summary", ""),
         "search_criteria": tenant_data.get("search_criteria", {}),
         "viewed_properties": tenant_data.get("viewed_properties", []),
-        "interested_properties": tenant_data.get("interested_properties", [])
+        "interested_properties": tenant_data.get("interested_properties", []),
+        "negotiation_round": state.get("negotiation_round", 1)
     }
 
 
@@ -166,7 +168,8 @@ def landlord_graph_input_adapter(state: MetaState):
         "landlord_model": landlord_model,
         "conversation_context": landlord_data.get("conversation_context", ""),
         "summary": landlord_data.get("summary", ""),
-        "current_property_focus": landlord_data.get("current_property_focus", None)
+        "current_property_focus": landlord_data.get("current_property_focus", None),
+        "negotiation_round": state.get("negotiation_round", 1)
     }
 
 
@@ -380,7 +383,7 @@ async def stream_conversation_with_state_update(initial_state: ExtendedMetaState
                     
                     # Log the conversation flow
                     agent_type = node_output.get("active_agent", "unknown")
-                    logger.info(f"💬 Meta Controller: {agent_type} generated message: {message_content[:100]}...")
+                    # logger.info(f"💬 Meta Controller: {agent_type} generated message: {message_content[:100]}...")
                     
                     # Execute callback if provided
                     if callback_fn:

@@ -27,6 +27,7 @@ from .group_negotiation import GroupNegotiationService
 from .websocket import ConnectionManager
 from app.agents.agents_factory import AgentDataInitializer
 from app.data_analysis.market_analyzer_api import analysis_router
+from app.config import NEGOTIATION_ROUND
 
 configure()
 
@@ -215,15 +216,15 @@ async def start_negotiation(request: StartNegotiationRequest):
         - 创建的协商会话信息，包含实际的agent名称
         - WebSocket连接信息
     """
+    global NEGOTIATION_ROUND
+    NEGOTIATION_ROUND += 1  # 每次调用自增
     try:
         logger.info(f"开始协商流程，租客IDs: {request.tenant_ids}")
-        # 记录详细的传入参数
-        logger.debug(f"开始协商请求参数: {json.dumps(request.dict(), ensure_ascii=False)}")
         
         # 获取所有已初始化的租客和房东数据
-        all_tenants = await agent_factory.get_all_tenants()
-        all_landlords = await agent_factory.get_all_landlords()
-        
+        all_tenants = await group_service._get_all_tenants()
+        all_landlords = await group_service._get_all_landlords()
+
         if not all_tenants or not all_landlords:
             raise HTTPException(status_code=400, detail="没有可用的租客或房东数据，请先调用初始化API")
         
@@ -231,7 +232,7 @@ async def start_negotiation(request: StartNegotiationRequest):
         participating_tenants = []
         for tenant_id in request.tenant_ids:
             tenant_data = await group_service._get_tenant_by_id(tenant_id)
-            if tenant_data:
+            if tenant_data and tenant_data.rental_status.is_rented is False:
                 participating_tenants.append(tenant_data)
             else:
                 logger.warning(f"租客 {tenant_id} 不存在，跳过")
@@ -245,7 +246,6 @@ async def start_negotiation(request: StartNegotiationRequest):
         
         for i in range(total_sessions):
             tenant = participating_tenants[i]
-            landlord = all_landlords[i % len(all_landlords)]  # 如果房东数量不够，循环使用
             
             # 使用GroupNegotiationService找到最佳房产匹配
             best_match = await group_service.find_best_property_for_tenant(tenant.tenant_id)
@@ -264,13 +264,11 @@ async def start_negotiation(request: StartNegotiationRequest):
                     session_data = {
                         "session_id": session_id,
                         "tenant_name": tenant.name,
-                        "landlord_name": landlord.name if hasattr(landlord, 'name') else landlord.get("name", "Unknown"),
-                        "property_address": "Property Available",
-                        "monthly_rent": 2500,  # 默认值
-                        "match_score": 60,  # 默认分数
-                        "match_reasons": ["创建协商会话失败"],
+                        "landlord_name": best_match.get("landlord_name", "unknown landlord"),
+                        "property_address": best_match.get("display_address", "Unknown Address"),
                         "status": "error",
-                        "created_at": datetime.now().isoformat()
+                        "created_at": datetime.now().isoformat(),
+                        "negotiation_round": NEGOTIATION_ROUND
                     }
             
             sessions.append(session_data)
@@ -278,7 +276,7 @@ async def start_negotiation(request: StartNegotiationRequest):
             # 发送初始化消息到WebSocket
             try:
                 tenant_name = tenant.get("name") if isinstance(tenant, dict) else tenant.name
-                landlord_name = landlord.get("name") if isinstance(landlord, dict) else landlord.name
+                landlord_name = session_data.get("landlord_name", "unknown landlord")
                 await manager.send_message_to_session(session_data["session_id"], {
                     "type": "negotiation_started",
                     "session_id": session_data["session_id"],

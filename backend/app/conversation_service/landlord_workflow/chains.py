@@ -51,8 +51,7 @@ def get_landlord_agent_chain(landlord_info=None, property_info=None, conversatio
     landlord_info = landlord_info or {}
     property_info = property_info or {}
     conversation_data = conversation_data or {}
-    
-    # Create a template context with all variables the prompt might need
+
     template_context = {
         "landlord_id": landlord_info.get("landlord_id", ""),
         "landlord_name": landlord_info.get("name", ""),
@@ -62,7 +61,8 @@ def get_landlord_agent_chain(landlord_info=None, property_info=None, conversatio
         "preferences": landlord_info.get("preferences", "No specific preferences"),
         "current_property_focus": property_info.get("address", "Not specified"),
         "conversation_context": conversation_data.get("conversation_context", "No previous context"),
-        "summary": conversation_data.get("summary", "")
+        "summary": conversation_data.get("summary", ""),
+        "negotiation_round": conversation_data.get("negotiation_round")
     }
     
     # Create the prompt template with the system message including all variables

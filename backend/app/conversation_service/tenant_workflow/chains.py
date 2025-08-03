@@ -57,7 +57,8 @@ def get_tenant_agent_chain(tenant_info=None, conversation_data=None, debug_promp
         "viewed_properties": tenant_info.get("viewed_properties", []),
         "interested_properties": tenant_info.get("interested_properties", []),
         "conversation_context": conversation_data.get("conversation_context", "No previous context"),
-        "summary": conversation_data.get("summary", "")
+        "summary": conversation_data.get("summary", ""),
+        "negotiation_round": conversation_data.get("negotiation_round", 1)
     }
     
     # Create the prompt template with the system message including all variables

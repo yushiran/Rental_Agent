@@ -246,3 +246,4 @@ class Config:
         return PROJECT_ROOT
 
 config = Config()
+NEGOTIATION_ROUND = 0  # 全局轮次计数器
