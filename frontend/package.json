@@ -1,7 +1,7 @@
 {
   "name": "rental-agent-maps-frontend",
   "version": "2.0.0",
-  "description": "Rental Agent Frontend - 基于Google Maps的多智能体租房协商可视化系统",
+  "description": "Rental Agent Frontend - Multi-Agent Rental Negotiation Visualization System Based on Google Maps",
   "main": "src/main.js",
   "type": "module",
   "scripts": {

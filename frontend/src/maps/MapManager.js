@@ -235,7 +235,7 @@ class MapManager {
             content: this.createAgentInfoContent(agentId, type, info)
         });
 
-        // 点击事件
+        // Click event
         marker.addListener('click', () => {
             this.closeAllInfoWindows();
             infoWindow.open(this.map, marker);
@@ -250,7 +250,7 @@ class MapManager {
     }
 
     /**
-     * 更新智能体位置
+     * Update agent position
      */
     updateAgentPosition(agentId, newPosition) {
         const marker = this.agentMarkers.get(agentId);

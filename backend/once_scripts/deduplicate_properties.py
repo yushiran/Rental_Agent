@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-去重脚本：处理rightmove_data_processed.json中的重复property_id
-只保留每个property_id的第一个对象
+Deduplication script: Handle duplicate property_id in rightmove_data_processed.json
+Only keep the first object for each property_id
 """
 
 import json
@@ -11,11 +11,11 @@ from loguru import logger
 
 def deduplicate_properties(input_file: str, output_file: str = None) -> None:
     """
-    去除重复的property_id，只保留每个property_id的第一个对象
+    Remove duplicate property_id, only keep the first object for each property_id
     
     Args:
-        input_file: 输入JSON文件路径
-        output_file: 输出JSON文件路径，如果为None则覆盖原文件
+        input_file: Input JSON file path
+        output_file: Output JSON file path, if None then overwrite original file
     """
     
     # 读取原始数据
@@ -34,49 +34,49 @@ def deduplicate_properties(input_file: str, output_file: str = None) -> None:
         logger.error("数据格式错误：期望是一个列表")
         return
     
-    logger.info(f"原始数据包含 {len(data)} 个对象")
+    logger.info(f"Original data contains {len(data)} objects")
     
-    # 使用字典来去重，key是property_id，value是第一个遇到的对象
+    # Use dictionary for deduplication, key is property_id, value is the first encountered object
     seen_property_ids: Dict[Any, Dict] = {}
     duplicate_count = 0
     
     for i, item in enumerate(data):
         if not isinstance(item, dict):
-            logger.warning(f"索引 {i} 的对象不是字典类型，跳过")
+            logger.warning(f"Object at index {i} is not a dictionary type, skip")
             continue
             
         property_id = item.get('property_id')
         
         if property_id is None:
-            logger.warning(f"索引 {i} 的对象没有property_id字段，跳过")
+            logger.warning(f"Object at index {i} has no property_id field, skip")
             continue
         
         if property_id in seen_property_ids:
             duplicate_count += 1
-            logger.debug(f"发现重复的property_id: {property_id} (索引 {i})")
+            logger.debug(f"Found duplicate property_id: {property_id} (index {i})")
         else:
             seen_property_ids[property_id] = item
     
-    # 转换回列表
+    # Convert back to list
     deduplicated_data = list(seen_property_ids.values())
     
-    logger.info("去重完成:")
-    logger.info(f"  - 原始对象数量: {len(data)}")
-    logger.info(f"  - 重复对象数量: {duplicate_count}")
-    logger.info(f"  - 去重后对象数量: {len(deduplicated_data)}")
-    logger.info(f"  - 唯一property_id数量: {len(seen_property_ids)}")
+    logger.info("Deduplication completed:")
+    logger.info(f"  - Original object count: {len(data)}")
+    logger.info(f"  - Duplicate object count: {duplicate_count}")
+    logger.info(f"  - Deduplicated object count: {len(deduplicated_data)}")
+    logger.info(f"  - Unique property_id count: {len(seen_property_ids)}")
     
-    # 确定输出文件路径
+    # Determine output file path
     if output_file is None:
         output_file = input_file
-        # 创建备份
+        # Create backup
         backup_file = f"{input_file}.backup"
-        logger.info(f"创建备份文件: {backup_file}")
+        logger.info(f"Creating backup file: {backup_file}")
         with open(backup_file, 'w', encoding='utf-8') as f:
             json.dump(data, f, ensure_ascii=False, indent=2)
     
-    # 写入去重后的数据
-    logger.info(f"正在写入去重后的数据到: {output_file}")
+    # Write deduplicated data
+    logger.info(f"Writing deduplicated data to: {output_file}")
     try:
         with open(output_file, 'w', encoding='utf-8') as f:
             json.dump(deduplicated_data, f, ensure_ascii=False, indent=2)
@@ -127,27 +127,27 @@ def analyze_duplicates(input_file: str) -> None:
     logger.info("数据分析结果:")
     logger.info(f"  - 总对象数量: {len(data)}")
     logger.info(f"  - 唯一property_id数量: {len(property_id_counts)}")
-    logger.info(f"  - 重复的property_id数量: {len(duplicates)}")
+    logger.info(f"  - Duplicate property_id count: {len(duplicates)}")
     
     if duplicates:
-        logger.info("重复的property_id详情:")
+        logger.info("Duplicate property_id details:")
         for pid, count in sorted(duplicates.items(), key=lambda x: x[1], reverse=True)[:10]:
             indexes = property_id_indexes[pid]
-            logger.info(f"  - property_id {pid}: 出现 {count} 次，索引位置: {indexes}")
+            logger.info(f"  - property_id {pid}: appears {count} times, index positions: {indexes}")
 
 def main():
-    """主函数"""
-    # 设置数据文件路径
+    """Main function"""
+    # Set data file path
     base_path = Path(__file__).parent.parent
     input_file = base_path / "dataset" / "rent_cast_data" / "processed" / "rightmove_data_processed.json"
     
     if not input_file.exists():
-        logger.error(f"输入文件不存在: {input_file}")
+        logger.error(f"Input file does not exist: {input_file}")
         return
     
-    # 分析重复数据
+    # Analyze duplicate data
     logger.info("=" * 50)
-    logger.info("步骤 1: 分析重复数据")
+    logger.info("Step 1: Analyze duplicate data")
     logger.info("=" * 50)
     analyze_duplicates(str(input_file))
     
@@ -168,14 +168,14 @@ def main():
     # 执行去重
     deduplicate_properties(str(input_file))
     
-    # 再次分析验证结果
+    # Analyze again to verify results
     logger.info("=" * 50)
-    logger.info("步骤 3: 验证去重结果")
+    logger.info("Step 3: Verify deduplication results")
     logger.info("=" * 50)
     analyze_duplicates(str(input_file))
 
 if __name__ == "__main__":
-    # 配置日志
+    # Configure logging
     logger.remove()
     logger.add(
         lambda msg: print(msg, end=""),

@@ -1,134 +1,134 @@
 # Rental Agent Maps Frontend
 
-基于 Google Maps 的多智能体租房协商可视化系统
+Multi-agent rental negotiation visualization system based on Google Maps
 
-## 🗺️ 功能特性
+## 🗺️ Features
 
-- **Google Maps 集成**: 使用真实地图展示智能体位置和房产信息
-- **实时协商可视化**: 通过地图标记和对话气泡展示智能体对话过程  
-- **多智能体支持**: 支持多个租客和房东智能体同时在地图上交互
-- **WebSocket 通信**: 与后端实时同步协商状态和消息
-- **响应式设计**: 适配桌面和移动设备
+- **Google Maps Integration**: Display agent locations and property information using real maps
+- **Real-time Negotiation Visualization**: Show agent dialogue process through map markers and conversation bubbles  
+- **Multi-agent Support**: Support multiple tenant and landlord agents interacting simultaneously on the map
+- **WebSocket Communication**: Real-time synchronization with backend for negotiation status and messages
+- **Responsive Design**: Compatible with desktop and mobile devices
 
-## 🏗️ 架构组件
+## 🏗️ Architecture Components
 
-### 地图模块 (`/src/maps/`)
+### Map Module (`/src/maps/`)
 
-- **MapManager**: Google Maps 核心管理器
-- **GoogleMapsLoader**: 动态加载 Google Maps API  
-- **AgentMapController**: 智能体地图控制器
+- **MapManager**: Google Maps core manager
+- **GoogleMapsLoader**: Dynamic loading of Google Maps API  
+- **AgentMapController**: Agent map controller
 
-### 网络模块 (`/src/network/`)
+### Network Module (`/src/network/`)
 
-- **NetworkManager**: HTTP请求和WebSocket连接管理
+- **NetworkManager**: HTTP request and WebSocket connection management
 
-### 主应用 (`/src/main.js`)
+### Main Application (`/src/main.js`)
 
-- **RentalAgentApp**: 应用主控制器，协调各模块工作
+- **RentalAgentApp**: Main application controller that coordinates all modules
 
-## 🚀 快速开始
+## 🚀 Quick Start
 
-### 1. 安装依赖
+### 1. Install Dependencies
 
 ```bash
 npm install
 ```
 
-### 2. 配置 Google Maps API (可选)
+### 2. Configure Google Maps API (Optional)
 
-编辑 `src/main.js` 中的配置：
+Edit configuration in `src/main.js`:
 
 ```javascript
 const config = {
-    apiKey: 'YOUR_GOOGLE_MAPS_API_KEY', // 可选，不填写将使用免费版本
+    apiKey: 'YOUR_GOOGLE_MAPS_API_KEY', // Optional, will use free version if not provided
     backendUrl: 'http://localhost:8000',
     mapContainer: 'map'
 };
 ```
 
-### 3. 启动开发服务器
+### 3. Start Development Server
 
 ```bash
 npm run dev
 ```
 
-### 4. 构建生产版本
+### 4. Build Production Version
 
 ```bash
 npm run build
 ```
 
-## 📡 与后端通信
+## 📡 Backend Communication
 
-### REST API 接口
+### REST API Endpoints
 
-- `POST /start-session`: 开始协商会话
-- `POST /reset-memory`: 重置记忆状态
+- `POST /start-session`: Start negotiation session
+- `POST /reset-memory`: Reset memory state
 
-### WebSocket 事件
+### WebSocket Events
 
-- `agent_started`: 智能体开始行动
-- `message_sent`: 发送消息
-- `agent_thought`: 智能体思考
-- `negotiation_update`: 协商进度更新
-- `agreement_reached`: 达成协议
-- `dialogue_ended`: 对话结束
+- `agent_started`: Agent starts action
+- `message_sent`: Send message
+- `agent_thought`: Agent thinking
+- `negotiation_update`: Negotiation progress update
+- `agreement_reached`: Agreement reached
+- `dialogue_ended`: Dialogue ended
 
-## 🎮 用户交互
+## 🎮 User Interaction
 
-### 主要功能
+### Main Features
 
-1. **开始协商**: 点击"开始协商"按钮启动新的协商会话
-2. **重置会话**: 清除当前会话状态，重新开始
-3. **查看日志**: 实时查看协商过程中的所有事件
-4. **地图交互**: 点击地图上的智能体和房产标记查看详细信息
+1. **Start Negotiation**: Click "Start Negotiation" button to start new negotiation session
+2. **Reset Session**: Clear current session state and restart
+3. **View Logs**: Real-time view of all events during negotiation process
+4. **Map Interaction**: Click on agent and property markers on map to view detailed information
 
-### 地图元素
+### Map Elements
 
-- **蓝色标记**: 租客智能体
-- **红色标记**: 房东智能体
-- **房屋图标**: 可租房产
-- **对话气泡**: 实时显示智能体对话内容
+- **Blue Markers**: Tenant agents
+- **Red Markers**: Landlord agents
+- **House Icons**: Available rental properties
+- **Dialogue Bubbles**: Real-time display of agent conversation content
 
-## 🔧 自定义配置
+## 🔧 Custom Configuration
 
-### 地图样式
+### Map Styling
 
-在 `MapManager.js` 的 `getMapStyles()` 方法中自定义地图外观。
+Customize map appearance in the `getMapStyles()` method in `MapManager.js`.
 
-### 智能体位置
+### Agent Positions
 
-在 `AgentMapController.js` 中修改 `agentPositions` 和 `propertyPositions` 数组来调整默认位置。
+Modify `agentPositions` and `propertyPositions` arrays in `AgentMapController.js` to adjust default positions.
 
-### UI 主题
+### UI Theme
 
-在 `index.html` 的 `<style>` 部分自定义颜色和布局。
+Customize colors and layout in the `<style>` section of `index.html`.
 
-## 📱 响应式支持
+## 📱 Responsive Support
 
-系统支持桌面和移动设备：
+System supports desktop and mobile devices:
 
-- 桌面：侧边栏 + 地图布局
-- 移动：堆叠布局，控制面板在上方
+- Desktop: Sidebar + map layout
+- Mobile: Stacked layout with control panel on top
 
-## 🔒 安全考虑
+## 🔒 Security Considerations
 
-- Google Maps API Key 应该设置域名限制
-- 生产环境请配置 HTTPS
-- WebSocket 连接支持自动重连机制
+- Google Maps API Key should be configured with domain restrictions
+- Use HTTPS in production environment
+- WebSocket connections support automatic reconnection mechanism
 
-## 🔍 调试模式
+## 🔍 Debug Mode
 
-打开浏览器开发者工具查看详细日志：
+Open browser developer tools to view detailed logs:
 
-- `[RentalAgentApp]`: 应用主逻辑
-- `[MapManager]`: 地图操作
-- `[NetworkManager]`: 网络通信
-- `[AgentMapController]`: 智能体控制
+- `[RentalAgentApp]`: Main application logic
+- `[MapManager]`: Map operations
+- `[NetworkManager]`: Network communication
+- `[AgentMapController]`: Agent control
 
-## 📈 性能优化
+## 📈 Performance Optimization
 
-- 地图标记使用对象池管理
-- WebSocket 连接带心跳检测
-- 日志条数自动限制避免内存泄漏
-- 响应式图片和矢量图标
+- Map markers managed using object pool
+- WebSocket connections with heartbeat detection
+- Automatic log entry limit to prevent memory leaks
+- Responsive images and vector icons

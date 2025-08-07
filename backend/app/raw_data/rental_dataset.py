@@ -453,16 +453,16 @@ class RentalDataset:
             map_path = analysis_dir / "rental_properties_map.html"
             m.save(str(map_path))
             
-            # 2. 构造 GeoDataFrame（转换为 Web Mercator 坐标系）
+            # 2. Create GeoDataFrame (convert to Web Mercator coordinate system)
             gdf = gpd.GeoDataFrame(
                 df_filtered,
                 geometry=gpd.points_from_xy(df_filtered['location_longitude'], df_filtered['location_latitude']),
-                crs='EPSG:4326'  # 原始为 WGS84 经纬度
-            ).to_crs(epsg=3857)  # 转换为 Web Mercator 适配底图
+                crs='EPSG:4326'  # Original WGS84 lat/lon
+            ).to_crs(epsg=3857)  # Convert to Web Mercator for basemap compatibility
             fig, ax = plt.subplots(figsize=(12, 10))
             gdf.plot(
                 ax=ax,
-                column='price_amount',  # 用价格着色
+                column='price_amount',  # Color by price
                 cmap='viridis',
                 markersize=50,
                 alpha=0.7,

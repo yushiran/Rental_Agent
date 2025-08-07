@@ -1,4 +1,4 @@
-# Rental Agent: 智能租房市场分析系统
+# Rental Agent: Intelligent Rental Market Analysis System
 
 UK rental market analysis system using Rightmove API data.
 

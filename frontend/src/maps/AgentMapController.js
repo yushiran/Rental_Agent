@@ -248,11 +248,11 @@ class AgentMapController {
     }
 
     /**
-     * 从后端数据添加房产标记
+     * Add property marker from backend data
      */
     addPropertyFromData(propertyData) {
         if (!this.isInitialized) {
-            console.warn('[AgentMapController] 控制器未初始化');
+            console.warn('[AgentMapController] Controller not initialized');
             return;
         }
 
@@ -264,7 +264,7 @@ class AgentMapController {
         const info = {
             title: propertyData.address || 'Unknown Address',
             rent: propertyData.price || 0,
-            area: `${propertyData.bedrooms || 1} 卧室`,
+            area: `${propertyData.bedrooms || 1} bedroom${propertyData.bedrooms > 1 ? 's' : ''}`,
             type: propertyData.property_type || 'Unknown',
             landlord_id: propertyData.landlord_id
         };
@@ -276,28 +276,28 @@ class AgentMapController {
             status: 'available'
         });
 
-        console.log(`[AgentMapController] 添加房产: ${propertyData.id} at ${propertyData.address}`);
+        console.log(`[AgentMapController] Added property: ${propertyData.id} at ${propertyData.address}`);
     }
 
     /**
-     * 处理智能体点击
+     * Handle agent click
      */
     handleAgentClick(data) {
         const { agentId, type, info } = data;
-        console.log(`[AgentMapController] 智能体被点击: ${agentId}`);
+        console.log(`[AgentMapController] Agent clicked: ${agentId}`);
         
-        // 可以在这里添加点击处理逻辑
-        // 例如显示详细信息、开始交互等
+        // Can add click handling logic here
+        // e.g. show detailed information, start interaction, etc.
     }
 
     /**
-     * 处理房产点击
+     * Handle property click
      */
     handlePropertyClick(data) {
         const { propertyId, info } = data;
-        console.log(`[AgentMapController] 房产被点击: ${propertyId}`);
+        console.log(`[AgentMapController] Property clicked: ${propertyId}`);
         
-        // 可以在这里添加房产点击处理逻辑
+        // Can add property click handling logic here
     }
 
     /**

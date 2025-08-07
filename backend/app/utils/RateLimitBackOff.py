@@ -11,7 +11,7 @@ from langchain_openai import ChatOpenAI
 from langchain_core.runnables import Runnable, RunnableConfig
 from typing import List, Any
 
-# 定义需要重试的OpenAI异常类型
+# Define OpenAI exception types that need retry
 RETRYABLE_EXCEPTIONS = (
     openai.APIError,
     openai.APITimeoutError,
@@ -33,8 +33,8 @@ RETRYABLE_EXCEPTIONS = (
 )
 async def invoke_llm_with_backoff(llm: ChatOpenAI, messages: List[BaseMessage]) -> Any:
     """
-    使用指数退避策略异步调用LLM。
-    如果发生可重试的API错误，将自动重试。
+    Invoke LLM asynchronously using exponential backoff strategy.
+    Automatically retries if retryable API errors occur.
     """
     return await llm.ainvoke(messages)
 
@@ -51,7 +51,7 @@ async def invoke_llm_with_backoff(llm: ChatOpenAI, messages: List[BaseMessage]) 
 )
 def invoke_llm_sync_with_backoff(llm: ChatOpenAI, messages: List[BaseMessage]) -> Any:
     """
-    使用指数退避策略同步调用LLM。
+    Invoke LLM synchronously using exponential backoff strategy.
     """
     return llm.invoke(messages)
 
@@ -69,8 +69,8 @@ def invoke_llm_sync_with_backoff(llm: ChatOpenAI, messages: List[BaseMessage]) -
 )
 async def invoke_chain_with_backoff(chain: Runnable, input_data: dict, config: RunnableConfig = None) -> Any:
     """
-    使用指数退避策略异步调用LangChain chain。
-    如果发生可重试的API错误，将自动重试。
+    Invoke LangChain chain asynchronously using exponential backoff strategy.
+    Automatically retries if retryable API errors occur.
     """
     if config:
         return await chain.ainvoke(input_data, config)

@@ -8,7 +8,7 @@ import uuid
 from datetime import datetime
 
 class PropertyRentalStatus(BaseModel):
-    """房产租赁状态"""
+    """Property rental status information"""
     is_occupied: bool = False
     is_rented: bool = False
     tenant_id: Optional[str] = None

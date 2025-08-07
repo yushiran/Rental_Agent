@@ -1,5 +1,5 @@
 """
-消息清理工具 - 修复不完整的工具调用消息
+Message cleaning tool - Fix incomplete tool call messages
 """
 
 from typing import List, Any
@@ -8,16 +8,16 @@ from loguru import logger
 
 def clean_incomplete_tool_calls(messages: List[Any]) -> List[Any]:
     """
-    清理消息列表中不完整的工具调用
+    Clean incomplete tool calls in message list
     
-    OpenAI API 要求：包含 tool_calls 的助手消息必须跟随相应的工具响应消息
-    此函数确保所有工具调用都有对应的响应，否则移除不完整的工具调用
+    OpenAI API requirement: Assistant messages containing tool_calls must be followed by corresponding tool response messages
+    This function ensures all tool calls have corresponding responses, otherwise removes incomplete tool calls
     
     Args:
-        messages: 原始消息列表
+        messages: Original message list
         
     Returns:
-        清理后的消息列表
+        Cleaned message list
     """
     cleaned_messages = []
     
@@ -25,15 +25,15 @@ def clean_incomplete_tool_calls(messages: List[Any]) -> List[Any]:
     while i < len(messages):
         message = messages[i]
         
-        # 检查是否是包含工具调用的助手消息
+        # Check if it's an assistant message containing tool calls
         if (hasattr(message, 'tool_calls') and message.tool_calls and 
             hasattr(message, 'role') and message.role == 'assistant'):
             
-            # 查找对应的工具响应消息
+            # Find corresponding tool response messages
             tool_call_ids = [call.id for call in message.tool_calls]
             found_responses = []
             
-            # 检查后续消息中是否有对应的工具响应
+            # Check if there are corresponding tool responses in subsequent messages
             j = i + 1
             while j < len(messages) and len(found_responses) < len(tool_call_ids):
                 next_msg = messages[j]

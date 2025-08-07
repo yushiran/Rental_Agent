@@ -466,7 +466,7 @@ class RentalAgentApp {
             }
         }
 
-        // 使用任意可用智能体
+        // Use any available agent
         if (!targetAgent) {
             const allAgents = this.mapController.getAllAgents();
             if (allAgents.length > 0) {
@@ -489,7 +489,7 @@ class RentalAgentApp {
     }
 
     /**
-     * 🎭 更新智能体说话动画
+     * 🎭 Update agent speaking animation
      */
     updateAgentSpeakingAnimation(targetAgent) {
         this.mapController.updateAgentStatus(targetAgent.id, 'speaking');
@@ -612,14 +612,14 @@ class RentalAgentApp {
             this.addLog('success', 'Negotiation completed successfully');
         }
 
-        // 🔥 使用新的市场分析组件
+        // 🔥 Use new market analysis component
         if (this.marketAnalysis) {
             await this.marketAnalysis.fetchAndDisplay();
         }
     }
 
     /**
-     * 🔥 提供给市场分析组件的快捷方法
+     * 🔥 Convenience methods for market analysis component
      */
     displayMarketAnalysis(analysisResult) {
         if (this.marketAnalysis) {
@@ -938,7 +938,7 @@ class RentalAgentApp {
             // Network manager cleanup
         }
         
-        // 🔥 销毁市场分析组件
+        // 🔥 Destroy market analysis component
         if (this.marketAnalysis) {
             this.marketAnalysis.destroy();
         }
@@ -950,7 +950,7 @@ class RentalAgentApp {
 
 }
 
-// 🌍 将方法暴露到全局，供HTML中的按钮调用
+// 🌍 Expose methods globally for HTML button calls
 window.hideMarketAnalysis = () => {
     if (window.app && window.app.marketAnalysis) {
         window.app.marketAnalysis.hide();
@@ -965,7 +965,7 @@ window.toggleMarketAnalysis = () => {
 
 // Create global application instance
 const app = new RentalAgentApp();
-window.app = app; // 🔥 暴露到全局以便其他地方调用
+window.app = app; // 🔥 Expose globally for external calls
 
 // Application startup
 document.addEventListener('DOMContentLoaded', async () => {

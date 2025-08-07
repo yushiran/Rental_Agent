@@ -272,7 +272,7 @@ class NetworkManager {
     }
 
     /**
-     * 事件系统
+     * Event system
      */
     on(event, callback) {
         if (!this.eventListeners.has(event)) {
@@ -297,7 +297,7 @@ class NetworkManager {
                 try {
                     callback(data);
                 } catch (error) {
-                    console.error(`[NetworkManager] 事件处理器错误 (${event}):`, error);
+                    console.error(`[NetworkManager] Event handler error (${event}):`, error);
                 }
             });
         }
@@ -342,12 +342,12 @@ class NetworkManager {
     }
 
     /**
-     * 销毁网络管理器
+     * Destroy network manager
      */
     destroy() {
         this.closeAllConnections();
         this.eventListeners.clear();
-        console.log('[NetworkManager] 已销毁');
+        console.log('[NetworkManager] Destroyed');
     }
 }
 

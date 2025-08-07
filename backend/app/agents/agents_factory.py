@@ -467,17 +467,17 @@ class AgentDataInitializer:
         """生成指定数量的租客"""
         tenants = self.create_random_tenants(count)
         
-        # 保存到数据库
+        # Save to database
         tenant_dicts = [tenant.to_dict() for tenant in tenants]
         if tenant_dicts:
             self.tenant_client.collection.insert_many(tenant_dicts)
         
-        logger.info(f"成功生成 {len(tenants)} 个租客")
-        # 转换ObjectId为字符串
+        logger.info(f"Successfully generated {len(tenants)} tenants")
+        # Convert ObjectId to string
         return [self._convert_objectid_to_str(tenant_dict) for tenant_dict in tenant_dicts]
 
     def _convert_objectid_to_str(self, data):
-        """递归转换ObjectId为字符串"""
+        """Recursively convert ObjectId to string"""
         from bson import ObjectId
         
         if isinstance(data, ObjectId):
@@ -490,21 +490,21 @@ class AgentDataInitializer:
             return data
 
     async def get_all_properties(self) -> List[Dict[str, Any]]:
-        """获取所有房产数据"""
+        """Get all property data"""
         properties = list(self.property_client.collection.find({}))
-        # 转换ObjectId为字符串
+        # Convert ObjectId to string
         return [self._convert_objectid_to_str(prop) for prop in properties]
 
     async def get_all_landlords(self) -> List[Dict[str, Any]]:
-        """获取所有房东数据"""
+        """Get all landlord data"""
         landlords = list(self.landlord_client.collection.find({}))
-        # 转换ObjectId为字符串
+        # Convert ObjectId to string
         return [self._convert_objectid_to_str(landlord) for landlord in landlords]
 
     async def get_all_tenants(self) -> List[Dict[str, Any]]:
-        """获取所有租客数据"""
+        """Get all tenant data"""
         tenants = list(self.tenant_client.collection.find({}))
-        # 转换ObjectId为字符串
+        # Convert ObjectId to string
         return [self._convert_objectid_to_str(tenant) for tenant in tenants]
 
     def print_statistics(self):

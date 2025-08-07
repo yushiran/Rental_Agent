@@ -11,19 +11,19 @@ async def save_conversation_history(
     session_id: str, session_state: ExtendedMetaState, analysis_result: Dict[str, Any]
 ) -> None:
     """
-    保存对话历史到 workspace/history 文件夹
+    Save conversation history to workspace/history folder
     
     Args:
-        session_id: 会话ID
-        session_state: 会话状态
-        analysis_result: 分析结果
+        session_id: Session ID
+        session_state: Session state
+        analysis_result: Analysis result
     """
     try:
-        # 创建 workspace/history 目录
+        # Create workspace/history directory
         history_dir = os.path.join("workspace", "history")
         os.makedirs(history_dir, exist_ok=True)
         
-        # 获取参与者信息
+        # Get participant information
         tenant_data = session_state.get("tenant_data", {})
         landlord_data = session_state.get("landlord_data", {})
         property_data = session_state.get("property_data", {})
@@ -102,11 +102,11 @@ async def save_conversation_history(
                 role = "unknown"
                 timestamp = ""
             
-            # 判断发言者
-            if i % 2 == 0:  # 偶数索引为租客
+            # Determine speaker
+            if i % 2 == 0:  # Even index for tenant
                 speaker = "tenant"
                 speaker_name = tenant_data.get("name", "Unknown Tenant")
-            else:  # 奇数索引为房东
+            else:  # Odd index for landlord
                 speaker = "landlord"
                 speaker_name = landlord_data.get("name", "Unknown Landlord")
             

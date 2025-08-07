@@ -38,7 +38,7 @@ from app.utils.RateLimitBackOff import invoke_llm_with_backoff
 
 
 class GroupNegotiationService:
-    """群体协商服务 - 管理多个租客与房东的匹配和协商"""
+    """Group negotiation service - Manages matching and negotiation between multiple tenants and landlords"""
 
     def __init__(self, websocket_manager=None):
         self.landlords_db = MongoClientWrapper(
@@ -267,13 +267,13 @@ class GroupNegotiationService:
         self, tenant_id: str
     ) -> Optional[Dict[str, Any]]:
         """
-        根据租客ID找到最适配的房产
+        Find the most suitable property based on tenant ID
 
         Args:
-            tenant_id: 租客ID
+            tenant_id: Tenant ID
 
         Returns:
-            包含最佳匹配房产信息的字典，包括property_id、匹配分数和匹配原因
+            Dictionary containing best matching property information, including property_id, matching score and matching reasons
         """
         try:
             # 获取租客信息
@@ -292,20 +292,20 @@ class GroupNegotiationService:
                 tenant: TenantModel, property_dict: Dict[str, Any]
             ) -> tuple[float, List[str]]:
                 """
-                计算租客与房产的匹配分数
+                Calculate matching score between tenant and property
 
                 Args:
-                    tenant: 租客模型
-                    property_dict: 房产信息字典
+                    tenant: Tenant model
+                    property_dict: Property information dictionary
 
                 Returns:
-                    匹配分数(0-100)和匹配原因列表
+                    Matching score (0-100) and list of matching reasons
                 """
                 score = 0
                 reasons = []
 
                 try:
-                    # 预算匹配 (权重: 30分)
+                    # Budget matching (weight: 30 points)
                     monthly_rent = property_dict.get("monthly_rent", 0)
                     if monthly_rent <= tenant.max_budget:
                         budget_ratio = (
@@ -318,29 +318,29 @@ class GroupNegotiationService:
                             reasons.append(f"租金 ${monthly_rent} 在预算范围内")
                         elif budget_ratio <= 1.0:  # 租金在预算范围内但较高
                             score += 20
-                            reasons.append(f"租金 ${monthly_rent} 接近预算上限")
+                            reasons.append(f"Rent ${monthly_rent} is close to budget limit")
                     else:
                         reasons.append(
-                            f"租金 ${monthly_rent} 超出预算 ${tenant.max_budget}"
+                            f"Rent ${monthly_rent} exceeds budget ${tenant.max_budget}"
                         )
 
-                    # 卧室数量匹配 (权重: 20分)
+                    # Bedroom count matching (weight: 20 points)
                     bedrooms = property_dict.get("bedrooms", 0)
                     if tenant.min_bedrooms <= bedrooms <= tenant.max_bedrooms:
                         score += 20
-                        reasons.append(f"{bedrooms}房满足需求")
+                        reasons.append(f"{bedrooms} bedroom(s) meets requirements")
                     elif (
                         bedrooms == tenant.min_bedrooms - 1
                         or bedrooms == tenant.max_bedrooms + 1
                     ):
                         score += 10
-                        reasons.append(f"{bedrooms}房接近需求")
+                        reasons.append(f"{bedrooms} bedroom(s) close to requirements")
                     else:
                         reasons.append(
-                            f"{bedrooms}房不符合需求({tenant.min_bedrooms}-{tenant.max_bedrooms}房)"
+                            f"{bedrooms} bedroom(s) doesn't match requirements({tenant.min_bedrooms}-{tenant.max_bedrooms} bedrooms)"
                         )
 
-                    # 地理位置匹配 (权重: 20分)
+                    # Geographic location matching (weight: 20 points)
                     property_location = property_dict.get("district", "").lower()
                     if property_location and tenant.preferred_locations:
                         preferred_lower = [
@@ -348,34 +348,34 @@ class GroupNegotiationService:
                         ]
                         if property_location in preferred_lower:
                             score += 20
-                            reasons.append(f"位于偏好区域: {property_location}")
+                            reasons.append(f"Located in preferred area: {property_location}")
                         elif any(pref in property_location for pref in preferred_lower):
                             score += 10
-                            reasons.append(f"位于相关区域: {property_location}")
+                            reasons.append(f"Located in related area: {property_location}")
 
-                    # 宠物政策匹配 (权重: 10分)
+                    # Pet policy matching (weight: 10 points)
                     pets_allowed = property_dict.get("pets_allowed", False)
                     if tenant.has_pets and pets_allowed:
                         score += 10
-                        reasons.append("允许宠物")
+                        reasons.append("Pets allowed")
                     elif not tenant.has_pets:
                         score += 5
-                        reasons.append("无宠物限制影响")
+                        reasons.append("No pet restriction impact")
                     elif tenant.has_pets and not pets_allowed:
-                        reasons.append("不允许宠物")
+                        reasons.append("Pets not allowed")
 
-                    # 吸烟政策匹配 (权重: 5分)
+                    # Smoking policy matching (weight: 5 points)
                     smoking_allowed = property_dict.get("smoking_allowed", False)
                     if tenant.is_smoker and smoking_allowed:
                         score += 5
-                        reasons.append("允许吸烟")
+                        reasons.append("Smoking allowed")
                     elif not tenant.is_smoker:
                         score += 2
-                        reasons.append("无吸烟限制影响")
+                        reasons.append("No smoking restriction impact")
                     elif tenant.is_smoker and not smoking_allowed:
-                        reasons.append("不允许吸烟")
+                        reasons.append("Smoking not allowed")
 
-                    # 学生友好 (权重: 5分)
+                    # Student friendly (weight: 5 points)
                     student_friendly = property_dict.get("student_friendly", True)
                     if tenant.is_student and student_friendly:
                         score += 5
@@ -417,21 +417,21 @@ class GroupNegotiationService:
                         if "pool" in amenities:
                             amenity_score += 1
                             reasons.append("包含游泳池")
-                        score += min(amenity_score, 5)  # 最多5分设施加分
+                        score += min(amenity_score, 5)  # Maximum 5 points for amenities
 
-                    # 确保分数在0-100范围内
+                    # Ensure score is within 0-100 range
                     score = max(0, min(100, score))
 
                     if not reasons:
-                        reasons.append("基础匹配评估")
+                        reasons.append("Basic matching evaluation")
 
                     return score, reasons
 
                 except Exception as e:
-                    logger.error(f"计算匹配分数时出错: {str(e)}")
-                    return 0, ["计算出错"]
+                    logger.error(f"Error calculating matching score: {str(e)}")
+                    return 0, ["Calculation error"]
 
-            # 先筛选预算范围内的房产
+            # First filter properties within budget range
             budget_properties = []
             for property_model in all_properties:
                 property_dict = property_model.to_dict()

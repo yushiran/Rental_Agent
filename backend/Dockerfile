@@ -1,23 +1,23 @@
 # -----------------------------------------------------------------------------
-# Stage 1: Builder - 安装 uv 并锁定/安装所有依赖
+# Stage 1: Builder - Install uv and lock/install all dependencies
 # -----------------------------------------------------------------------------
-# 选择一个轻量级的 Python 基础镜像作为构建阶段的起点
-# python:3.13-slim-bookworm 提供了 Python 3.13 和 Debian Bookworm 操作系统
+# Choose a lightweight Python base image as the starting point for the build stage
+# python:3.13-slim-bookworm provides Python 3.13 and Debian Bookworm OS
 FROM python:3.13-slim-bookworm AS builder
 
-# 设置容器内的工作目录。后续的指令（如 COPY, RUN）都将相对于此目录执行
+# Set the working directory inside the container. Subsequent instructions (like COPY, RUN) will execute relative to this directory
 WORKDIR /app
 
-# 从 uv 的官方 Docker 镜像中复制预编译的 uv 二进制文件到 /usr/local/bin
-# 这比在容器内编译 uv 更快，也避免了安装 Rust 编译器等额外工具
+# Copy the pre-compiled uv binary from the official uv Docker image to /usr/local/bin
+# This is faster than compiling uv inside the container and avoids installing Rust compiler and other additional tools
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 
-# 复制项目的依赖配置文件。
-# 放在这里可以利用 Docker 的构建缓存：如果这些文件不变，则下面的 RUN 指令可以跳过
+# Copy project dependency configuration files.
+# Placing them here allows leveraging Docker's build cache: if these files don't change, the RUN instruction below can be skipped
 COPY pyproject.toml uv.lock ./
 
-# 运行 uv 同步依赖。
-# --mount=type=cache,target=/root/.cache/uv: 挂载一个缓存卷，加速 uv 的重复构建
+# Run uv sync dependencies.
+# --mount=type=cache,target=/root/.cache/uv: Mount a cache volume to accelerate repeated uv builds
 # --frozen: 强制 uv 严格按照 uv.lock 的版本安装，确保可复现性
 # --no-install-project: 不安装当前项目本身 (如果你的项目只是一个脚本集合，不是一个可安装的 Python 包)
 # --no-dev: 不安装开发依赖 (如 pytest, ruff 等)，只安装生产环境所需依赖

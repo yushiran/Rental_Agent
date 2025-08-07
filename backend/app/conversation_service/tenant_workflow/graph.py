@@ -25,7 +25,7 @@ def create_tenant_workflow_graph():
     graph_builder.add_node("summarize_conversation_node", summarize_conversation_node)
     
     graph_builder.set_entry_point('tenant_agent_node')
-    # 首先检查是否需要进行房产匹配
+    # First check if property matching is needed
     graph_builder.add_conditional_edges(
         'tenant_agent_node',
         should_continue_tenant_conversation,
@@ -33,14 +33,14 @@ def create_tenant_workflow_graph():
             'tools': 'tenant_tools_node',
             # 'analyze_feedback': 'viewing_feedback_analysis_node',
             'summarize': 'summarize_conversation_node',
-            'end': END  # 🔧 使用 END 常量
+            'end': END  # Use END constant
         }
     )
 
-    # 工具节点执行完后回到租客代理节点
+    # After tool node execution, return to tenant agent node
     graph_builder.add_edge("tenant_tools_node", "tenant_agent_node")
     
-    # 总结节点结束对话
+    # Summary node ends the conversation
     graph_builder.add_edge("summarize_conversation_node", END)
     
     return graph_builder
