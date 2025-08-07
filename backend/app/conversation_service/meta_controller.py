@@ -5,11 +5,7 @@ This module implements a LangGraph-based controller that coordinates conversatio
 between tenant and landlord agents, with proper streaming support and termination logic.
 """
 from typing import List, Dict, Any, TypedDict, Literal
-from jinja2 import Environment, FileSystemLoader, select_autoescape
 import json
-import os
-import asyncio
-import traceback
 from langgraph.checkpoint.mongodb.aio import AsyncMongoDBSaver
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage
@@ -20,6 +16,8 @@ from app.config import config
 from app.conversation_service.tenant_workflow.graph import create_tenant_workflow_graph
 from app.conversation_service.landlord_workflow.graph import create_landlord_workflow_graph
 from app.conversation_service.prompt import META_CONTROLLER_SHOULD_CONTINUE_PROMPT
+from app.utils.RateLimitBackOff import invoke_llm_sync_with_backoff
+
 
 class MetaState(TypedDict):
     """State maintained by the meta-controller graph."""
@@ -281,10 +279,27 @@ def should_continue(state: MetaState) -> str:
             max_tokens=llm_config.max_tokens,
         )
         message = HumanMessage(content=prompt)
-        result = llm.invoke([message])
-        parsed = json.loads(result.content)
-        action = parsed.get("action", "continue")
-        reason = parsed.get("reason", "")
+        result = invoke_llm_sync_with_backoff(llm, [message])
+        # Clean up potential markdown code block delimiters
+        content = result.content.strip()
+        if content.startswith("```json"):
+            content = content[7:]
+        if content.endswith("```"):
+            content = content[:-3]
+        
+        try:
+            parsed = json.loads(content)
+            action = parsed.get("action", "continue")
+            reason = parsed.get("reason", "")
+        except json.JSONDecodeError:
+            logger.warning(f"Failed to parse LLM output: {content}")
+            # Fallback logic if parsing fails
+            if "end" in content.lower():
+                action = "end"
+                reason = "Fallback: LLM indicated termination"
+            else:
+                action = "continue"
+                reason = "Fallback: Default to continue"
 
         if action == "end":
             state["is_terminated"] = True
@@ -382,8 +397,7 @@ async def stream_conversation_with_state_update(initial_state: ExtendedMetaState
                         }
                     
                     # Log the conversation flow
-                    agent_type = node_output.get("active_agent", "unknown")
-                    # logger.info(f"💬 Meta Controller: {agent_type} generated message: {message_content[:100]}...")
+                    # logger.info(f"💬 Meta Controller: {node_output.get('active_agent', 'unknown')} generated message: {message_content[:100]}...")
                     
                     # Execute callback if provided
                     if callback_fn:

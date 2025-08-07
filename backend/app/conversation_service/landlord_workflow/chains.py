@@ -1,7 +1,7 @@
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_openai import ChatOpenAI
 
-from app.conversation_service import tools
+from app.conversation_service import landlord_tools
 from app.config import config
 from app.conversation_service.prompt import (
     LANDLORD_AGENT_PROMPT,
@@ -18,23 +18,6 @@ def get_chat_model(temperature: float = 0.7, model_name: str = "default") -> Cha
         max_tokens=llm_config.max_tokens,
     )
 
-
-# def get_landlord_agent_chain():
-#     """Get the chain for landlord agent responses"""
-#     model = get_chat_model()
-#     model = model.bind_tools(tools)
-    
-#     prompt = ChatPromptTemplate.from_messages(
-#         [
-#             ("system", LANDLORD_AGENT_PROMPT.prompt),
-#             MessagesPlaceholder(variable_name="messages"),
-#         ],
-#         template_format="jinja2",
-#     )
-
-#     return prompt | model
-
-
 def get_landlord_agent_chain(landlord_info=None, property_info=None, conversation_data=None):
     """
     Get the chain for landlord agent responses with proper variable handling
@@ -45,7 +28,7 @@ def get_landlord_agent_chain(landlord_info=None, property_info=None, conversatio
         conversation_data (dict): Context and summary of the conversation
     """
     model = get_chat_model()
-    model = model.bind_tools(tools)
+    model = model.bind_tools(landlord_tools)
     
     # Default values to prevent errors when variables are missing
     landlord_info = landlord_info or {}

@@ -11,7 +11,7 @@ from .edges import (
     should_continue_tenant_conversation,
 )
 from .nodes import (
-    retriever_node,
+    tenant_tools_node,
     tenant_agent_node,
     property_matching_node,
     viewing_feedback_analysis_node,
@@ -29,7 +29,7 @@ __all__ = [
     "get_rental_conversation_summary_chain",
     "should_summarize_tenant_conversation",
     "should_continue_tenant_conversation",
-    "retriever_node",
+    "tenant_tools_node",
     "tenant_agent_node",
     "property_matching_node",
     "viewing_feedback_analysis_node",

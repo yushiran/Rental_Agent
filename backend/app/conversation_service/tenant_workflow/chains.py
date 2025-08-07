@@ -1,7 +1,7 @@
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_openai import ChatOpenAI
 
-from app.conversation_service import tools
+from app.conversation_service import tenant_tools
 from app.config import config
 from app.conversation_service.prompt import (
     TENANT_AGENT_PROMPT,
@@ -31,7 +31,7 @@ def get_tenant_agent_chain(tenant_info=None, conversation_data=None, debug_promp
         debug_prompt (bool): If True, will print the formatted prompt for debugging
     """
     model = get_chat_model()
-    model = model.bind_tools(tools)
+    model = model.bind_tools(tenant_tools)
     
     # Default values to prevent errors when variables are missing
     tenant_info = tenant_info or {}

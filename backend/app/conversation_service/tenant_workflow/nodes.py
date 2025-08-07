@@ -10,10 +10,11 @@ from app.conversation_service.tenant_workflow import (
     get_rental_conversation_summary_chain,
 )
 from app.conversation_service.tenant_workflow import TenantState
-from app.conversation_service import tools
+from app.conversation_service import tenant_tools
 from app.config import config
+from app.utils.RateLimitBackOff import invoke_chain_with_backoff
 
-retriever_node = ToolNode(tools)
+tenant_tools_node = ToolNode(tenant_tools)
 
 
 async def tenant_agent_node(state: TenantState, config: RunnableConfig):
@@ -60,10 +61,9 @@ async def tenant_agent_node(state: TenantState, config: RunnableConfig):
     # context_data = {**tenant_info, **conversation_data}
     
     # Invoke the chain with just messages
-    response = await tenant_chain.ainvoke(
-        {
-            "messages": state["messages"]
-        },
+    response = await invoke_chain_with_backoff(
+        tenant_chain,
+        {"messages": state["messages"]},
         config,
     )
     
@@ -111,7 +111,7 @@ async def property_matching_node(state: TenantState, config: RunnableConfig):
     )
     
     # Invoke the chain
-    response = await matching_chain.ainvoke({}, config)
+    response = await invoke_chain_with_backoff(matching_chain, {}, config)
     
     # Process the matching results (implement your logic)
     # ...
@@ -161,7 +161,7 @@ async def viewing_feedback_analysis_node(state: TenantState, config: RunnableCon
     # await debug_print_prompt(feedback_chain, context_data, state["messages"])
     
     # Invoke the chain with empty message (context is already provided in the chain)
-    response = await feedback_chain.ainvoke({}, config)
+    response = await invoke_chain_with_backoff(feedback_chain, {}, config)
     
     return {"messages": response}
 
@@ -193,10 +193,9 @@ async def summarize_conversation_node(state: TenantState):
     # await debug_print_prompt(summary_chain, conversation_data, text_only_messages)
     
     # 🎯 使用纯文本消息进行摘要
-    response = await summary_chain.ainvoke(
-        {
-            "messages": text_only_messages
-        }
+    response = await invoke_chain_with_backoff(
+        summary_chain,
+        {"messages": text_only_messages},
     )
 
     # Get the number of messages to keep after summary from config

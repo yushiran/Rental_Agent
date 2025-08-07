@@ -9,6 +9,7 @@ from datetime import datetime
 
 class PropertyRentalStatus(BaseModel):
     """房产租赁状态"""
+    is_occupied: bool = False
     is_rented: bool = False
     tenant_id: Optional[str] = None
     rental_price: Optional[float] = None

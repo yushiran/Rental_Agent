@@ -33,6 +33,7 @@ from app.conversation_service.prompt.prompts import (
 )
 from app.config import config
 from app.config import NEGOTIATION_ROUND
+from app.utils.RateLimitBackOff import invoke_llm_with_backoff
 
 
 
@@ -82,6 +83,17 @@ class GroupNegotiationService:
             if not landlord:
                 logger.error(f"Cannot find landlord with ID {landlord_id}")
                 return None
+            
+            # 检查房产是否已被占用，如果被占用则无法开始新的会话
+            if property_data.rental_status and property_data.rental_status.is_occupied:
+                logger.warning(f"Property {property_id} is already occupied or under negotiation.")
+                return None
+            
+            # 锁定房产，标记为正在协商中
+            self.properties_db.update_document(
+                {"landlord_id": landlord_id},
+                {"$set": {"rental_status": {"is_occupied": True}}}
+            )
 
             # 2. Generate a unique session ID
             session_id = f"session_{uuid.uuid4().hex[:8]}_{int(time.time())}"
@@ -167,16 +179,16 @@ class GroupNegotiationService:
                         callback_fn=message_callback,
                         graph=meta_controller_graph,
                     ):
-                        await asyncio.sleep(5)  # Simulate async delay
+                        await asyncio.sleep(10)  # Simulate async delay
                         pass
                     
                     # 🚀 After negotiation completion, one-click analysis and update all states
-                    analysis_result = await self.analyze_and_update_rental_states(session_id)
-
-                    logger.info(f"Session {session_id} analysis result: {analysis_result}")
+                    analysis_result_model = await self.analyze_and_update_rental_states(session_id)
+                    analysis_result_json = analysis_result_model.model_dump(mode='json') if hasattr(analysis_result_model, 'model_dump') else analysis_result_model
+                    logger.info(f"Session {session_id} analysis result: {analysis_result_json}")
 
                     # 💾 保存对话历史到文件
-                    await save_conversation_history(session_id, initial_state, analysis_result)
+                    await save_conversation_history(session_id, initial_state, analysis_result_json)
 
                     # 发送对话结束事件
                     if self.websocket_manager:
@@ -184,7 +196,7 @@ class GroupNegotiationService:
                             "type": "dialogue_ended",
                             "session_id": session_id,
                             "reason": "completed",
-                            "negotiation_result": analysis_result,
+                            "negotiation_result": analysis_result_json,
                             "timestamp": datetime.now().isoformat(),
                         }
                         await self.websocket_manager.send_message_to_session(
@@ -193,7 +205,7 @@ class GroupNegotiationService:
 
                     # Update status when complete
                     initial_state["status"] = "completed"
-                    initial_state["analysis_result"] = analysis_result
+                    initial_state["analysis_result"] = analysis_result_json
                     logger.info(
                         f"Session {session_id} completed with {len(initial_state['messages'])} messages"
                     )
@@ -203,7 +215,11 @@ class GroupNegotiationService:
                     initial_state["status"] = "cancelled"
                     initial_state["termination_reason"] = "manually_cancelled"
                     
-                    # 即使被取消也保存对话历史
+                    # 释放房产锁定
+                    self.properties_db.update_document(
+                        {"property_id": property_id},
+                        {"$set": {"rental_status": {"is_occupied": False}}}
+                    )
                     try:
                         await save_conversation_history(session_id, initial_state, {"status": "cancelled"})
                     except Exception as save_error:
@@ -214,7 +230,11 @@ class GroupNegotiationService:
                     initial_state["status"] = "error"
                     initial_state["termination_reason"] = f"Error: {str(e)}"
                     
-                    # 出错时也保存对话历史
+                    # 释放房产锁定
+                    self.properties_db.update_document(
+                        {"property_id": property_id},
+                        {"$set": {"rental_status": {"is_occupied": False}}}
+                    )
                     try:
                         await save_conversation_history(session_id, initial_state, {"status": "error", "error": str(e)})
                     except Exception as save_error:
@@ -263,7 +283,7 @@ class GroupNegotiationService:
                 return None
 
             # 获取所有可用房产
-            all_properties = await self._get_all_unrented_properties()
+            all_properties = await self._get_all_unrented_unoccupied_properties()
             if not all_properties:
                 logger.error("没有可用房产")
                 return None
@@ -453,6 +473,7 @@ class GroupNegotiationService:
                 logger.info(
                     f"为租客 {tenant.name} 找到最佳匹配房产: {best_match['property_id']} (分数: {best_score})"
                 )
+                
                 return best_match
             else:
                 logger.warning(f"未找到适合租客 {tenant.name} 的房产")
@@ -606,6 +627,18 @@ class GroupNegotiationService:
             logger.error(f"获取未租赁房产失败: {str(e)}")
             return []
 
+    async def _get_all_unrented_unoccupied_properties(self) -> List[PropertyModel]:
+        """获取所有未租赁且未被占用的房产"""
+        try:
+            results = self.properties_db.fetch_documents(
+                0, {"rental_status.is_rented": False, "rental_status.is_occupied": False}
+            )
+            logger.info(f"获取未租赁且未被占用房产数量: {len(results)}")
+            return results  # MongoDB client now returns Pydantic models directly
+        except Exception as e:
+            logger.error(f"获取未租赁且未被占用房产失败: {str(e)}")
+            return []
+
     async def analyze_and_update_rental_states(self, session_id: str) -> Dict[str, Any]:
         """
         🎯 Integrated negotiation analysis and status update function
@@ -664,7 +697,7 @@ class GroupNegotiationService:
 
             current_time = datetime.now().isoformat()
 
-            result = await structured_llm.ainvoke([message])
+            result = await invoke_llm_with_backoff(structured_llm, [message])   
 
             # 7. Supplement necessary ID and timestamp fields
             if result.negotiation_successful:
@@ -681,6 +714,7 @@ class GroupNegotiationService:
                 result.property_rental_status.tenant_id = tenant_data.get("tenant_id")
                 result.property_rental_status.negotiation_session_id = session_id
                 result.property_rental_status.last_updated = current_time
+
             else:
                 # On failure, clear rental status but keep timestamps
                 result.tenant_rental_status.is_rented = False
@@ -690,6 +724,7 @@ class GroupNegotiationService:
                 result.tenant_rental_status.last_updated = current_time
 
                 result.property_rental_status.is_rented = False
+                result.property_rental_status.is_occupied = False
                 result.property_rental_status.tenant_id = None
                 result.property_rental_status.rental_price = None
                 result.property_rental_status.last_updated = current_time

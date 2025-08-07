@@ -3,9 +3,19 @@ from langchain_core.tools import tool
 from app.rag import get_retriever
 from app.config import config
 from app.utils import RentalLatex, RentalInfo
-from typing import Dict, Any
 import os
 from datetime import datetime
+from app.mongo import MongoClientWrapper
+from app.agents.models import TenantModel, LandlordModel
+import logging
+
+# Configure logger
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+
+# Initialize database connections for tools
+tenants_db = MongoClientWrapper(model=TenantModel, collection_name="tenants")
+landlords_db = MongoClientWrapper(model=LandlordModel, collection_name="landlords")
 
 retriever = get_retriever(
     embedding_model_id=config.rag.text_embedding_model_id,
@@ -18,6 +28,82 @@ retriever_tool = create_retriever_tool(
     "retrieve_rental_context",
     "Search and return information about rental properties, market data, landlord preferences, or tenant requirements. Use this tool when you need to access rental-related information from the knowledge base.",
 )
+
+@tool
+def change_tenant_max_budget(max_budget: str, tenant_id: str) -> str:
+    """
+    Update the tenant's maximum rental budget during negotiation.
+    
+    Use this tool when a tenant wants to adjust their budget constraints during 
+    the rental negotiation process. This is commonly used when:
+    - The tenant realizes they can afford more for a desirable property
+    - Market analysis shows their current budget is unrealistic
+    - They want to increase competitiveness in a tight rental market
+    - Negotiations require budget flexibility to reach an agreement
+    
+    The budget should be in British Pounds with proper formatting.
+
+    Args:
+        max_budget: The new maximum budget amount the tenant is willing to pay monthly (format: "£1500", "£2000", etc.)
+        tenant_id: The unique identifier of the tenant whose budget is being modified
+
+    Returns:
+        str: Confirmation message indicating successful budget update
+        
+    Example usage:
+        - Tenant says "I can go up to £1800 if the property includes utilities"
+        - Market analysis shows average rent is above tenant's current budget
+        - Landlord's asking price is slightly above tenant's stated budget
+    """
+    try:
+        tenants_db.update_document(
+            {"tenant_id": tenant_id},
+            {"$set": {"max_budget": max_budget}}
+        )
+        logger.info(f"🛠️ Tenant {tenant_id} max budget updated to {max_budget}")
+        return f"🛠️ ✅ Tenant's maximum budget successfully updated to {max_budget}. They can now consider properties up to this amount."
+    except Exception as e:
+        logger.error(f"🛠️ Failed to update tenant {tenant_id} budget: {str(e)}")
+        return f"🛠️ ❌ Failed to update tenant's budget: {str(e)}"
+
+@tool
+def change_landlord_max_budget(max_budget: str, landlord_id: str) -> str:
+    """
+    Update the landlord's minimum acceptable rental price during negotiation.
+    
+    Use this tool when a landlord wants to adjust their pricing expectations during 
+    the rental negotiation process. This is commonly used when:
+    - Market analysis suggests their asking price is too high
+    - They want to accept a lower offer due to property condition or market conditions  
+    - Multiple negotiations have failed at current price point
+    - They need to be more competitive to secure a reliable tenant
+    - Seasonal market changes require price adjustments
+    
+    The budget represents their new minimum acceptable monthly rent.
+
+    Args:
+        max_budget: The new minimum rental price the landlord is willing to accept monthly (format: "£1400", "£1800", etc.)
+        landlord_id: The unique identifier of the landlord whose pricing is being modified
+
+    Returns:
+        str: Confirmation message indicating successful pricing update
+        
+    Example usage:
+        - Landlord says "I could accept £1600 if the tenant signs a longer lease"
+        - Market analysis shows similar properties rent for less
+        - Property has been on market for extended period without interest
+        - Landlord wants to negotiate down from original asking price
+    """
+    try:
+        landlords_db.update_document(
+            {"landlord_id": landlord_id},
+            {"$set": {"max_budget": max_budget}}
+        )
+        logger.info(f"🛠️ Landlord {landlord_id} max budget updated to {max_budget}")
+        return f"🛠️ ✅ Landlord's minimum acceptable rent successfully updated to {max_budget}. They will now consider offers at or above this amount."
+    except Exception as e:
+        logger.error(f"🛠️ Failed to update landlord {landlord_id} budget: {str(e)}")
+        return f"🛠️ ❌ Failed to update landlord's pricing: {str(e)}"
 
 @tool
 def generate_rental_contract(
@@ -67,7 +153,7 @@ def generate_rental_contract(
     
     missing_params = [key for key, value in required_params.items() if not value]
     if missing_params:
-        return f"❌ Cannot generate contract: Missing required information: {', '.join(missing_params)}"
+        return f"🛠️ ❌ Cannot generate contract: Missing required information: {', '.join(missing_params)}"
     
     # Set default values for optional parameters
     if not agreement_date:
@@ -79,7 +165,7 @@ def generate_rental_contract(
             rent_value = monthly_rent.replace("£", "").replace(",", "")
             monthly_rent_value = float(rent_value)
             security_deposit = f"£{(monthly_rent_value * 5/4.3):.2f}"
-        except:
+        except (ValueError, AttributeError):
             security_deposit = monthly_rent  # Fallback to same as monthly rent
             
     if not start_date:
@@ -98,7 +184,7 @@ def generate_rental_contract(
             end = start.replace(month=((start.month - 1 + months) % 12) + 1, 
                               year=start.year + ((start.month - 1 + months) // 12))
             tenancy_end_date = end.strftime("%d/%m/%Y")
-        except:
+        except (ValueError, IndexError, AttributeError):
             # Fallback to one year later
             end_date = datetime.now().replace(year=datetime.now().year + 1)
             tenancy_end_date = end_date.strftime("%d/%m/%Y")
@@ -137,12 +223,14 @@ def generate_rental_contract(
         # Generate the PDF
         result_path = latex_generator.generate_pdf(rental_info, output_path)
         
-        return f"✅ Rental agreement PDF successfully generated at: {result_path}\n\nThe contract includes:\n- Landlord: {landlord_name}\n- Tenant: {tenant_name}\n- Property: {property_address}\n- Monthly Rent: {monthly_rent}\n- Start Date: {start_date}\n- Duration: {tenancy_duration}"
+        logger.info(f"🛠️ Rental contract generated for {tenant_name} at {result_path}")
+        return f"🛠️ ✅ Rental agreement PDF successfully generated at: {result_path}\n\nThe contract includes:\n- Landlord: {landlord_name}\n- Tenant: {tenant_name}\n- Property: {property_address}\n- Monthly Rent: {monthly_rent}\n- Start Date: {start_date}\n- Duration: {tenancy_duration}"
         
     except Exception as e:
         import traceback
         error_details = traceback.format_exc()
-        return f"❌ Failed to generate rental agreement PDF: {str(e)}\n\nError details: {error_details}"
+        logger.error(f"🛠️ Failed to generate contract: {str(e)}")
+        return f"🛠️ ❌ Failed to generate rental agreement PDF: {str(e)}\n\nError details: {error_details}"
 
 @tool
 def analyze_rental_market_info(
@@ -206,7 +294,7 @@ def analyze_rental_market_info(
         properties = properties_db.fetch_documents(0, query_filter)  # 0 = no limit
         
         if not properties:
-            return f"❌ No properties found matching criteria:\n- Location: {location or 'Any'}\n- Type: {property_type or 'Any'}\n- Bedrooms: {bedrooms or 'Any'}\n- Budget: £{budget_min}-£{budget_max or 'unlimited'}"
+            return f"🛠️ ❌ No properties found matching criteria:\n- Location: {location or 'Any'}\n- Type: {property_type or 'Any'}\n- Bedrooms: {bedrooms or 'Any'}\n- Budget: £{budget_min}-£{budget_max or 'unlimited'}"
         
         # Extract data for analysis
         prices = []
@@ -272,7 +360,7 @@ def analyze_rental_market_info(
         
         # Build comprehensive report
         report = f"""
-🏘️ **RENTAL MARKET ANALYSIS REPORT**
+🛠️ 🏘️ **RENTAL MARKET ANALYSIS REPORT**
 📍 **Search Criteria:**
    • Location: {location or 'All areas'}
    • Property Type: {property_type or 'All types'}
@@ -343,7 +431,7 @@ def analyze_rental_market_info(
         
         if analysis_type == "pricing":
             # Focus on price analysis only
-            price_summary = "\n\n📈 **DETAILED PRICING ANALYSIS:**\n"
+            price_summary = "\n\n�️ �📈 **DETAILED PRICING ANALYSIS:**\n"
             price_summary += f"   • Market Average: £{avg_price:.0f}/month\n"
             price_summary += f"   • Market Median: £{median_price:.0f}/month\n"
             price_summary += f"   • Price Variance: {((max_price - min_price) / avg_price * 100):.1f}%\n"
@@ -351,17 +439,20 @@ def analyze_rental_market_info(
         
         elif analysis_type == "availability":
             # Focus on availability only
-            return f"🏠 **AVAILABILITY ANALYSIS:**\n   • {available_properties} out of {total_properties} properties available ({availability_rate:.1f}%)\n   • Market Status: {'Buyer\'s Market' if availability_rate > 60 else 'Seller\'s Market' if availability_rate < 40 else 'Balanced Market'}"
+            return f"🛠️ 🏠 **AVAILABILITY ANALYSIS:**\n   • {available_properties} out of {total_properties} properties available ({availability_rate:.1f}%)\n   • Market Status: {'Buyer\'s Market' if availability_rate > 60 else 'Seller\'s Market' if availability_rate < 40 else 'Balanced Market'}"
         
         elif analysis_type == "trends":
             # Focus on trends (simplified for now)
-            return f"📈 **MARKET TRENDS:**\n   • Average rent in {location or 'analyzed area'}: £{avg_price:.0f}\n   • Most common property type: {type_stats.most_common(1)[0][0] if type_stats else 'N/A'}\n   • Availability trend: {availability_rate:.1f}% available"
+            return f"�️ �📈 **MARKET TRENDS:**\n   • Average rent in {location or 'analyzed area'}: £{avg_price:.0f}\n   • Most common property type: {type_stats.most_common(1)[0][0] if type_stats else 'N/A'}\n   • Availability trend: {availability_rate:.1f}% available"
         
+        logger.info(f"🛠️ Market analysis completed for {location or 'general area'} - {total_properties} properties analyzed")
         return report
         
     except Exception as e:
         import traceback
         error_details = traceback.format_exc()
-        return f"❌ Failed to analyze rental market: {str(e)}\n\nError details: {error_details}"
-        
-tools = [retriever_tool, generate_rental_contract, analyze_rental_market_info]
+        logger.error(f"🛠️ Failed to analyze rental market: {str(e)}")
+        return f"🛠️ ❌ Failed to analyze rental market: {str(e)}\n\nError details: {error_details}"
+
+tenant_tools = [retriever_tool, generate_rental_contract, analyze_rental_market_info, change_tenant_max_budget]
+landlord_tools = [retriever_tool, generate_rental_contract, analyze_rental_market_info, change_landlord_max_budget]

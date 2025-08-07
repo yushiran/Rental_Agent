@@ -9,7 +9,7 @@ from .edges import (
     should_continue_landlord_conversation,
 )
 from .nodes import (
-    retriever_node,
+    landlord_tools_node,
     landlord_agent_node,
     summarize_conversation_node,
 )
@@ -23,7 +23,7 @@ __all__ = [
     "get_rental_conversation_summary_chain",
     "should_summarize_landlord_conversation",
     "should_continue_landlord_conversation",
-    "retriever_node",
+    "landlord_tools_node",
     "landlord_agent_node",
     "summarize_conversation_node",
     "create_landlord_workflow_graph",

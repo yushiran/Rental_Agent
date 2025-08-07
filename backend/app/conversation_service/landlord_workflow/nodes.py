@@ -8,10 +8,11 @@ from app.conversation_service.landlord_workflow import (
     get_rental_conversation_summary_chain,
 )
 from app.conversation_service.landlord_workflow import LandlordState
-from app.conversation_service import tools
+from app.conversation_service import landlord_tools
 from app.config import config
+from app.utils.RateLimitBackOff import invoke_chain_with_backoff
 
-retriever_node = ToolNode(tools)
+landlord_tools_node = ToolNode(landlord_tools)
 
 async def landlord_agent_node(state: LandlordState, config: RunnableConfig):
     """Handle landlord agent conversations - responding to tenant inquiries about matched properties"""
@@ -48,10 +49,9 @@ async def landlord_agent_node(state: LandlordState, config: RunnableConfig):
     )
 
     # Invoke the chain with just messages
-    response = await landlord_chain.ainvoke(
-        {
-            "messages": state["messages"]
-        },
+    response = await invoke_chain_with_backoff(
+        landlord_chain,
+        {"messages": state["messages"]},
         config,
     )
     
@@ -85,10 +85,9 @@ async def summarize_conversation_node(state: LandlordState):
     summary_chain = get_rental_conversation_summary_chain(conversation_data)
     
     # 🎯 使用纯文本消息进行摘要
-    response = await summary_chain.ainvoke(
-        {
-            "messages": text_only_messages
-        }
+    response = await invoke_chain_with_backoff(
+        summary_chain,
+        {"messages": text_only_messages},
     )
 
     # Get the number of messages to keep after summary from config
