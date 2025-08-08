@@ -19,7 +19,6 @@ dependencies = [
     "pypdf2>=3.0.1",
     "pywhatkit>=5.4",
     "pillow>=11.2.1",
-    "autogen>=0.9.1.post0",
     "sqlalchemy>=2.0.41",
     "streamlit>=1.45.1",
     "plotly>=6.1.2",

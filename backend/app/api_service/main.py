@@ -87,6 +87,15 @@ async def root():
         ]
     }
 
+@app.get("/health")
+async def health_check():
+    """健康检查端点"""
+    return {
+        "status": "healthy",
+        "timestamp": datetime.now().isoformat(),
+        "service": "rental-agent-backend"
+    }
+
 @app.get("/config")
 async def get_config():
     """

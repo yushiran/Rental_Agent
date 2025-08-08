@@ -10,6 +10,9 @@ venv/
 .mypy_cache/
 .pytest_cache/
 .ruff_cache/
+workspace/history/
+
+.langgraph_api/
 
 # Editor/IDE specific
 .vscode/
