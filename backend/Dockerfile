@@ -6,13 +6,10 @@ WORKDIR /app
 # 安装系统依赖
 RUN apt-get update && apt-get install -y \
     curl \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* \
+    && pip install uv
 
-# 安装uv
-RUN pip install uv
-
-# 复制项目文件
-COPY . .
+COPY . /app
 
 # 使用uv同步依赖
 RUN uv sync

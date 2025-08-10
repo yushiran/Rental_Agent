@@ -131,47 +131,6 @@ wheels = [
 ]
 
 [[package]]
-name = "autogen-agentchat"
-version = "0.6.4"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "autogen-core" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/c3/9a/89e3b4456ba543593aef37e2ed38b52b374d0b43db87a3494490e20aa29e/autogen_agentchat-0.6.4.tar.gz", hash = "sha256:a50ba1a97f3881693084677807756714f237da89fd481207e6d139c930b2b3f8", size = 137817 }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/92/bc/3cc970d370d3dff4e83cf4008062e129c997b879cf721efce5a381cbb953/autogen_agentchat-0.6.4-py3-none-any.whl", hash = "sha256:441f884af0eb9edb953451b0ec06077ac782a7d60d591ce7ea57d94fefad2098", size = 114245 },
-]
-
-[[package]]
-name = "autogen-core"
-version = "0.6.4"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "jsonref" },
-    { name = "opentelemetry-api" },
-    { name = "pillow" },
-    { name = "protobuf" },
-    { name = "pydantic" },
-    { name = "typing-extensions" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/9b/9c/36411364e8d02b292d4ff79823c0e15ebca9e055b1f9e57169562763f6c3/autogen_core-0.6.4.tar.gz", hash = "sha256:0c0ea2aa2794d5ec28e55eb2385480761e591f07c34dbd814feb71a21407aa0d", size = 99761 }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/75/40/7621973ad47912186f165ad02290d446b0e1a001ea79b5d3874eef8486cf/autogen_core-0.6.4-py3-none-any.whl", hash = "sha256:49bce7e2fb24aee5e577e5e32faa6e440dfcdd472f653e5eaa5a640eb908dd35", size = 101394 },
-]
-
-[[package]]
-name = "autogen-ext"
-version = "0.6.4"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "autogen-core" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/45/87/8872f3fbaea54cac11114935a2e497213ff40333b79cc1c9856e4b1de0c5/autogen_ext-0.6.4.tar.gz", hash = "sha256:ed153aa896723186ca9c5db42b3ec998d010cba503fee21d70548efb7bf9f0bb", size = 368319 }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/95/49/8d5a78e0072530151f4347743a231634e4af8f1772b17b767f3070de8ba6/autogen_ext-0.6.4-py3-none-any.whl", hash = "sha256:9a1a74bb671b791a5c2e3bf3038ba7c6d0d4825d98bd393b3e0a980ae83db893", size = 317109 },
-]
-
-[[package]]
 name = "backoff"
 version = "2.2.1"
 source = { registry = "https://pypi.org/simple" }
@@ -1328,15 +1287,6 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/6a/0a/eebeb1fa92507ea94016a2a790b93c2ae41a7e18778f85471dc54475ed25/jsonpointer-3.0.0.tar.gz", hash = "sha256:2b2d729f2091522d61c3b31f82e11870f60b68f43fbc705cb76bf4b832af59ef", size = 9114 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/71/92/5e77f98553e9e75130c78900d000368476aed74276eb8ae8796f65f00918/jsonpointer-3.0.0-py2.py3-none-any.whl", hash = "sha256:13e088adc14fca8b6aa8177c044e12701e6ad4b28ff10e65f2267a90109c9942", size = 7595 },
-]
-
-[[package]]
-name = "jsonref"
-version = "1.1.0"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/aa/0d/c1f3277e90ccdb50d33ed5ba1ec5b3f0a242ed8c1b1a85d3afeb68464dca/jsonref-1.1.0.tar.gz", hash = "sha256:32fe8e1d85af0fdefbebce950af85590b22b60f9e95443176adbde4e1ecea552", size = 8814 }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/0c/ec/e1db9922bceb168197a558a2b8c03a7963f1afe93517ddd3cf99f202f996/jsonref-1.1.0-py3-none-any.whl", hash = "sha256:590dc7773df6c21cbf948b5dac07a72a251db28b0238ceecce0a2abfa8ec30a9", size = 9425 },
 ]
 
 [[package]]
@@ -2704,18 +2654,6 @@ wheels = [
 ]
 
 [[package]]
-name = "pyautogen"
-version = "0.10.0"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "autogen-agentchat" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/85/34/329a2be17d87c3884e3f59acfaa3baf1d0efc6b84bccc5b08677adb6f3e6/pyautogen-0.10.0.tar.gz", hash = "sha256:ed42d7d94144d1333cc5727d904bf1c7a8deb8337b185adba332086997e4d682", size = 3413 }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/a2/78/b5ec481c9705a482ae6692270f991548b3d265ed60048a325bbbb571e39d/pyautogen-0.10.0-py3-none-any.whl", hash = "sha256:957be90fae96cb324de168151e758f116d81e249dd2e65cf353550fb4f15f3c6", size = 3029 },
-]
-
-[[package]]
 name = "pyautogui"
 version = "0.9.54"
 source = { registry = "https://pypi.org/simple" }
@@ -3298,8 +3236,6 @@ name = "rental-agent"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
-    { name = "autogen-agentchat" },
-    { name = "autogen-ext" },
     { name = "chromadb" },
     { name = "contextily" },
     { name = "faker" },
@@ -3330,7 +3266,6 @@ dependencies = [
     { name = "pandas" },
     { name = "pillow" },
     { name = "plotly" },
-    { name = "pyautogen" },
     { name = "pydantic" },
     { name = "pymongo" },
     { name = "pypdf" },
@@ -3350,8 +3285,6 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "autogen-agentchat", specifier = ">=0.5.7" },
-    { name = "autogen-ext", specifier = ">=0.5.7" },
     { name = "chromadb", specifier = ">=0.6.3" },
     { name = "contextily", specifier = ">=1.6.2" },
     { name = "faker", specifier = ">=37.3.0" },
@@ -3382,7 +3315,6 @@ requires-dist = [
     { name = "pandas", specifier = ">=2.0.0" },
     { name = "pillow", specifier = ">=11.2.1" },
     { name = "plotly", specifier = ">=6.1.2" },
-    { name = "pyautogen", specifier = ">=0.9" },
     { name = "pydantic", specifier = ">=2.11.5" },
     { name = "pymongo", specifier = "==4.11.3" },
     { name = "pypdf", specifier = ">=5.6.0" },
