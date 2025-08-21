@@ -84,3 +84,8 @@ The frontend communicates with the backend LangGraph Controller in real-time via
   - `message_sent`: A text dialogue is sent
   - `agent_thought`: Character's internal thinking process
   - `agreement_reached` / `dialogue_ended`: Dialogue success / failure
+
+
+
+### 同时你还要帮助我写project论文
+论文行文风格仿照/docs/reference/Park 等 - 2023 - Generative Agents Interactive Simulacra of Human Behavior.pdf
