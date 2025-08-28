@@ -151,7 +151,7 @@ class AgentDataInitializer:
     def create_random_tenants(self, count: int = 200) -> List[TenantModel]:
         """Create realistic student tenants for London based on 2024 survey"""
         tenants = []
-        # 伦敦主要大学及周边区域
+        # London major universities and surrounding areas
         uni_areas = [
             {"latitude": 51.5246, "longitude": -0.1340, "name": "UCL/Bloomsbury"},
             {"latitude": 51.5220, "longitude": -0.1300, "name": "SOAS/Bloomsbury"},
@@ -165,18 +165,18 @@ class AgentDataInitializer:
             {"latitude": 51.5007, "longitude": -0.1246, "name": "Westminster"}
         ]
         for _ in range(count):
-            # 预算分布（2024伦敦学生宿舍市场真实分布）
+            # Budget distribution (2024 London student accommodation market real distribution)
             budget = int(random.choices(
                 population=[800, 900, 1000, 1100, 1200, 1300, 1400, 1500],
-                weights=[10, 20, 30, 25, 20, 10, 3, 2],  # £900-£1200为主流
+                weights=[10, 20, 30, 25, 20, 10, 3, 2],  # £900-£1200 as mainstream
                 k=1
             )[0])
-            # 年收入（假设家庭/奖学金/兼职，3-5倍月租，部分有担保人）
+            # Annual income (assuming family/scholarship/part-time, 3-5 times monthly rent, some with guarantors)
             annual_income = budget * 12 * random.uniform(3.0, 5.0)
-            # 偏好1-2人间
+            # Prefer 1-2 bedrooms
             min_bedrooms = 1
             max_bedrooms = random.choices([1, 2], weights=[0.7, 0.3])[0]
-            # 偏好大学周边
+            # Prefer areas near universities
             num_preferred = random.randint(1, 2)
             preferred_locations = []
             for coord in random.sample(uni_areas, num_preferred):
@@ -186,11 +186,11 @@ class AgentDataInitializer:
                     "latitude": coord["latitude"] + lat_variation,
                     "longitude": coord["longitude"] + lon_variation
                 })
-            # 其它属性
+            # Other attributes
             is_student = True
             has_pets = random.choices([False, True], weights=[0.85, 0.15])[0]
             is_smoker = random.choices([False, True], weights=[0.9, 0.1])[0]
-            has_guarantor = True  # 绝大多数学生有担保人
+            has_guarantor = True  # Most students have guarantors
             num_occupants = random.choices([1, 2], weights=[0.8, 0.2])[0]
             tenant = TenantModel(
                 name=self.fake.name(),
@@ -290,58 +290,58 @@ class AgentDataInitializer:
         # self.print_statistics()
     
     async def clear_all_data(self):
-        """清除所有数据"""
+        """Clear all data"""
         try:
             self.landlord_client.collection.delete_many({})
             self.tenant_client.collection.delete_many({})
             self.property_client.collection.delete_many({})
-            logger.info("成功清除所有数据")
+            logger.info("Successfully cleared all data")
         except Exception as e:
-            logger.error(f"清除数据失败: {e}")
+            logger.error(f"Failed to clear data: {e}")
             raise
 
     async def get_properties_count(self) -> int:
-        """获取房产数量"""
+        """Get property count"""
         return self.property_client.collection.count_documents({})
 
     async def get_landlords_count(self) -> int:
-        """获取房东数量"""
+        """Get landlord count"""
         return self.landlord_client.collection.count_documents({})
 
     async def get_tenants_count(self) -> int:
-        """获取租客数量"""
+        """Get tenant count"""
         return self.tenant_client.collection.count_documents({})
 
     async def initialize_properties_and_landlords(self, rightmove_file_path: str = None):
-        """初始化房产和房东数据"""
+        """Initialize property and landlord data"""
         if not rightmove_file_path:
             rightmove_file_path = f"{config.root_path}/dataset/rent_cast_data/processed/rightmove_data_processed.json"
         
         try:
-            # 加载房产数据
+            # Load property data
             raw_properties = self.load_rightmove_data(rightmove_file_path)
             if not raw_properties:
-                logger.warning("无法从文件加载房产数据，使用默认数据")
+                logger.warning("Unable to load property data from file, using default data")
                 raw_properties = self._get_default_properties()
             
-            # 清洁房产数据
+            # Clean property data
             properties = []
             for raw_prop in raw_properties:
                 try:
                     prop = self.clean_property_data(raw_prop)
                     properties.append(prop)
                 except Exception as e:
-                    logger.warning(f"跳过无效房产数据: {e}")
+                    logger.warning(f"Skipping invalid property data: {e}")
                     continue
             
             if not properties:
-                logger.warning("没有有效的房产数据，创建默认房产")
+                logger.warning("No valid property data, creating default properties")
                 properties = self._create_default_properties()
             
-            # 创建房东
+            # Create landlords
             landlords = self.create_landlords_from_properties(properties)
             
-            # 保存房东和房产数据
+            # Save landlord and property data
             landlord_dicts = []
             property_dicts = []
             
@@ -349,27 +349,27 @@ class AgentDataInitializer:
                 landlord_dict = landlord.to_dict()
                 landlord_dicts.append(landlord_dict)
                 
-                # 保存房产数据到独立集合
+                # Save property data to separate collection
                 for property_data in landlord.properties:
                     property_dict = property_data.to_dict()
                     property_dict['landlord_id'] = landlord.landlord_id
                     property_dicts.append(property_dict)
             
-            # 插入数据
+            # Insert data
             if landlord_dicts:
                 self.landlord_client.collection.insert_many(landlord_dicts)
             if property_dicts:
                 self.property_client.collection.insert_many(property_dicts)
             
-            logger.info(f"成功初始化 {len(landlords)} 个房东和 {len(properties)} 个房产")
+            logger.info(f"Successfully initialized {len(landlords)} landlords and {len(properties)} properties")
             
         except Exception as e:
-            logger.error(f"初始化房产和房东数据失败: {e}")
-            # 创建基本的默认数据
+            logger.error(f"Failed to initialize property and landlord data: {e}")
+            # Create basic default data
             await self._create_emergency_data()
     
     def _get_default_properties(self):
-        """获取默认房产数据"""
+        """Get default property data"""
         return [
             {
                 "id": "prop_001",
@@ -398,7 +398,7 @@ class AgentDataInitializer:
         ]
     
     def _create_default_properties(self):
-        """创建默认房产对象"""
+        """Create default property objects"""
         from app.agents.models.property_model import PropertyModel
         
         properties = []
@@ -418,10 +418,10 @@ class AgentDataInitializer:
         return properties
     
     async def _create_emergency_data(self):
-        """创建紧急默认数据"""
-        logger.info("创建紧急默认数据...")
+        """Create emergency default data"""
+        logger.info("Creating emergency default data...")
         
-        # 创建默认房产数据
+        # Create default property data
         default_properties = [
             {
                 "property_id": "emergency_001",
@@ -443,7 +443,7 @@ class AgentDataInitializer:
             }
         ]
         
-        # 创建默认房东数据
+        # Create default landlord data
         default_landlords = [
             {
                 "landlord_id": "emergency_landlord_001",
@@ -455,16 +455,16 @@ class AgentDataInitializer:
             }
         ]
         
-        # 插入数据
+        # Insert data
         if default_properties:
             self.property_client.collection.insert_many(default_properties)
         if default_landlords:
             self.landlord_client.collection.insert_many(default_landlords)
             
-        logger.info("紧急默认数据创建完成")
+        logger.info("Emergency default data creation completed")
 
     async def generate_tenants(self, count: int) -> List[Dict[str, Any]]:
-        """生成指定数量的租客"""
+        """Generate specified number of tenants"""
         tenants = self.create_random_tenants(count)
         
         # Save to database

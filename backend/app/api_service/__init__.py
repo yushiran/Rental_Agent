@@ -1,12 +1,12 @@
 """
-群体Agent沟通API服务
+Multi-Agent Communication API Service
 """
 
 from .group_negotiation import GroupNegotiationService
 from .websocket import ConnectionManager
 
 __all__ = [
-    # 新的简化服务
+    # New simplified service
     "GroupNegotiationService",
     "ConnectionManager"
 ]

@@ -29,7 +29,7 @@ async def save_conversation_history(
         property_data = session_state.get("property_data", {})
         messages = session_state.get("messages", [])
         
-        # 构建保存的对话记录
+        # Build saved conversation record
         conversation_log = {
             "session_info": {
                 "session_id": session_id,
@@ -86,9 +86,9 @@ async def save_conversation_history(
             "analysis_result": analysis_result
         }
         
-        # 格式化对话历史
+        # Format conversation history
         for i, msg in enumerate(messages):
-            # 安全地获取消息内容
+            # Safely get message content
             if isinstance(msg, dict):
                 content = msg.get("content", "")
                 role = msg.get("role", "unknown")
@@ -119,21 +119,21 @@ async def save_conversation_history(
                 "timestamp": timestamp if timestamp else datetime.now().isoformat()
             })
         
-        # 添加统计信息
+        # Add statistical information
         conversation_log["statistics"] = {
             "total_messages": len(messages),
             "tenant_messages": len([m for i, m in enumerate(messages) if i % 2 == 0]),
             "landlord_messages": len([m for i, m in enumerate(messages) if i % 2 == 1]),
-            "conversation_duration_estimate": f"{len(messages) * 2} minutes",  # 假设每条消息2分钟
+            "conversation_duration_estimate": f"{len(messages) * 2} minutes",  # Assume 2 minutes per message
             "negotiation_successful": analysis_result.get("negotiation_successful", False),
             "confidence_score": analysis_result.get("confidence_score", 0)
         }
         
-        # 生成文件名和路径
+        # Generate filename and path
         filename = f"{session_id}.json"
         file_path = os.path.join(history_dir, filename)
         
-        # 保存到JSON文件
+        # Save to JSON file
         with open(file_path, 'w', encoding='utf-8') as f:
             json.dump(conversation_log, f, indent=2, ensure_ascii=False)
         

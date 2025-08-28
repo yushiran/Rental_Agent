@@ -42,17 +42,17 @@ def clean_incomplete_tool_calls(messages: List[Any]) -> List[Any]:
                     next_msg.tool_call_id in tool_call_ids):
                     found_responses.append(next_msg)
                 elif hasattr(next_msg, 'role') and next_msg.role != 'tool':
-                    # 遇到非工具消息，停止查找
+                    # Encountered non-tool message, stop searching
                     break
                 j += 1
             
-            # 只有当所有工具调用都有对应响应时才包含这组消息
+            # Only include this group of messages when all tool calls have corresponding responses
             if len(found_responses) == len(tool_call_ids):
                 cleaned_messages.append(message)
                 cleaned_messages.extend(found_responses)
                 i = j
             else:
-                # 跳过不完整的工具调用
+                # Skip incomplete tool calls
                 logger.warning(
                     f"🚨 Skipping incomplete tool call: "
                     f"{len(found_responses)}/{len(tool_call_ids)} responses found. "
@@ -60,7 +60,7 @@ def clean_incomplete_tool_calls(messages: List[Any]) -> List[Any]:
                 )
                 i += 1
         else:
-            # 普通消息直接添加
+            # Regular messages are added directly
             cleaned_messages.append(message)
             i += 1
     

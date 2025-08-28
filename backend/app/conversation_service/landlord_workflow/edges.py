@@ -18,7 +18,7 @@ def should_summarize_landlord_conversation(
     if len(messages) > summary_trigger:
         return "summarize_conversation_node"
 
-    return "__end__"  # 🔧 直接返回字符串而不是 END 常量
+    return "__end__"  # 🔧 Return string directly instead of END constant
 
 
 def should_continue_landlord_conversation(
@@ -28,7 +28,7 @@ def should_continue_landlord_conversation(
     messages = state["messages"]
     
     if not messages:
-        return "__end__"  # 🔧 返回字符串而不是 END 常量
+        return "__end__"  # 🔧 Return string instead of END constant
     
     # Continue with landlord agent by default - no property matching needed as tenants handle matching
     return "landlord_agent_node"

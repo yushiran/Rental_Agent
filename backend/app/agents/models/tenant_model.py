@@ -9,7 +9,7 @@ import math
 from datetime import datetime
 
 class RentalStatus(BaseModel):
-    """租客租赁状态"""
+    """Tenant rental status"""
     is_rented: bool = False
     property_id: Optional[str] = None
     landlord_id: Optional[str] = None

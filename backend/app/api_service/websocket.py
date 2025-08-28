@@ -23,7 +23,7 @@ class ConnectionManager:
             if session_id not in self.active_connections:
                 self.active_connections[session_id] = set()
             self.active_connections[session_id].add(websocket)
-        logger.info(f"WebSocket连接建立，会话ID: {session_id}")
+        logger.info(f"WebSocket connection established, session ID: {session_id}")
     
     def disconnect(self, websocket: WebSocket, session_id: str):
         """Disconnect a WebSocket from a session"""
@@ -31,7 +31,7 @@ class ConnectionManager:
             self.active_connections[session_id].discard(websocket)
             if not self.active_connections[session_id]:
                 del self.active_connections[session_id]
-        logger.info(f"WebSocket连接断开，会话ID: {session_id}")
+        logger.info(f"WebSocket connection disconnected, session ID: {session_id}")
     
     async def send_message_to_session(self, session_id: str, message: dict):
         """Send a message to all WebSockets in a session"""
@@ -44,10 +44,10 @@ class ConnectionManager:
                 try:
                     await connection.send_text(json.dumps(message))
                 except Exception as e:
-                    logger.error(f"发送消息到WebSocket失败: {str(e)}")
+                    logger.error(f"Failed to send message to WebSocket: {str(e)}")
                     disconnected.add(connection)
             
-            # 清理断开的连接
+            # Clean up disconnected connections
             if disconnected:
                 async with self._lock:
                     if session_id in self.active_connections:
@@ -57,7 +57,7 @@ class ConnectionManager:
                             del self.active_connections[session_id]
     
     async def broadcast_to_all_sessions(self, message: dict):
-        """广播消息到所有会话"""
+        """Broadcast message to all sessions"""
         session_ids = []
         async with self._lock:
             session_ids = list(self.active_connections.keys())
@@ -67,12 +67,12 @@ class ConnectionManager:
     
     async def stream_to_session(self, session_id: str, stream_generator, message_type="stream_chunk"):
         """
-        将流式内容发送到会话
+        Send streaming content to session
         
         Args:
-            session_id: 会话ID
-            stream_generator: 异步生成器，产生流式内容
-            message_type: 消息类型
+            session_id: Session ID
+            stream_generator: Async generator that produces streaming content
+            message_type: Message type
         """
         try:
             async for chunk in stream_generator:
@@ -82,7 +82,7 @@ class ConnectionManager:
                     "timestamp": "now"
                 })
         except Exception as e:
-            logger.error(f"流式传输到会话 {session_id} 失败: {str(e)}")
+            logger.error(f"Streaming to session {session_id} failed: {str(e)}")
             await self.send_message_to_session(session_id, {
                 "type": "stream_error",
                 "error": str(e),
@@ -90,7 +90,7 @@ class ConnectionManager:
             })
     
     def start_background_task(self, coro_func: Callable[..., Coroutine], *args, **kwargs):
-        """启动一个后台任务"""
+        """Start a background task"""
         task = asyncio.create_task(coro_func(*args, **kwargs))
         self.background_tasks.append(task)
         
@@ -103,9 +103,9 @@ class ConnectionManager:
         return task
     
     def cancel_all_tasks(self):
-        """取消所有后台任务"""
+        """Cancel all background tasks"""
         for task in self.background_tasks:
             if not task.done() and not task.cancelled():
                 task.cancel()
         # Don't clear the list here - let the callbacks handle it
-        logger.info("已取消所有后台任务")
+        logger.info("All background tasks have been cancelled")

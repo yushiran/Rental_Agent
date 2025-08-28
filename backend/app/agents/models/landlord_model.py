@@ -11,7 +11,7 @@ from .property_model import PropertyModel
 
 
 class LandlordRentalStatus(BaseModel):
-    """房东租赁统计"""
+    """Landlord rental statistics"""
     total_properties: int = 0
     rented_properties: int = 0
     available_properties: int = 0

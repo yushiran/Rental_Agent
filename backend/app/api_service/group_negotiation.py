@@ -1,5 +1,5 @@
 """
-群体Agent沟通服务 - 实现租客寻找房东并协商的核心功能
+Multi-Agent Communication Service - Core functionality for tenant-landlord search and negotiation
 """
 
 import asyncio
@@ -13,9 +13,9 @@ import time
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage
 
-# 确保日志配置正确，强制显示INFO级别消息
-logger.remove()  # 移除默认处理器
-logger.add(sys.stderr, level="INFO")  # 添加stderr处理器，设置级别为INFO
+# Ensure logging configuration is correct, force display of INFO level messages
+logger.remove()  # Remove default handler
+logger.add(sys.stderr, level="INFO")  # Add stderr handler, set level to INFO
 
 from app.mongo import MongoClientWrapper
 from app.agents.models import LandlordModel, TenantModel, PropertyModel
@@ -51,10 +51,10 @@ class GroupNegotiationService:
             model=PropertyModel, collection_name="properties"
         )
 
-        # 活跃的协商会话 - 使用ExtendedMetaState来存储所有会话状态
+        # Active negotiation sessions - use ExtendedMetaState to store all session states
         self.active_negotiations: Dict[str, ExtendedMetaState] = {}
 
-        # WebSocket管理器，用于实时通信
+        # WebSocket manager for real-time communication
         self.websocket_manager = websocket_manager
 
     async def create_negotiation_session(
@@ -84,12 +84,12 @@ class GroupNegotiationService:
                 logger.error(f"Cannot find landlord with ID {landlord_id}")
                 return None
             
-            # 检查房产是否已被占用，如果被占用则无法开始新的会话
+            # Check if property is already occupied, if occupied cannot start new session
             if property_data.rental_status and property_data.rental_status.is_occupied:
                 logger.warning(f"Property {property_id} is already occupied or under negotiation.")
                 return None
             
-            # 锁定房产，标记为正在协商中
+            # Lock property, mark as under negotiation
             self.properties_db.update_document(
                 {"landlord_id": landlord_id},
                 {"$set": {"rental_status": {"is_occupied": True}}}
@@ -119,7 +119,7 @@ class GroupNegotiationService:
 
             # 4. Define message callback for logging and WebSocket communication
             async def message_callback(msg):
-                # 详细记录对话内容
+                # Detailed logging of conversation content
                 role = msg.get("role", "unknown")
                 active_agent = msg.get("active_agent", "unknown")
                 content = msg.get("content", "")
@@ -187,10 +187,10 @@ class GroupNegotiationService:
                     analysis_result_json = analysis_result_model.model_dump(mode='json') if hasattr(analysis_result_model, 'model_dump') else analysis_result_model
                     logger.info(f"Session {session_id} analysis result: {analysis_result_json}")
 
-                    # 💾 保存对话历史到文件
+                    # 💾 Save conversation history to file
                     await save_conversation_history(session_id, initial_state, analysis_result_json)
 
-                    # 发送对话结束事件
+                    # Send dialogue end event
                     if self.websocket_manager:
                         end_message = {
                             "type": "dialogue_ended",
@@ -215,7 +215,7 @@ class GroupNegotiationService:
                     initial_state["status"] = "cancelled"
                     initial_state["termination_reason"] = "manually_cancelled"
                     
-                    # 释放房产锁定
+                    # Release property lock
                     self.properties_db.update_document(
                         {"property_id": property_id},
                         {"$set": {"rental_status": {"is_occupied": False}}}
@@ -230,7 +230,7 @@ class GroupNegotiationService:
                     initial_state["status"] = "error"
                     initial_state["termination_reason"] = f"Error: {str(e)}"
                     
-                    # 释放房产锁定
+                    # Release property lock
                     self.properties_db.update_document(
                         {"property_id": property_id},
                         {"$set": {"rental_status": {"is_occupied": False}}}
@@ -276,13 +276,13 @@ class GroupNegotiationService:
             Dictionary containing best matching property information, including property_id, matching score and matching reasons
         """
         try:
-            # 获取租客信息
+            # Get tenant information
             tenant = await self._get_tenant_by_id(tenant_id)
             if not tenant:
-                logger.error(f"找不到租客: {tenant_id}")
+                logger.error(f"Cannot find tenant: {tenant_id}")
                 return None
 
-            # 获取所有可用房产
+            # Get all available properties
             all_properties = await self._get_all_unrented_unoccupied_properties()
             if not all_properties:
                 logger.error("没有可用房产")
