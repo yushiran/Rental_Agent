@@ -1,0 +1,59 @@
+# Configuration file for Rental Agent System
+# Copy this file to config.toml and fill in your actual values
+
+[llm]
+# OpenAI LLM configuration
+model = "gpt-4o-mini"
+base_url = "https://api.openai.com/v1"
+api_key = "your_openai_api_key_here"  # Replace with your actual OpenAI API key
+max_tokens = 512
+temperature = 0.0
+
+[llm.vision]
+# OpenAI Vision model configuration (for image processing capabilities)
+model = "gpt-4o-mini"
+base_url = "https://api.openai.com/v1"
+api_key = "your_openai_api_key_here"  # Replace with your actual OpenAI API key
+
+[raw_rental_data_api]
+# RapidAPI configuration for UK real estate data
+api_src = "uk-real-estate-rightmove.p.rapidapi.com"
+api_key = "your_rapidapi_key_here"  # Replace with your actual RapidAPI key
+
+[mongodb]
+# MongoDB configuration
+host = "mongodb"  # Use "localhost" when running outside Docker, "mongodb" for Docker Compose
+port = 27017
+username = ""  # Leave empty if no authentication is required
+password = ""  # Leave empty if no authentication is required
+database = "rental_agent"
+mongo_state_checkpoint_collection = "state_checkpoints"
+mongo_state_writes_collection = "state_writes"
+
+[rag]
+# Retrieval-Augmented Generation configuration
+text_embedding_model_id = "sentence-transformers/all-MiniLM-L6-v2"
+text_embedding_model_dim = 384
+top_k = 3
+device = "cpu"  # Use "cuda" if you have GPU support
+chunk_size = 256
+
+[opik]
+# Opik observability platform configuration
+api_key = "your_opik_api_key_here"  # Replace with your actual Opik API key
+workspace = "your_workspace_name"  # Replace with your Opik workspace name
+project_name = "rental_agent"
+use_local = false  # Set to true if using local Opik instance
+
+[langsmith]
+# LangSmith tracing and monitoring configuration
+api_key = "your_langsmith_api_key_here"  # Replace with your actual LangSmith API key
+
+[agents]
+# Agent behavior configuration
+total_messages_summary_trigger = 30  # Number of messages before triggering summary
+total_messages_after_summary = 5    # Number of messages to keep after summarization
+
+[google_maps]
+# Google Maps API configuration for location-based features
+api_key = "your_google_maps_api_key_here"  # Replace with your actual Google Maps API key
