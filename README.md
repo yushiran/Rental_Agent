@@ -30,9 +30,7 @@ This is a **multi-agent dialogue system** built with [LangGraph](https://github.
 
 ### Demo Negotiation History
 
-<p align="center">
-  <img src="./docs/images/memory.png" alt="Demo Negotiation History" style="background-color:white; padding:5px; border-radius:8px;" />
-</p>
+![Demo Negotiation History](./docs/images/memory.svg)
 
 
 ##  Quick Start
