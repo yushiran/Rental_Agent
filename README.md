@@ -10,7 +10,7 @@ An intelligent rental negotiation system based on [LangGraph](https://github.com
 
 This is a **multi-agent dialogue system** built with [LangGraph](https://github.com/langchain-ai/langgraph), focusing on **modular design**, **code clarity**, and **reusability**.
 
-
+https://github.com/user-attachments/assets/6a550beb-5211-4f10-bd8e-61fb65b675dd
 
 ### Key Features
 
