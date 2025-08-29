@@ -29,9 +29,9 @@ This is a **multi-agent dialogue system** built with [LangGraph](https://github.
 </p>
 
 ### Demo Negotiation History
-
-![Demo Negotiation History](./docs/images/memory.svg)
-
+<p align="center">
+  <img src="./docs/images/memory.png" alt="System Architecture" style="background-color:white; padding:5px; border-radius:8px;" />
+</p>
 
 ##  Quick Start
 ###  Environment Setup
