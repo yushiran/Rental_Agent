@@ -24,9 +24,7 @@ This is a **multi-agent dialogue system** built with [LangGraph](https://github.
 
 ###  System Architecture
 
-<p align="center">
-  <img src="./docs/images/main_pipeline.png" alt="System Architecture" style="background-color:white; padding:5px; border-radius:8px;" />
-</p>
+![System Architecture](./docs/images/main.png)
 
 ### Demo Negotiation History
 <p align="center">
