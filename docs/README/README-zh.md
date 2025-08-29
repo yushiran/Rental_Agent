@@ -21,10 +21,16 @@
 - 📄 **合同生成**: 基于成功协商自动生成虚拟租房合同 [查看演示合同](../images/basic_rental_agreement_side_by_side.png)
 
 ### 系统架构
-![系统架构](../images/main_pipeline.png)
+
+<p align="center">
+  <img src="../images/main_pipeline.png" alt="系统架构" style="background-color:white; padding:5px; border-radius:8px;" />
+</p>
 
 ### 演示协商历史
-![演示协商历史](../images/memory.png)
+
+<p align="center">
+  <img src="../images/memory.png" alt="演示协商历史" style="background-color:white; padding:5px; border-radius:8px;" />
+</p>
 
 ## 快速开始
 

@@ -23,10 +23,16 @@ This is a **multi-agent dialogue system** built with [LangGraph](https://github.
 - 📄 **Contract Generation**: Automatic generation of virtual rental contracts based on successful negotiations [View Demo Contract](./docs/images/basic_rental_agreement_side_by_side.png)
 
 ###  System Architecture
-![System Architecture](./docs/images/main_pipeline.png)
+
+<p align="center">
+  <img src="./docs/images/main_pipeline.png" alt="System Architecture" style="background-color:white; padding:5px; border-radius:8px;" />
+</p>
 
 ### Demo Negotiation History
-![Demo Negotiation History](./docs/images/memory.png)
+
+<p align="center">
+  <img src="./docs/images/memory.png" alt="Demo Negotiation History" style="background-color:white; padding:5px; border-radius:8px;" />
+</p>
 
 
 ##  Quick Start
