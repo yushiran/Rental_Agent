@@ -1,0 +1,99 @@
+{
+    "analysis_date": "2025-06-06T17:04:48.756489",
+    "total_properties_analyzed": 154,
+    "price_distribution_analysis": {
+        "total_properties": 154,
+        "price_mean": 1968.8896103896104,
+        "price_median": 1837.5,
+        "price_std": 1181.8751554878054,
+        "price_min": "340",
+        "price_max": "7250",
+        "price_q25": 901.25,
+        "price_q75": 2587.5,
+        "outlier_count": 1,
+        "outlier_percentage": 0.6493506493506493
+    },
+    "geographical_distribution_analysis": {
+        "total_properties_with_location": 154,
+        "latitude_range": [
+            51.458264,
+            51.6144
+        ],
+        "longitude_range": [
+            -0.273843,
+            0.079771
+        ],
+        "center_lat": 51.51831983766234,
+        "center_lon": -0.10929859090909091
+    },
+    "property_type_vs_price_analysis": {
+        "bedrooms_price_correlation": 0.38240571741838475,
+        "bathrooms_price_correlation": 0.3261259150814094,
+        "avg_price_by_bedrooms": {
+            "mean": {
+                "0": 1338.9285714285713,
+                "1": 1655.7567567567567,
+                "2": 2198.0789473684213,
+                "3": 1971.6774193548388,
+                "4": 2912.9375,
+                "5": 2900.0,
+                "6": 4950.0,
+                "7": 2450.0
+            },
+            "count": {
+                "0": 28,
+                "1": 37,
+                "2": 38,
+                "3": 31,
+                "4": 16,
+                "5": 2,
+                "6": 1,
+                "7": 1
+            }
+        },
+        "avg_price_by_bathrooms": {
+            "mean": {
+                "0.0": 1230.0,
+                "1.0": 1844.962962962963,
+                "2.0": 2300.633333333333,
+                "3.0": 4983.333333333333,
+                "5.0": 1800.0,
+                "6.0": 3700.0
+            },
+            "count": {
+                "0.0": 5,
+                "1.0": 108,
+                "2.0": 30,
+                "3.0": 3,
+                "5.0": 1,
+                "6.0": 2
+            }
+        },
+        "avg_price_by_property_type": {
+            "mean": {
+                "Apartment": 2086.627450980392,
+                "Flat": 1840.1571428571428,
+                "Flat Share": 1000.0,
+                "House": 3300.0,
+                "House Share": 787.5,
+                "Maisonette": 2076.6666666666665,
+                "Semi-Detached": 4000.0,
+                "Studio": 1493.3333333333333,
+                "Terraced": 3150.0,
+                "Town House": 3700.0
+            },
+            "count": {
+                "Apartment": 51,
+                "Flat": 70,
+                "Flat Share": 1,
+                "House": 4,
+                "House Share": 4,
+                "Maisonette": 3,
+                "Semi-Detached": 3,
+                "Studio": 15,
+                "Terraced": 2,
+                "Town House": 1
+            }
+        }
+    }
+}
