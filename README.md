@@ -1,5 +1,7 @@
 # Rental Agent: Multi-Agent Rental Negotiation System
-
+![License](https://img.shields.io/badge/license-MIT-blue.svg)
+![Python Version](https://img.shields.io/badge/python-3.11%2B-brightgreen)
+![Build Status](https://img.shields.io/badge/build-passing-brightgreen)
 [🇨🇳 中文版本](./docs/README/README-zh.md) | 🇺🇸 English
 
 An intelligent rental negotiation system based on [LangGraph](https://github.com/langchain-ai/langgraph), implementing automated dialogue negotiation between tenants and landlords with real-time map visualization.
